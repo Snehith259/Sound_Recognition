@@ -1,0 +1,15 @@
+import soundfile as sf 
+data, samplerate = sf.read("1-137-A-32.wav") 
+# soundfile preserves the original format (stereo if stereo) 
+print(f"Shape                  : {data.shape}") 
+print(f"Sample rate            : {samplerate} Hz") 
+print(f"Data type              : {data.dtype}") 
+# Get detailed file info 
+info = sf.info("1-137-A-32.wav") 
+print(f"\n--- File Info ---") 
+print(f"Format                 : {info.format}") 
+print(f"Subtype (bit depth)    : {info.subtype}") 
+print(f"Channels               : {info.channels}") 
+print(f"Frames (samples)       : {info.frames}") 
+print(f"Duration               : {info.duration:.2f} seconds") 
+print(f"Sample rate            : {info.samplerate} Hz") 
