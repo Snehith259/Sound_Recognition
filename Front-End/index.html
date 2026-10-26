@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -73,23 +73,28 @@
     <section class="view-panel active" id="view-studio" role="tabpanel" aria-labelledby="tab-nav-studio">
       <div class="panel-header-banner">
         <div class="banner-content">
+          <div class="banner-badge">
+            <span class="badge-dot" aria-hidden="true"></span>
+            ESC-50 Deep Learning Acoustic Suite
+          </div>
           <h1 class="banner-title">Environmental Sound <span class="gradient-text">Classification Studio</span></h1>
           <p class="banner-desc">
-            Leveraging dual-stream deep learning with <strong>SResNet</strong> (linear spectral features) and <strong>CNN-GRU</strong> (nonlinear dynamics) to classify environmental audio across 50 ESC classes.
+            Dual-stream deep neural network combining <strong>SResNet</strong> (linear spectral representations) and <strong>CNN-GRU</strong> (nonlinear recurrent sequences) for real-time acoustic recognition across 50 environmental sound categories.
           </p>
+          <div class="banner-pills-row">
+            <span class="bpill">50 Audio Classes</span>
+            <span class="bpill">Linear + Nonlinear Fusion</span>
+            <span class="bpill">Interactive Waveform</span>
+          </div>
         </div>
-        <div class="banner-stats">
-          <div class="b-stat">
-            <span class="b-stat-val">50</span>
-            <span class="b-stat-lbl">Sound Classes</span>
-          </div>
-          <div class="b-stat">
-            <span class="b-stat-val">97.2%</span>
-            <span class="b-stat-lbl">Fusion Accuracy</span>
-          </div>
-          <div class="b-stat">
-            <span class="b-stat-val">&lt; 15ms</span>
-            <span class="b-stat-lbl">Inference Latency</span>
+        <div class="banner-visual-showcase" aria-hidden="true">
+          <div class="banner-img-frame">
+            <img src="hero_bg.jpg" alt="Acoustic waveform spectral representation" class="banner-hero-img" />
+            <div class="banner-img-overlay"></div>
+            <div class="banner-floating-badge">
+              <span class="wave-pulse-dot"></span>
+              <span>Acoustic Waveform Analysis</span>
+            </div>
           </div>
         </div>
       </div>
@@ -108,11 +113,11 @@
               <label class="control-label" for="model-select">Classification Model</label>
               <div class="select-wrap">
                 <select id="model-select" class="custom-select" aria-label="Select classification model">
-                  <option value="fusion" selected>Fusion Model (SResNet + CNN-GRU) &mdash; 97.2% Acc</option>
-                  <option value="sresnet">SResNet (Linear MFCC Features) &mdash; 95.1% Acc</option>
-                  <option value="cnngru">CNN-GRU (Nonlinear Log-Mel) &mdash; 93.4% Acc</option>
-                  <option value="cnn">CNN Baseline &mdash; 82.5% Acc</option>
-                  <option value="rnn">RNN Baseline &mdash; 78.1% Acc</option>
+                  <option value="fusion" selected>Fusion Model (SResNet + CNN-GRU)</option>
+                  <option value="sresnet">SResNet</option>
+                  <option value="cnngru">CNN-GRU</option>
+                  <option value="cnn">CNN Baseline</option>
+                  <option value="rnn">RNN Baseline</option>
                 </select>
                 <svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
               </div>
@@ -479,8 +484,8 @@
           <div class="flow-step-card">
             <div class="flow-num">04</div>
             <h4 class="flow-step-title">Decision Fusion &amp; Confidence</h4>
-            <p class="flow-step-desc">A weighted softmax ensemble combines class posteriors: $P_{final} = \alpha P_{SResNet} + (1-\alpha) P_{CNN-GRU}$, achieving state-of-the-art classification confidence.</p>
-            <div class="flow-pill">Ensemble &bull; Softmax</div>
+            <p class="flow-step-desc">Combines stationary spectral representations from SResNet with temporal sequence transitions from CNN-GRU at the decision layer. The multi-stream consensus resolves acoustic ambiguities across complex soundscapes to produce the final classification and confidence metric.</p>
+            <div class="flow-pill">Posterior Consensus &bull; Noise Robustness</div>
           </div>
         </div>
 

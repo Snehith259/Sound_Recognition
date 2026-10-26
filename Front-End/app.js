@@ -1,4 +1,4 @@
-﻿/* ═══════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════
    SoundSense · app.js
    Acoustic Intelligence Studio Client Logic
    ESC-50 Deep Learning Model Simulation (SResNet + CNN-GRU)
@@ -70,11 +70,11 @@ const ESC50_CATEGORIES = [
 ];
 
 const MODEL_INFO = {
-  fusion:  { name: 'Fusion Model (SResNet + CNN-GRU)', acc: '97.2%' },
-  sresnet: { name: 'SResNet (Linear MFCC Features)',   acc: '95.1%' },
-  cnngru:  { name: 'CNN-GRU (Nonlinear Log-Mel)',     acc: '93.4%' },
-  cnn:     { name: 'CNN Baseline',                    acc: '82.5%' },
-  rnn:     { name: 'RNN Baseline',                    acc: '78.1%' },
+  fusion:  { name: 'Fusion Model (SResNet + CNN-GRU)' },
+  sresnet: { name: 'SResNet' },
+  cnngru:  { name: 'CNN-GRU' },
+  cnn:     { name: 'CNN Baseline' },
+  rnn:     { name: 'RNN Baseline' },
 };
 
 /* ── Application State ────────────────────────────────────────── */
@@ -386,6 +386,10 @@ function resetStudioUpload() {
   uploadIdle.hidden = false;
   uploadReady.hidden = true;
   classifyBtn.disabled = true;
+  btnClassifyInner.hidden = false;
+  btnClassifyInner.style.display = 'flex';
+  btnLoading.hidden = true;
+  btnLoading.style.display = 'none';
 
   document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
   resetOutputPanel();
@@ -452,7 +456,9 @@ async function executeClassification() {
   resultLoading.hidden = false;
 
   btnClassifyInner.hidden = true;
+  btnClassifyInner.style.display = 'none';
   btnLoading.hidden = false;
+  btnLoading.style.display = 'flex';
   classifyBtn.disabled = true;
 
   loadingModelName.textContent = modelSpec.name;
@@ -481,7 +487,9 @@ async function executeClassification() {
 
   // Restore button state
   btnClassifyInner.hidden = false;
+  btnClassifyInner.style.display = 'flex';
   btnLoading.hidden = true;
+  btnLoading.style.display = 'none';
   classifyBtn.disabled = false;
 }
 
