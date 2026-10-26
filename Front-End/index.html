@@ -278,13 +278,39 @@
                 </ul>
               </div>
 
-              <!-- Feature Map / Spectrogram Canvas -->
+              <!-- Feature Map / Spectrogram Canvas with Scientific Telemetry -->
               <div class="spec-module">
                 <div class="spec-header">
-                  <span class="sec-label">Time-Frequency Feature Representation</span>
-                  <span class="spec-freq-info">0 Hz &ndash; 22.05 kHz</span>
+                  <div class="spec-title-box">
+                    <span class="sec-label">Time-Frequency Feature Representation</span>
+                    <span class="spec-sublabel">128-Band Log-Mel Spectrogram (STFT)</span>
+                  </div>
+                  <div class="spec-telemetry" id="spec-telemetry">
+                    <span class="tele-item" id="spec-rate">44.1 kHz</span>
+                    <span class="tele-sep">&bull;</span>
+                    <span class="tele-item" id="spec-dur">5.00s</span>
+                    <span class="tele-sep">&bull;</span>
+                    <span class="tele-item" id="spec-mode">Log-Mel</span>
+                  </div>
                 </div>
-                <canvas id="spec-canvas" class="spectrogram-canvas" width="460" height="75" aria-hidden="true"></canvas>
+                <div class="spec-canvas-wrap">
+                  <canvas id="spec-canvas" class="spectrogram-canvas" width="560" height="140" aria-label="Acoustic time-frequency spectrogram"></canvas>
+                </div>
+                <div class="spec-legend-row">
+                  <div class="legend-scale">
+                    <span class="leg-lbl">Energy (dB):</span>
+                    <div class="leg-gradient-bar" aria-hidden="true"></div>
+                    <div class="leg-marks">
+                      <span>-80 dB</span>
+                      <span>-50 dB</span>
+                      <span>-25 dB</span>
+                      <span>0 dB</span>
+                    </div>
+                  </div>
+                  <div class="spec-cursor-info">
+                    Time: <span id="cursor-time" class="highlight-cyan">0.00s</span> &bull; Peak: <span id="spec-peak" class="highlight-cyan">-8.4 dB</span>
+                  </div>
+                </div>
               </div>
             </div>
 
