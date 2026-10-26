@@ -1,0 +1,324 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="SoundSense — AI-powered Environmental Sound Classification using ESC-50 deep learning models (SResNet, CNN-GRU). Upload an audio file to identify the sound category instantly." />
+  <title>SoundSense — Environmental Sound Classifier</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <canvas id="bg-canvas" aria-hidden="true"></canvas>
+  <nav class="navbar" role="navigation" aria-label="Main navigation">
+    <div class="nav-inner">
+      <a href="#" class="nav-logo" aria-label="SoundSense home">
+        <span class="logo-icon" aria-hidden="true">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="16" cy="16" r="15" stroke="url(#logo-grad)" stroke-width="2"/>
+            <rect x="8" y="12" width="3" height="8" rx="1.5" fill="url(#logo-grad)"/>
+            <rect x="13" y="8" width="3" height="16" rx="1.5" fill="url(#logo-grad)"/>
+            <rect x="18" y="10" width="3" height="12" rx="1.5" fill="url(#logo-grad)"/>
+            <rect x="23" y="14" width="3" height="4" rx="1.5" fill="url(#logo-grad)"/>
+            <defs>
+              <linearGradient id="logo-grad" x1="8" y1="8" x2="26" y2="26" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#38bdf8"/><stop offset="1" stop-color="#a855f7"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </span>
+        <span class="logo-text">Sound<span class="logo-accent">Sense</span></span>
+      </a>
+      <div class="nav-links">
+        <a href="#how-it-works" class="nav-link" id="nav-how-it-works">How it works</a>
+        <a href="#models" class="nav-link" id="nav-models">Models</a>
+        <a href="#categories" class="nav-link" id="nav-categories">Categories</a>
+      </div>
+      <a href="#upload-section" class="nav-cta" id="nav-cta-btn">Try it Free</a>
+    </div>
+  </nav>
+  <header class="hero" id="hero" role="banner">
+    <div class="hero-content">
+      <div class="hero-badge" id="hero-badge">
+        <span class="badge-dot" aria-hidden="true"></span>
+        ESC-50 &middot; 50 Sound Classes &middot; Deep Learning
+      </div>
+      <h1 class="hero-title" id="hero-title">
+        Hear the<br />
+        <span class="gradient-text">World&apos;s Sounds</span><br />
+        Understood
+      </h1>
+      <p class="hero-subtitle" id="hero-subtitle">
+        Upload any environmental audio clip and our fusion deep-learning models &mdash;
+        <strong>SResNet</strong>, <strong>CNN-GRU</strong>, and more &mdash;
+        instantly classify what&apos;s happening around you.
+      </p>
+      <div class="hero-actions">
+        <a href="#upload-section" class="btn-primary" id="hero-cta-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Classify a Sound
+        </a>
+        <a href="#how-it-works" class="btn-ghost" id="hero-learn-btn">Learn more</a>
+      </div>
+      <div class="hero-wave-wrap" aria-hidden="true">
+        <div class="mini-wave" id="mini-wave">
+          <span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+    </div>
+    <div class="hero-visual" aria-hidden="true">
+      <div class="hero-img-wrap">
+        <img src="hero_bg.jpg" alt="Sound wave visualization" class="hero-img" id="hero-img" loading="eager" />
+        <div class="hero-img-overlay"></div>
+      </div>
+      <div class="floating-chip chip-1">&#127925; Dog Bark <span class="chip-conf">94%</span></div>
+      <div class="floating-chip chip-2">&#127754; Rain <span class="chip-conf">87%</span></div>
+      <div class="floating-chip chip-3">&#128276; Alarm <span class="chip-conf">91%</span></div>
+    </div>
+  </header>
+  <section class="section" id="how-it-works" aria-labelledby="hiw-heading">
+    <div class="section-inner">
+      <div class="section-badge">Process</div>
+      <h2 class="section-title" id="hiw-heading">How it works</h2>
+      <p class="section-sub">Three simple steps from upload to insight.</p>
+      <div class="steps-grid">
+        <div class="step-card" id="step-1">
+          <div class="step-number">01</div>
+          <div class="step-icon-wrap"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+          <h3 class="step-title">Upload Audio</h3>
+          <p class="step-desc">Drop a WAV, MP3, OGG, or FLAC file (up to 5 seconds works best) into the classifier.</p>
+        </div>
+        <div class="step-divider" aria-hidden="true"><span></span></div>
+        <div class="step-card" id="step-2">
+          <div class="step-number">02</div>
+          <div class="step-icon-wrap"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg></div>
+          <h3 class="step-title">Deep Analysis</h3>
+          <p class="step-desc">Our fusion model (linear + nonlinear features via SResNet &amp; CNN-GRU) processes the spectral data.</p>
+        </div>
+        <div class="step-divider" aria-hidden="true"><span></span></div>
+        <div class="step-card" id="step-3">
+          <div class="step-number">03</div>
+          <div class="step-icon-wrap"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+          <h3 class="step-title">Get Results</h3>
+          <p class="step-desc">Receive the detected sound category and a confidence score with top-5 predictions ranked by probability.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="section section-dark" id="models" aria-labelledby="models-heading">
+    <div class="section-inner">
+      <div class="section-badge">Architecture</div>
+      <h2 class="section-title" id="models-heading">Powered by Research Models</h2>
+      <p class="section-sub">Fusing linear and nonlinear features for state-of-the-art ESC accuracy.</p>
+      <div class="models-grid">
+        <div class="model-card" id="model-sresnet">
+          <div class="model-header">
+            <div class="model-icon-wrap sresnet-color"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div>
+            <div class="model-tag">Linear Features</div>
+          </div>
+          <h3 class="model-name">SResNet</h3>
+          <p class="model-desc">A squeezed residual network that captures fine-grained linear spectral features from mel-spectrograms. Achieves high accuracy with a compact architecture ideal for environmental sounds.</p>
+          <div class="model-stats">
+            <div class="stat"><span class="stat-val">~95%</span><span class="stat-label">ESC-50 Acc.</span></div>
+            <div class="stat"><span class="stat-val">MFCC</span><span class="stat-label">Input Feature</span></div>
+            <div class="stat"><span class="stat-val">ResNet</span><span class="stat-label">Backbone</span></div>
+          </div>
+        </div>
+        <div class="model-card" id="model-cnngru">
+          <div class="model-header">
+            <div class="model-icon-wrap cnngru-color"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+            <div class="model-tag">Nonlinear Features</div>
+          </div>
+          <h3 class="model-name">CNN-GRU</h3>
+          <p class="model-desc">A hybrid convolutional-recurrent model that captures nonlinear temporal dynamics. The CNN extracts local patterns while GRU layers model long-range acoustic sequences.</p>
+          <div class="model-stats">
+            <div class="stat"><span class="stat-val">~93%</span><span class="stat-label">ESC-50 Acc.</span></div>
+            <div class="stat"><span class="stat-val">Log-Mel</span><span class="stat-label">Input Feature</span></div>
+            <div class="stat"><span class="stat-val">GRU</span><span class="stat-label">Sequence</span></div>
+          </div>
+        </div>
+        <div class="model-card model-card-fusion" id="model-fusion">
+          <div class="model-header">
+            <div class="model-icon-wrap fusion-color"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg></div>
+            <div class="model-tag fusion-tag">&#10022; Best Performance</div>
+          </div>
+          <h3 class="model-name">Fusion Model</h3>
+          <p class="model-desc">Based on the EURASIP 2024 paper &mdash; fuses SResNet and CNN-GRU at the decision level, combining complementary linear and nonlinear feature representations for maximum accuracy.</p>
+          <div class="model-stats">
+            <div class="stat"><span class="stat-val">~97%</span><span class="stat-label">ESC-50 Acc.</span></div>
+            <div class="stat"><span class="stat-val">Fusion</span><span class="stat-label">Strategy</span></div>
+            <div class="stat"><span class="stat-val">SOTA</span><span class="stat-label">Performance</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="section" id="upload-section" aria-labelledby="upload-heading">
+    <div class="section-inner">
+      <div class="section-badge">Classify</div>
+      <h2 class="section-title" id="upload-heading">Try the Classifier</h2>
+      <p class="section-sub">Upload an audio file and see instant AI-powered environmental sound classification.</p>
+      <div class="classifier-panel" id="classifier-panel">
+        <div class="classifier-left">
+          <div class="control-group" id="model-selector-group">
+            <label class="control-label" for="model-select">Select Model</label>
+            <div class="select-wrap">
+              <select id="model-select" class="custom-select" aria-label="Choose classification model">
+                <option value="fusion">Fusion Model (SResNet + CNN-GRU)</option>
+                <option value="sresnet">SResNet (Linear Features)</option>
+                <option value="cnngru">CNN-GRU (Nonlinear Features)</option>
+                <option value="cnn">CNN Baseline</option>
+                <option value="rnn">RNN Baseline</option>
+              </select>
+              <svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label">Audio File</label>
+            <div class="upload-zone" id="upload-zone" role="button" tabindex="0" aria-label="Upload audio file, click or drag and drop" aria-describedby="upload-hint">
+              <input type="file" id="audio-input" accept="audio/*,.wav,.mp3,.ogg,.flac,.aac,.m4a" hidden aria-label="Audio file input" />
+              <div class="upload-idle" id="upload-idle">
+                <div class="upload-icon-wrap" aria-hidden="true">
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                </div>
+                <p class="upload-main">Drop audio file here</p>
+                <p class="upload-sub" id="upload-hint">or <span class="upload-link">browse files</span></p>
+                <p class="upload-formats">WAV &middot; MP3 &middot; OGG &middot; FLAC &middot; AAC &middot; M4A</p>
+              </div>
+              <div class="upload-ready" id="upload-ready" hidden>
+                <div class="file-preview" id="file-preview">
+                  <div class="file-icon" aria-hidden="true"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
+                  <div class="file-info">
+                    <p class="file-name" id="file-name">audio.wav</p>
+                    <p class="file-size" id="file-size">0 KB</p>
+                  </div>
+                  <button class="file-remove" id="file-remove" type="button" aria-label="Remove selected file">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                </div>
+                <div class="audio-player" id="audio-player">
+                  <button class="play-btn" id="play-btn" type="button" aria-label="Play audio">
+                    <svg id="play-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    <svg id="pause-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                  </button>
+                  <div class="waveform-bars" id="waveform-bars" aria-hidden="true">
+                    <span></span><span></span><span></span><span></span><span></span>
+                    <span></span><span></span><span></span><span></span><span></span>
+                    <span></span><span></span><span></span><span></span><span></span>
+                    <span></span><span></span><span></span><span></span><span></span>
+                    <span></span><span></span><span></span><span></span><span></span>
+                    <span></span><span></span><span></span><span></span><span></span>
+                  </div>
+                  <span class="time-display" id="time-display">0:00</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button class="btn-classify" id="classify-btn" type="button" disabled aria-label="Run sound classification">
+            <span class="btn-classify-inner" id="btn-classify-inner">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+              Classify Sound
+            </span>
+            <span class="btn-classify-loading" id="btn-loading" hidden>
+              <span class="spinner" aria-hidden="true"></span>
+              Analyzing&hellip;
+            </span>
+          </button>
+        </div>
+        <div class="classifier-right">
+          <div class="result-empty" id="result-empty">
+            <div class="result-empty-icon" aria-hidden="true"><svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+            <p class="result-empty-title">No audio yet</p>
+            <p class="result-empty-sub">Upload a file and hit Classify to see results here.</p>
+          </div>
+          <div class="result-loading" id="result-loading" hidden aria-live="polite" aria-label="Analyzing audio">
+            <div class="loading-orb" aria-hidden="true">
+              <div class="orb-ring ring-1"></div>
+              <div class="orb-ring ring-2"></div>
+              <div class="orb-ring ring-3"></div>
+              <div class="orb-core"></div>
+            </div>
+            <p class="loading-title">Analyzing audio&hellip;</p>
+            <p class="loading-sub">Extracting spectral features via <span id="loading-model-name">Fusion Model</span></p>
+            <div class="loading-steps" id="loading-steps">
+              <div class="lstep" id="lstep-1"><span class="lstep-dot"></span> Loading audio buffer</div>
+              <div class="lstep" id="lstep-2"><span class="lstep-dot"></span> Computing mel-spectrogram</div>
+              <div class="lstep" id="lstep-3"><span class="lstep-dot"></span> Running model inference</div>
+              <div class="lstep" id="lstep-4"><span class="lstep-dot"></span> Ranking predictions</div>
+            </div>
+          </div>
+          <div class="result-output" id="result-output" hidden aria-live="polite">
+            <div class="result-header">
+              <div class="result-model-badge" id="result-model-badge">Fusion Model</div>
+              <button class="result-retry" id="result-retry" type="button" aria-label="Classify again">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.93"/></svg>
+                Try again
+              </button>
+            </div>
+            <div class="top-prediction" id="top-prediction" aria-live="polite">
+              <div class="top-pred-emoji" id="top-emoji" aria-hidden="true">&#128266;</div>
+              <div class="top-pred-info">
+                <p class="top-pred-category" id="top-category">Unknown</p>
+                <p class="top-pred-group" id="top-group">Sound Category</p>
+              </div>
+              <div class="top-conf-ring" id="top-conf-ring" aria-label="Confidence score">
+                <svg class="conf-svg" viewBox="0 0 80 80" aria-hidden="true">
+                  <circle class="conf-track" cx="40" cy="40" r="32"/>
+                  <circle class="conf-fill" id="conf-fill-circle" cx="40" cy="40" r="32"/>
+                </svg>
+                <span class="conf-pct" id="conf-pct">0%</span>
+              </div>
+            </div>
+            <div class="top5-section">
+              <p class="top5-title">Top 5 Predictions</p>
+              <ul class="top5-list" id="top5-list" aria-label="Top 5 predictions"></ul>
+            </div>
+            <div class="spectrogram-hint" id="spectrogram-wrap" aria-label="Feature map visualization">
+              <p class="spec-label">Feature Map (Simulated)</p>
+              <canvas id="spec-canvas" class="spec-canvas" aria-hidden="true" width="320" height="80"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="section section-dark" id="categories" aria-labelledby="cat-heading">
+    <div class="section-inner">
+      <div class="section-badge">ESC-50 Dataset</div>
+      <h2 class="section-title" id="cat-heading">50 Sound Categories</h2>
+      <p class="section-sub">Browse all environmental sound classes that SoundSense can identify.</p>
+      <div class="cat-tabs" role="tablist" aria-label="Sound category groups" id="cat-tabs">
+        <button class="cat-tab active" role="tab" data-group="all" id="tab-all" aria-selected="true" aria-controls="cat-grid">All</button>
+        <button class="cat-tab" role="tab" data-group="Animals" id="tab-animals" aria-selected="false" aria-controls="cat-grid">&#128062; Animals</button>
+        <button class="cat-tab" role="tab" data-group="Natural" id="tab-natural" aria-selected="false" aria-controls="cat-grid">&#127807; Natural</button>
+        <button class="cat-tab" role="tab" data-group="Human" id="tab-human" aria-selected="false" aria-controls="cat-grid">&#129463; Human</button>
+        <button class="cat-tab" role="tab" data-group="Interior" id="tab-interior" aria-selected="false" aria-controls="cat-grid">&#127968; Interior</button>
+        <button class="cat-tab" role="tab" data-group="Urban" id="tab-urban" aria-selected="false" aria-controls="cat-grid">&#127963; Urban</button>
+      </div>
+      <div class="cat-grid" id="cat-grid" role="tabpanel" aria-labelledby="tab-all"></div>
+    </div>
+  </section>
+  <footer class="footer" role="contentinfo">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <span class="footer-logo">Sound<span class="logo-accent">Sense</span></span>
+        <p class="footer-copy">Powered by the EURASIP 2024 research on fusing linear &amp; nonlinear features for environmental sound classification.</p>
+      </div>
+      <div class="footer-right">
+        <p class="footer-ref">Reference:</p>
+        <p class="footer-cite">Zeng, J., Zhou, C., &amp; Cai, D. (2024). <em>Sound recognition fusion: A deep learning approach for environmental sound classification by fusing linear and nonlinear features.</em> EURASIP Journal on Advances in Signal Processing.</p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2024 SoundSense &middot; For research &amp; educational purposes only &middot; No audio data is stored or transmitted.</p>
+    </div>
+  </footer>
+  <audio id="audio-el" hidden aria-hidden="true"></audio>
+  <script src="app.js"></script>
+</body>
+</html>
