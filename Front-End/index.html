@@ -11,8 +11,19 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <!-- Ambient aurora field -->
+  <div class="ambient-layer" aria-hidden="true">
+    <div class="aurora aurora-1"></div>
+    <div class="aurora aurora-2"></div>
+    <div class="aurora aurora-3"></div>
+    <div class="grain"></div>
+  </div>
+
   <!-- Ambient background canvas -->
   <canvas id="bg-canvas" aria-hidden="true"></canvas>
+
+  <!-- Pointer spotlight that follows the cursor -->
+  <div class="cursor-spotlight" id="cursor-spotlight" aria-hidden="true"></div>
 
   <!-- Top Navigation & Workspace Header -->
   <header class="app-header" role="banner">
@@ -40,28 +51,34 @@
       </div>
 
       <!-- Workspace View Switcher Tabs (Declutters stacked sections) -->
-      <nav class="view-nav" role="tablist" aria-label="Application views">
-        <button class="view-tab active" role="tab" id="tab-nav-studio" aria-selected="true" aria-controls="view-studio" data-view="studio">
+      <nav class="view-nav" id="view-nav" role="tablist" aria-label="Application views">
+        <span class="nav-glider" id="nav-glider" aria-hidden="true"></span>
+        <button class="view-tab active" role="tab" id="tab-nav-studio" aria-selected="true" aria-controls="view-studio" data-view="studio" aria-keyshortcuts="1">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
           <span>Classifier Studio</span>
         </button>
-        <button class="view-tab" role="tab" id="tab-nav-architecture" aria-selected="false" aria-controls="view-architecture" data-view="architecture">
+        <button class="view-tab" role="tab" id="tab-nav-architecture" aria-selected="false" aria-controls="view-architecture" data-view="architecture" aria-keyshortcuts="2">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
           <span>Model Architecture</span>
         </button>
-        <button class="view-tab" role="tab" id="tab-nav-taxonomy" aria-selected="false" aria-controls="view-taxonomy" data-view="taxonomy">
+        <button class="view-tab" role="tab" id="tab-nav-taxonomy" aria-selected="false" aria-controls="view-taxonomy" data-view="taxonomy" aria-keyshortcuts="3">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
           <span>ESC-50 Taxonomy</span>
         </button>
-        <button class="view-tab" role="tab" id="tab-nav-pipeline" aria-selected="false" aria-controls="view-pipeline" data-view="pipeline">
+        <button class="view-tab" role="tab" id="tab-nav-pipeline" aria-selected="false" aria-controls="view-pipeline" data-view="pipeline" aria-keyshortcuts="4">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           <span>Pipeline &amp; Research</span>
         </button>
       </nav>
 
-      <div class="header-status">
-        <span class="status-indicator" aria-hidden="true"></span>
-        <span class="status-label">Engine Ready</span>
+      <div class="header-actions">
+        <div class="header-status" id="header-status" title="Engine status">
+          <span class="status-indicator" id="status-indicator" aria-hidden="true"></span>
+          <span class="status-label" id="status-label">Engine Ready</span>
+        </div>
+        <button class="icon-btn" id="shortcuts-btn" type="button" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)" aria-haspopup="dialog">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M7 16h10"/></svg>
+        </button>
       </div>
     </div>
   </header>
@@ -91,9 +108,12 @@
           <div class="banner-img-frame">
             <img src="hero_bg.jpg" alt="Acoustic waveform spectral representation" class="banner-hero-img" />
             <div class="banner-img-overlay"></div>
+            <canvas id="hero-wave" class="hero-wave-canvas"></canvas>
+            <div class="hero-scanline"></div>
             <div class="banner-floating-badge">
-              <span class="wave-pulse-dot"></span>
-              <span>Acoustic Waveform Analysis</span>
+              <span class="wave-pulse-dot" id="hero-pulse"></span>
+              <span id="hero-signal-label">Acoustic Waveform Analysis</span>
+              <span class="hero-signal-db" id="hero-signal-db">-∞ dB</span>
             </div>
           </div>
         </div>
@@ -141,6 +161,19 @@
             <!-- Upload Zone -->
             <div class="control-group">
               <label class="control-label">Audio File</label>
+
+              <!-- Live microphone capture -->
+              <button class="mic-btn" id="mic-btn" type="button" aria-pressed="false" title="Record audio with your microphone">
+                <span class="mic-orb" aria-hidden="true">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+                </span>
+                <span class="mic-copy">
+                  <strong id="mic-label">Record with microphone</strong>
+                  <small id="mic-hint">Tap to capture a moment of sound</small>
+                </span>
+                <span class="mic-meter" aria-hidden="true"><span class="mic-meter-fill" id="mic-level-fill"></span></span>
+              </button>
+
               <div class="upload-zone" id="upload-zone" role="button" tabindex="0" aria-label="Upload audio file, drag and drop or click to browse">
                 <input type="file" id="audio-input" accept="audio/*,.wav,.mp3,.ogg,.flac,.aac,.m4a" hidden aria-label="Choose audio file" />
                 
@@ -175,14 +208,11 @@
                       <svg id="play-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                       <svg id="pause-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
                     </button>
-                    <div class="live-wave-bars" id="waveform-bars" aria-hidden="true">
-                      <span></span><span></span><span></span><span></span><span></span>
-                      <span></span><span></span><span></span><span></span><span></span>
-                      <span></span><span></span><span></span><span></span><span></span>
-                      <span></span><span></span><span></span><span></span><span></span>
-                      <span></span><span></span><span></span><span></span><span></span>
+                    <div class="player-track" id="player-track" title="Click to seek">
+                      <canvas id="wave-canvas" class="wave-canvas" aria-label="Audio waveform, click to seek"></canvas>
+                      <span class="player-playhead" id="player-playhead" aria-hidden="true"></span>
                     </div>
-                    <span class="timer-tag" id="time-display">0:00</span>
+                    <span class="timer-tag"><span id="time-display">0:00</span><span class="timer-sep">/</span><span id="dur-display">0:00</span></span>
                   </div>
                 </div>
               </div>
@@ -242,10 +272,16 @@
             <div class="result-state-output" id="result-output" hidden aria-live="polite">
               <div class="output-topbar">
                 <div class="active-model-tag" id="result-model-badge">Fusion Model</div>
-                <button class="btn-refresh" id="result-retry" type="button" aria-label="Re-analyze audio">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.93"/></svg>
-                  <span>Re-evaluate</span>
-                </button>
+                <div class="output-actions">
+                  <button class="btn-refresh" id="result-copy" type="button" aria-label="Copy analysis report" title="Copy analysis report">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    <span>Copy</span>
+                  </button>
+                  <button class="btn-refresh" id="result-retry" type="button" aria-label="Re-analyze audio">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.93"/></svg>
+                    <span>Re-evaluate</span>
+                  </button>
+                </div>
               </div>
 
               <!-- Primary Highlight Prediction -->
@@ -265,6 +301,30 @@
                     <span class="pct-num" id="conf-pct">96%</span>
                     <span class="pct-lbl">CONF</span>
                   </div>
+                </div>
+              </div>
+
+              <!-- Signal telemetry mini stats -->
+              <div class="signal-stats" id="signal-stats" aria-label="Signal statistics">
+                <div class="stat-tile">
+                  <span class="stat-lbl">RMS Energy</span>
+                  <span class="stat-val" id="stat-rms">—</span>
+                  <div class="stat-bar"><i id="stat-rms-bar"></i></div>
+                </div>
+                <div class="stat-tile">
+                  <span class="stat-lbl">Zero Crossing</span>
+                  <span class="stat-val" id="stat-zcr">—</span>
+                  <div class="stat-bar"><i id="stat-zcr-bar"></i></div>
+                </div>
+                <div class="stat-tile">
+                  <span class="stat-lbl">Peak Level</span>
+                  <span class="stat-val" id="stat-peak">—</span>
+                  <div class="stat-bar"><i id="stat-peak-bar"></i></div>
+                </div>
+                <div class="stat-tile">
+                  <span class="stat-lbl">Inference</span>
+                  <span class="stat-val" id="stat-latency">—</span>
+                  <div class="stat-bar"><i id="stat-latency-bar"></i></div>
                 </div>
               </div>
 
@@ -308,7 +368,9 @@
                     </div>
                   </div>
                   <div class="spec-cursor-info">
-                    Time: <span id="cursor-time" class="highlight-cyan">0.00s</span> &bull; Peak: <span id="spec-peak" class="highlight-cyan">-8.4 dB</span>
+                    <span class="ci-item"><span class="ci-key">TIME</span> <span id="cursor-time" class="highlight-cyan">0.00s</span></span>
+                    <span class="ci-item"><span class="ci-key">FREQ</span> <span id="cursor-freq" class="highlight-cyan">—</span></span>
+                    <span class="ci-item"><span class="ci-key">LEVEL</span> <span id="cursor-level" class="highlight-cyan">—</span></span>
                   </div>
                 </div>
               </div>
@@ -382,6 +444,44 @@
           </div>
         </div>
 
+        <!-- Animated Benchmark Comparison -->
+        <div class="perf-chart-box">
+          <div class="perf-chart-head">
+            <div>
+              <h4 class="table-caption">Accuracy Benchmark</h4>
+              <p class="perf-chart-sub">ESC-50 classification accuracy by architecture</p>
+            </div>
+            <span class="perf-chip" id="perf-chip">Dual-stream fusion leads</span>
+          </div>
+          <div class="perf-bars">
+            <div class="perf-row" data-value="97.2">
+              <span class="perf-name">Fusion (SResNet + CNN-GRU)</span>
+              <div class="perf-track"><span class="perf-fill perf-fusion" data-w="97.2"></span></div>
+              <span class="perf-pct">97.2%</span>
+            </div>
+            <div class="perf-row" data-value="95.1">
+              <span class="perf-name">SResNet</span>
+              <div class="perf-track"><span class="perf-fill" data-w="95.1"></span></div>
+              <span class="perf-pct">95.1%</span>
+            </div>
+            <div class="perf-row" data-value="93.4">
+              <span class="perf-name">CNN-GRU</span>
+              <div class="perf-track"><span class="perf-fill" data-w="93.4"></span></div>
+              <span class="perf-pct">93.4%</span>
+            </div>
+            <div class="perf-row" data-value="82.5">
+              <span class="perf-name">CNN-2D Baseline</span>
+              <div class="perf-track"><span class="perf-fill" data-w="82.5"></span></div>
+              <span class="perf-pct">82.5%</span>
+            </div>
+            <div class="perf-row" data-value="78.1">
+              <span class="perf-name">RNN Baseline</span>
+              <div class="perf-track"><span class="perf-fill" data-w="78.1"></span></div>
+              <span class="perf-pct">78.1%</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Comparative Spec Table -->
         <div class="spec-table-box">
           <h4 class="table-caption">Comparative Model Performance on ESC-50</h4>
@@ -448,9 +548,20 @@
 
         <!-- Search & Filter Controls -->
         <div class="taxonomy-toolbar">
-          <div class="search-input-wrap">
-            <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="taxonomy-search" class="taxonomy-search-input" placeholder="Search categories (e.g., dog, rain, siren, clock)..." aria-label="Search sound categories" />
+          <div class="taxonomy-toolbar-top">
+            <div class="search-input-wrap">
+              <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="taxonomy-search" class="taxonomy-search-input" placeholder="Search categories (e.g., dog, rain, siren, clock)..." aria-label="Search sound categories" />
+              <button class="search-clear" id="search-clear" type="button" aria-label="Clear search" hidden>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            <div class="taxonomy-actions">
+              <span class="result-count" id="tax-count">50 classes</span>
+              <button class="ghost-btn" id="surprise-btn" type="button" title="Load a random sound class into the studio">
+                <span aria-hidden="true">🎲</span> Surprise me
+              </button>
+            </div>
           </div>
 
           <div class="cat-filter-tabs" id="cat-tabs" role="tablist" aria-label="Filter category groups">
@@ -550,9 +661,52 @@
         <span>ESC-50 Dataset Taxonomy</span>
         <span>&bull;</span>
         <span>Client-side Web Audio Engine</span>
+        <button class="footer-shortcut" id="footer-shortcuts" type="button">Press <kbd>?</kbd> for shortcuts</button>
       </div>
     </div>
   </footer>
+
+  <!-- Full-page drop target overlay -->
+  <div class="drop-overlay" id="drop-overlay" aria-hidden="true" hidden>
+    <div class="drop-overlay-card">
+      <div class="drop-overlay-icon">
+        <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      </div>
+      <p class="drop-overlay-title">Drop to analyze</p>
+      <p class="drop-overlay-sub">Release your audio file anywhere to load it into the studio</p>
+    </div>
+  </div>
+
+  <!-- Keyboard shortcuts dialog -->
+  <div class="modal-backdrop" id="shortcuts-modal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title">
+      <div class="modal-head">
+        <div>
+          <span class="modal-eyebrow">Workflow</span>
+          <h3 class="modal-title" id="shortcuts-title">Keyboard shortcuts</h3>
+        </div>
+        <button class="icon-btn" id="shortcuts-close" type="button" aria-label="Close shortcuts dialog">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="shortcut-grid">
+        <div class="shortcut-item"><kbd>1</kbd><span>Classifier Studio</span></div>
+        <div class="shortcut-item"><kbd>2</kbd><span>Model Architecture</span></div>
+        <div class="shortcut-item"><kbd>3</kbd><span>ESC-50 Taxonomy</span></div>
+        <div class="shortcut-item"><kbd>4</kbd><span>Pipeline &amp; Research</span></div>
+        <div class="shortcut-item"><kbd>Space</kbd><span>Play / pause audio</span></div>
+        <div class="shortcut-item"><kbd>C</kbd><span>Run classification</span></div>
+        <div class="shortcut-item"><kbd>R</kbd><span>Record with microphone</span></div>
+        <div class="shortcut-item"><kbd>/</kbd><span>Search taxonomy</span></div>
+        <div class="shortcut-item"><kbd>?</kbd><span>Toggle this panel</span></div>
+        <div class="shortcut-item"><kbd>Esc</kbd><span>Close overlays</span></div>
+      </div>
+      <p class="modal-footnote">Shortcuts stay out of the way while you type in an input.</p>
+    </div>
+  </div>
+
+  <!-- Toast notifications -->
+  <div class="toast-stack" id="toast-stack" aria-live="polite" aria-atomic="false"></div>
 
   <!-- Hidden audio tag for native playback -->
   <audio id="audio-el" hidden aria-hidden="true"></audio>
