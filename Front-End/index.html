@@ -119,101 +119,114 @@
         </div>
       </div>
 
-      <!-- Studio Workbench: 2-Column Split Dashboard -->
+      <!-- Studio Workbench: 2-Column Split -->
       <div class="studio-workbench">
 
-        <!-- Left Workbench: Input & Controls -->
+        <!-- Left Workbench: Input & Controls (Separated Modular Cards) -->
         <div class="bench-col bench-input">
-          <div class="card-box">
+
+          <!-- CARD 1: Classification Model Configuration -->
+          <div class="card-box card-module">
             <div class="card-header">
-              <span class="card-tag">Model Configuration</span>
-              <span class="card-sub-info">EURASIP 2024</span>
+              <span class="card-tag">Classification Model</span>
+              <span class="card-sub-info" id="model-badge-info">Dual-Stream 97.8%</span>
             </div>
-            <div class="control-group">
-              <label class="control-label" for="model-select">Classification Model</label>
+            <div class="control-group no-margin">
               <div class="select-wrap">
                 <select id="model-select" class="custom-select" aria-label="Select classification model">
                   <option value="fusion" selected>Fusion Model (SResNet + CNN-GRU)</option>
-                  <option value="sresnet">SResNet</option>
-                  <option value="cnngru">CNN-GRU</option>
+                  <option value="sresnet">SResNet (Linear Spectral)</option>
+                  <option value="cnngru">CNN-GRU (Nonlinear Recurrent)</option>
                   <option value="cnn">CNN Baseline</option>
                   <option value="rnn">RNN Baseline</option>
                 </select>
                 <svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
               </div>
             </div>
+          </div>
 
-            <!-- Quick Test Preset Samples (Eliminates friction of having to find audio) -->
-            <div class="control-group">
-              <div class="label-with-hint">
-                <label class="control-label">Quick Test Presets</label>
-                <span class="hint-text">Instant 1-click test</span>
-              </div>
-              <div class="presets-row" id="presets-row">
-                <button type="button" class="preset-btn" data-sound="dog" title="Test Dog Bark">🐶 Dog</button>
-                <button type="button" class="preset-btn" data-sound="rain" title="Test Rain">🌧️ Rain</button>
-                <button type="button" class="preset-btn" data-sound="alarm" title="Test Clock Alarm">⏰ Alarm</button>
-                <button type="button" class="preset-btn" data-sound="typing" title="Test Keyboard Typing">⌨️ Typing</button>
-                <button type="button" class="preset-btn" data-sound="siren" title="Test Siren">🚨 Siren</button>
-              </div>
+          <!-- CARD 2: Quick Test Presets (Instant Evaluation) -->
+          <div class="card-box card-module">
+            <div class="card-header">
+              <span class="card-tag">Quick Test Presets</span>
+              <span class="card-sub-info">1-Click Test</span>
             </div>
+            <p class="card-desc-compact">Select a verified ESC-50 sample for instant feature extraction &amp; classification:</p>
+            <div class="presets-row" id="presets-row">
+              <button type="button" class="preset-btn" data-sound="dog" title="Test Dog Bark">🐶 Dog</button>
+              <button type="button" class="preset-btn" data-sound="rain" title="Test Rain">🌧️ Rain</button>
+              <button type="button" class="preset-btn" data-sound="alarm" title="Test Clock Alarm">⏰ Alarm</button>
+              <button type="button" class="preset-btn" data-sound="typing" title="Test Keyboard Typing">⌨️ Typing</button>
+              <button type="button" class="preset-btn" data-sound="siren" title="Test Siren">🚨 Siren</button>
+            </div>
+          </div>
 
-            <!-- Upload Zone -->
-            <div class="control-group">
-              <label class="control-label">Audio File</label>
+          <!-- CARD 3: Live Microphone Recording (Independent Module) -->
+          <div class="card-box card-module">
+            <div class="card-header">
+              <span class="card-tag">Live Microphone Recording</span>
+              <span class="card-sub-info">Real-time Audio</span>
+            </div>
+            <p class="card-desc-compact">Capture ambient environmental sounds directly through your device microphone:</p>
+            <button class="mic-btn" id="mic-btn" type="button" aria-pressed="false" title="Record audio with your microphone">
+              <span class="mic-orb" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+              </span>
+              <span class="mic-copy">
+                <strong id="mic-label">Record with microphone</strong>
+                <small id="mic-hint">Tap to start live audio capture</small>
+              </span>
+              <span class="mic-meter" aria-hidden="true"><span class="mic-meter-fill" id="mic-level-fill"></span></span>
+            </button>
+          </div>
 
-              <!-- Live microphone capture -->
-              <button class="mic-btn" id="mic-btn" type="button" aria-pressed="false" title="Record audio with your microphone">
-                <span class="mic-orb" aria-hidden="true">
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
-                </span>
-                <span class="mic-copy">
-                  <strong id="mic-label">Record with microphone</strong>
-                  <small id="mic-hint">Tap to capture a moment of sound</small>
-                </span>
-                <span class="mic-meter" aria-hidden="true"><span class="mic-meter-fill" id="mic-level-fill"></span></span>
-              </button>
+          <!-- CARD 4: Audio File Placer (Drag & Drop from File Explorer + MPEG / MPG Support) -->
+          <div class="card-box card-module">
+            <div class="card-header">
+              <span class="card-tag">Audio File Placer</span>
+              <span class="card-sub-info">Drag &amp; Drop</span>
+            </div>
+            <p class="card-desc-compact">Drag and drop audio files from your File Explorer or browse from device:</p>
 
-              <div class="upload-zone" id="upload-zone" role="button" tabindex="0" aria-label="Upload audio file, drag and drop or click to browse">
-                <input type="file" id="audio-input" accept="audio/*,.wav,.mp3,.ogg,.flac,.aac,.m4a" hidden aria-label="Choose audio file" />
-                
-                <div class="upload-idle" id="upload-idle">
-                  <div class="upload-icon-circle" aria-hidden="true">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <div class="upload-zone" id="upload-zone" role="button" tabindex="0" aria-label="Upload audio file, drag and drop from File Explorer or click to browse">
+              <input type="file" id="audio-input" accept="audio/*,.wav,.mp3,.ogg,.flac,.aac,.m4a,.mpg,.mpeg,audio/mpeg,video/mpeg" hidden aria-label="Choose audio file" />
+              
+              <div class="upload-idle" id="upload-idle">
+                <div class="upload-icon-circle" aria-hidden="true">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                </div>
+                <p class="upload-title">Drop audio from File Explorer</p>
+                <p class="upload-sub">or <span class="highlight-link">browse from device</span></p>
+                <div class="format-pills">
+                  <span>WAV</span><span>MP3</span><span>MPEG / MPG</span><span>OGG</span><span>FLAC</span><span>M4A</span>
+                </div>
+              </div>
+
+              <div class="upload-ready" id="upload-ready" hidden>
+                <div class="file-card">
+                  <div class="file-icon-box" aria-hidden="true">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
                   </div>
-                  <p class="upload-title">Drop your audio file here</p>
-                  <p class="upload-sub">or <span class="highlight-link">browse from device</span></p>
-                  <div class="format-pills">
-                    <span>WAV</span><span>MP3</span><span>OGG</span><span>FLAC</span><span>M4A</span>
+                  <div class="file-meta">
+                    <p class="file-title" id="file-name">sample.wav</p>
+                    <p class="file-detail" id="file-size">0 KB</p>
                   </div>
+                  <button class="remove-btn" id="file-remove" type="button" aria-label="Remove audio file" title="Remove file">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
                 </div>
 
-                <div class="upload-ready" id="upload-ready" hidden>
-                  <div class="file-card">
-                    <div class="file-icon-box" aria-hidden="true">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-                    </div>
-                    <div class="file-meta">
-                      <p class="file-title" id="file-name">sample.wav</p>
-                      <p class="file-detail" id="file-size">0 KB</p>
-                    </div>
-                    <button class="remove-btn" id="file-remove" type="button" aria-label="Remove audio file" title="Remove file">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    </button>
+                <!-- Waveform Player Preview -->
+                <div class="player-bar">
+                  <button class="play-toggle" id="play-btn" type="button" aria-label="Play or pause audio">
+                    <svg id="play-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    <svg id="pause-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                  </button>
+                  <div class="player-track" id="player-track" title="Click to seek">
+                    <canvas id="wave-canvas" class="wave-canvas" aria-label="Audio waveform, click to seek"></canvas>
+                    <span class="player-playhead" id="player-playhead" aria-hidden="true"></span>
                   </div>
-
-                  <!-- Waveform Player Preview -->
-                  <div class="player-bar">
-                    <button class="play-toggle" id="play-btn" type="button" aria-label="Play or pause audio">
-                      <svg id="play-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                      <svg id="pause-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-                    </button>
-                    <div class="player-track" id="player-track" title="Click to seek">
-                      <canvas id="wave-canvas" class="wave-canvas" aria-label="Audio waveform, click to seek"></canvas>
-                      <span class="player-playhead" id="player-playhead" aria-hidden="true"></span>
-                    </div>
-                    <span class="timer-tag"><span id="time-display">0:00</span><span class="timer-sep">/</span><span id="dur-display">0:00</span></span>
-                  </div>
+                  <span class="timer-tag"><span id="time-display">0:00</span><span class="timer-sep">/</span><span id="dur-display">0:00</span></span>
                 </div>
               </div>
             </div>
