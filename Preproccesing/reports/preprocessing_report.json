@@ -1,0 +1,35 @@
+{
+  "timestamp": "2026-10-28 15:36:24",
+  "total_files": 1998,
+  "success_count": 1998,
+  "fail_count": 0,
+  "elapsed_seconds": 190.13,
+  "average_speed_fps": 10.51,
+  "specifications": {
+    "sample_rate": 22050,
+    "target_duration_sec": 5.0,
+    "target_samples": 110250,
+    "log_mel_dimension": [
+      128,
+      216
+    ],
+    "mfcc_dimension": [
+      40,
+      216
+    ],
+    "recurrence_plot_dimension": [
+      128,
+      128
+    ],
+    "paa_dimension": 128,
+    "num_classes": 50,
+    "num_folds": 5
+  },
+  "output_directories": {
+    "processed_audio": "D:\\All Project Folder\\PS folder\\Sound_Recognition\\Preproccesing\\processed\\audio_22k",
+    "log_mel_spectrograms": "D:\\All Project Folder\\PS folder\\Sound_Recognition\\Preproccesing\\processed\\features\\log_mel",
+    "mfcc_features": "D:\\All Project Folder\\PS folder\\Sound_Recognition\\Preproccesing\\processed\\features\\mfcc",
+    "recurrence_plots": "D:\\All Project Folder\\PS folder\\Sound_Recognition\\Preproccesing\\processed\\features\\recurrence_plot",
+    "splits": "D:\\All Project Folder\\PS folder\\Sound_Recognition\\Preproccesing\\splits"
+  }
+}

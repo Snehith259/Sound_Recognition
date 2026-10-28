@@ -342,25 +342,42 @@
               <div class="spec-module">
                 <div class="spec-header">
                   <div class="spec-title-box">
-                    <span class="sec-label">Time-Frequency Feature Representation</span>
-                    <span class="spec-sublabel">128-Band Log-Mel Spectrogram (STFT)</span>
+                    <span class="sec-label">Dual-Modal Acoustic Representation</span>
+                    <span class="spec-sublabel" id="spec-sublabel">128-Band Log-Mel Spectrogram (Spatial Harmonic)</span>
                   </div>
                   <div class="spec-telemetry" id="spec-telemetry">
-                    <span class="tele-item" id="spec-rate">44.1 kHz</span>
+                    <span class="tele-item" id="spec-rate">22.05 kHz</span>
                     <span class="tele-sep">&bull;</span>
                     <span class="tele-item" id="spec-dur">5.00s</span>
                     <span class="tele-sep">&bull;</span>
                     <span class="tele-item" id="spec-mode">Log-Mel</span>
                   </div>
                 </div>
+
+                <!-- Preprocessing Mode Switcher Tabs -->
+                <div class="feat-mode-bar" id="feat-mode-bar" role="tablist" aria-label="Feature visualization modes">
+                  <button class="feat-tab-btn active" id="btn-mode-mel" data-mode="mel" role="tab" aria-selected="true" type="button">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h3l2-7 4 14 3-9 2 4 4-2h2"/></svg>
+                    <span>128-Mel Spectrogram</span>
+                  </button>
+                  <button class="feat-tab-btn" id="btn-mode-rp" data-mode="rp" role="tab" aria-selected="false" type="button">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="2"/><circle cx="16" cy="16" r="2"/><circle cx="16" cy="8" r="1"/><circle cx="8" cy="16" r="1"/></svg>
+                    <span>Threshold-Free RP</span>
+                  </button>
+                  <button class="feat-tab-btn" id="btn-mode-active" data-mode="active" role="tab" aria-selected="false" type="button">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    <span>Active Segment</span>
+                  </button>
+                </div>
+
                 <div class="spec-canvas-wrap">
                   <canvas id="spec-canvas" class="spectrogram-canvas" width="560" height="140" aria-label="Acoustic time-frequency spectrogram"></canvas>
                 </div>
                 <div class="spec-legend-row">
                   <div class="legend-scale">
-                    <span class="leg-lbl">Energy (dB):</span>
-                    <div class="leg-gradient-bar" aria-hidden="true"></div>
-                    <div class="leg-marks">
+                    <span class="leg-lbl" id="leg-scale-lbl">Energy (dB):</span>
+                    <div class="leg-gradient-bar" id="leg-gradient-bar" aria-hidden="true"></div>
+                    <div class="leg-marks" id="leg-marks">
                       <span>-80 dB</span>
                       <span>-50 dB</span>
                       <span>-25 dB</span>
@@ -368,9 +385,9 @@
                     </div>
                   </div>
                   <div class="spec-cursor-info">
-                    <span class="ci-item"><span class="ci-key">TIME</span> <span id="cursor-time" class="highlight-cyan">0.00s</span></span>
-                    <span class="ci-item"><span class="ci-key">FREQ</span> <span id="cursor-freq" class="highlight-cyan">—</span></span>
-                    <span class="ci-item"><span class="ci-key">LEVEL</span> <span id="cursor-level" class="highlight-cyan">—</span></span>
+                    <span class="ci-item"><span class="ci-key" id="ci-k1">TIME</span> <span id="cursor-time" class="highlight-cyan">0.00s</span></span>
+                    <span class="ci-item"><span class="ci-key" id="ci-k2">FREQ</span> <span id="cursor-freq" class="highlight-cyan">—</span></span>
+                    <span class="ci-item"><span class="ci-key" id="ci-k3">LEVEL</span> <span id="cursor-level" class="highlight-cyan">—</span></span>
                   </div>
                 </div>
               </div>
@@ -593,36 +610,73 @@
         <div class="pipeline-cards-row">
           <div class="flow-step-card">
             <div class="flow-num">01</div>
-            <h4 class="flow-step-title">Audio Resampling &amp; Windowing</h4>
-            <p class="flow-step-desc">Input audio clips are normalized to a uniform sample rate (16 kHz / 44.1 kHz) and divided into short overlapping Hanning windows (frame size 1024, hop size 512).</p>
-            <div class="flow-pill">STFT &bull; Pre-emphasis</div>
+            <h4 class="flow-step-title">Resampling &amp; Active Segment</h4>
+            <p class="flow-step-desc">Audio is resampled to a standardized 22,050 Hz (5.0s duration, 110,250 samples), peak-normalized to [-1.0, 1.0], and scanned for the longest energetic acoustic activity window.</p>
+            <div class="flow-pill">22.05 kHz &bull; Peak Norm &bull; VAD</div>
           </div>
 
           <div class="flow-connector" aria-hidden="true">&rarr;</div>
 
           <div class="flow-step-card">
             <div class="flow-num">02</div>
-            <h4 class="flow-step-title">Dual Spectral Feature Extraction</h4>
-            <p class="flow-step-desc">Linear features are calculated via MFCCs with discrete cosine transforms, while nonlinear representations are captured through 128-band log-mel filterbanks.</p>
-            <div class="flow-pill">MFCC &bull; Log-Mel Banks</div>
+            <h4 class="flow-step-title">Dual-Modal Feature Extraction</h4>
+            <p class="flow-step-desc">Extracts 128-band Log-Mel spectrograms &amp; 40-MFCCs (macroscopic linear/harmonic) alongside 128-PAA Threshold-Free Recurrence Plots (microscopic chaotic dynamics).</p>
+            <div class="flow-pill">128-Mel &bull; 40-MFCC &bull; 128x128 RP</div>
           </div>
 
           <div class="flow-connector" aria-hidden="true">&rarr;</div>
 
           <div class="flow-step-card">
             <div class="flow-num">03</div>
-            <h4 class="flow-step-title">Parallel Deep Network Inference</h4>
-            <p class="flow-step-desc">SResNet processes spatial spectral matrices while CNN-GRU models recurrent temporal sequences, extracting rich complementary latent embeddings.</p>
-            <div class="flow-pill">Residuals &bull; Bi-GRU</div>
+            <h4 class="flow-step-title">Stratified 5-Fold Validation</h4>
+            <p class="flow-step-desc">Dataset is split into 5 official balanced folds with strictly disjoint recording sources to ensure zero data leakage between training, validation, and test partitions.</p>
+            <div class="flow-pill">5 Folds &bull; Zero Leakage &bull; PyTorch</div>
           </div>
 
           <div class="flow-connector" aria-hidden="true">&rarr;</div>
 
           <div class="flow-step-card">
             <div class="flow-num">04</div>
-            <h4 class="flow-step-title">Decision Fusion &amp; Confidence</h4>
-            <p class="flow-step-desc">Combines stationary spectral representations from SResNet with temporal sequence transitions from CNN-GRU at the decision layer. The multi-stream consensus resolves acoustic ambiguities across complex soundscapes to produce the final classification and confidence metric.</p>
-            <div class="flow-pill">Posterior Consensus &bull; Noise Robustness</div>
+            <h4 class="flow-step-title">Dual-Modal Fusion &amp; SwiGLU</h4>
+            <p class="flow-step-desc">Cross-attention merges continuous phase recurrence with spectral energy maps, processed through SwiGLU-gated SResNet to suppress ambient noise and produce >97.8% accuracy.</p>
+            <div class="flow-pill">DMFF Cross-Attn &bull; SwiGLU SResNet</div>
+          </div>
+        </div>
+
+        <!-- Live Preprocessed Dataset Telemetry Card -->
+        <div class="dataset-telemetry-banner">
+          <div class="dt-head">
+            <div class="dt-badge">
+              <span class="status-indicator live" aria-hidden="true"></span>
+              Preprocessing Suite Telemetry
+            </div>
+            <span class="dt-sub">Standardized ESC-50 dataset telemetry across 50 acoustic classes</span>
+          </div>
+          <div class="dt-grid">
+            <div class="dt-stat">
+              <span class="dt-val">1,998</span>
+              <span class="dt-lbl">Processed Clips (22.05 kHz)</span>
+            </div>
+            <div class="dt-stat">
+              <span class="dt-val">128 &times; 216</span>
+              <span class="dt-lbl">Log-Mel Matrices (.npy)</span>
+            </div>
+            <div class="dt-stat">
+              <span class="dt-val">40 &times; 216</span>
+              <span class="dt-lbl">MFCC Cepstra (.npy)</span>
+            </div>
+            <div class="dt-stat">
+              <span class="dt-val">128 &times; 128</span>
+              <span class="dt-lbl">Threshold-Free RP (.npy)</span>
+            </div>
+            <div class="dt-stat">
+              <span class="dt-val">5 Folds</span>
+              <span class="dt-lbl">Disjoint Stratified Splits</span>
+            </div>
+            <div class="dt-stat">
+              <span class="dt-val">100%</span>
+              <span class="dt-lbl">Tensor Validation Pass</span>
+            </div>
           </div>
         </div>
 
@@ -638,7 +692,8 @@
             </p>
             <div class="citation-tags">
               <span class="c-tag">Environmental Sound Classification</span>
-              <span class="c-tag">Feature Fusion</span>
+              <span class="c-tag">Threshold-Free Recurrence Plot</span>
+              <span class="c-tag">Dual-Modal Feature Fusion</span>
               <span class="c-tag">ESC-50 Benchmark</span>
             </div>
           </div>

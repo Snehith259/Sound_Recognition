@@ -69,6 +69,61 @@ const ESC50_CATEGORIES = [
   { id: 49, name: 'hand_saw',          group: 'Urban',    emoji: '🔧' },
 ];
 
+/* ── Canonical ESC-50 Dataset WAV Filenames (0–49) ────────────── */
+const CANONICAL_ESC50_FILES = {
+  0: '1-100032-A-0.wav',    // dog
+  1: '1-26806-A-1.wav',     // rooster
+  2: '1-208757-A-2.wav',    // pig
+  3: '1-16568-A-3.wav',     // cow
+  4: '1-15689-A-4.wav',     // frog
+  5: '1-34094-A-5.wav',     // cat
+  6: '1-18074-A-6.wav',     // hen
+  7: '1-17585-A-7.wav',     // insects
+  8: '1-121951-A-8.wav',    // sheep
+  9: '1-103298-A-9.wav',    // crow
+  10: '1-17367-A-10.wav',   // rain
+  11: '1-28135-A-11.wav',   // sea_waves
+  12: '1-17150-A-12.wav',   // crackling_fire
+  13: '1-57316-A-13.wav',   // crickets
+  14: '1-100038-A-14.wav',  // chirping_birds
+  15: '1-12653-A-15.wav',   // water_drops
+  16: '1-137296-A-16.wav',  // wind
+  17: '1-118559-A-17.wav',  // pouring_water
+  18: '1-20736-A-18.wav',   // toilet_flush
+  19: '1-101296-A-19.wav',  // thunderstorm
+  20: '1-187207-A-20.wav',  // crying_baby
+  21: '1-26143-A-21.wav',   // sneezing
+  22: '1-104089-A-22.wav',  // clapping
+  23: '1-18631-A-23.wav',   // breathing
+  24: '1-19111-A-24.wav',   // coughing
+  25: '1-155858-A-25.wav',  // footsteps
+  26: '1-1791-A-26.wav',    // laughing
+  27: '1-17092-A-27.wav',   // brushing_teeth
+  28: '1-20545-A-28.wav',   // snoring
+  29: '1-17295-A-29.wav',   // drinking_sipping
+  30: '1-101336-A-30.wav',  // door_wood_knock
+  31: '1-118206-A-31.wav',  // mouse_click
+  32: '1-137-A-32.wav',     // keyboard_typing
+  33: '1-51805-A-33.wav',   // door_wood_creaks
+  34: '1-101404-A-34.wav',  // can_opening
+  35: '1-21896-A-35.wav',   // washing_machine
+  36: '1-100210-A-36.wav',  // vacuum_cleaner
+  37: '1-13613-A-37.wav',   // clock_alarm
+  38: '1-21934-A-38.wav',   // clock_tick
+  39: '1-20133-A-39.wav',   // glass_breaking
+  40: '1-172649-A-40.wav',  // helicopter
+  41: '1-116765-A-41.wav',  // chainsaw
+  42: '1-31482-A-42.wav',   // siren
+  43: '1-17124-A-43.wav',   // car_horn
+  44: '1-18527-A-44.wav',   // engine
+  45: '1-119125-A-45.wav',  // train
+  46: '1-13571-A-46.wav',   // church_bells
+  47: '1-11687-A-47.wav',   // airplane
+  48: '1-115545-A-48.wav',  // fireworks
+  49: '1-18810-A-49.wav'    // hand_saw
+};
+
+
 const MODEL_INFO = {
   fusion:  { name: 'Fusion Model (SResNet + CNN-GRU)', short: 'Fusion Model', latency: 12.4, params: '14.2 M' },
   sresnet: { name: 'SResNet',                          short: 'SResNet',      latency: 7.8,  params: '8.6 M' },
@@ -252,6 +307,20 @@ let currentSpectrogramData = null;
 let spectrogramCache       = null;
 let specHover              = null;
 let currentWavePeaks       = null;
+let currentFeatureMode     = 'mel'; // 'mel' | 'rp' | 'active'
+let currentRecurrenceData  = null;
+let currentActiveSegmentData = null;
+let recurrencePlotCache    = null;
+let activeSegmentCache     = null;
+
+const featModeBar          = document.getElementById('feat-mode-bar');
+const specSublabel         = document.getElementById('spec-sublabel');
+const legScaleLbl          = document.getElementById('leg-scale-lbl');
+const legGradientBar       = document.getElementById('leg-gradient-bar');
+const legMarks             = document.getElementById('leg-marks');
+const ciK1                 = document.getElementById('ci-k1');
+const ciK2                 = document.getElementById('ci-k2');
+const ciK3                 = document.getElementById('ci-k3');
 let audioAnalyser          = null;
 let audioSourceNode        = null;
 let audioFreqData          = null;
@@ -383,15 +452,17 @@ function animateMetricValue(el) {
 }
 
 /* ── Web Audio Synthesizer for 1-Click Instant Presets ────────── */
-/* Generates real playable WAV blobs in-memory for instant testing */
-function generateSyntheticAudioBlob(soundType) {
+/* Generates authentic acoustic waveforms matching any ESC-50 sound category */
+function generateSyntheticAudioForCategory(targetId, catName = '') {
   const sampleRate = 22050;
-  const duration = 2.5; // seconds
+  const duration = 3.0; // 3 seconds
   const numSamples = Math.floor(sampleRate * duration);
   const buffer = new Float32Array(numSamples);
 
-  if (soundType === 'dog') {
-    // 2 bark impulses with decaying pitch and harmonics
+  const id = typeof targetId === 'number' ? targetId : (KEYWORD_MAP[targetId] ?? 0);
+
+  // Group 0: Animals (0–9)
+  if (id === 0) { // dog
     for (let i = 0; i < numSamples; i++) {
       const t = i / sampleRate;
       const b1 = (t >= 0.2 && t <= 0.6) ? Math.exp(-(t - 0.2) * 12) * Math.sin(2 * Math.PI * (280 - (t - 0.2) * 200) * t) : 0;
@@ -399,8 +470,119 @@ function generateSyntheticAudioBlob(soundType) {
       const noise = (Math.random() * 2 - 1) * 0.15 * (b1 + b2);
       buffer[i] = Math.max(-1, Math.min(1, (b1 + b2) * 0.8 + noise));
     }
-  } else if (soundType === 'rain') {
-    // Filtered pink noise with stochastic droplet spikes
+  } else if (id === 1) { // rooster
+    const pitches = [520, 680, 840, 720];
+    const starts = [0.2, 0.5, 0.8, 1.2];
+    const lens = [0.22, 0.22, 0.35, 0.65];
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      for (let k = 0; k < 4; k++) {
+        if (t >= starts[k] && t <= starts[k] + lens[k]) {
+          const dt = t - starts[k];
+          const env = Math.sin(Math.PI * (dt / lens[k]));
+          const f = pitches[k];
+          buffer[i] += (Math.sin(2 * Math.PI * f * t) + 0.5 * Math.sin(2 * Math.PI * f * 2 * t) + 0.3 * Math.sin(2 * Math.PI * f * 3 * t)) * env * 0.3;
+        }
+      }
+    }
+  } else if (id === 2) { // pig (grunting/oink)
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const pulse = Math.sin(2 * Math.PI * 9 * t);
+      if (t >= 0.3 && t <= 2.2 && pulse > 0.2) {
+        const env = Math.sin(Math.PI * (t - 0.3) / 1.9) * pulse;
+        const carrier = Math.sin(2 * Math.PI * 135 * t) + 0.5 * Math.sin(2 * Math.PI * 270 * t);
+        const noise = (Math.random() * 2 - 1) * 0.25;
+        buffer[i] = (carrier + noise) * env * 0.45;
+      }
+    }
+  } else if (id === 3) { // cow (deep resonant moo)
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      if (t >= 0.2 && t <= 2.4) {
+        const p = (t - 0.2) / 2.2;
+        const f0 = 145 - p * 35;
+        const vibrato = 1 + 0.03 * Math.sin(2 * Math.PI * 5 * t);
+        const freq = f0 * vibrato;
+        const env = Math.sin(Math.PI * p) * Math.min(1, (t - 0.2) * 6);
+        const s1 = Math.sin(2 * Math.PI * freq * t);
+        const s2 = 0.65 * Math.sin(2 * Math.PI * freq * 2 * t);
+        const s3 = 0.45 * Math.sin(2 * Math.PI * freq * 3 * t);
+        const s4 = 0.25 * Math.sin(2 * Math.PI * freq * 4 * t);
+        buffer[i] = (s1 + s2 + s3 + s4) * env * 0.4;
+      }
+    }
+  } else if (id === 4) { // frog (ribbit croak)
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const burst1 = (t >= 0.3 && t <= 0.8);
+      const burst2 = (t >= 1.2 && t <= 1.7);
+      if (burst1 || burst2) {
+        const mod = Math.sin(2 * Math.PI * 24 * t);
+        const env = mod > 0 ? mod : 0;
+        const tone = Math.sin(2 * Math.PI * 390 * t) + 0.4 * Math.sin(2 * Math.PI * 780 * t);
+        buffer[i] = tone * env * 0.55;
+      }
+    }
+  } else if (id === 5) { // cat (meow)
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      if (t >= 0.3 && t <= 1.9) {
+        const p = (t - 0.3) / 1.6;
+        const freq = p < 0.4 ? 470 + (p / 0.4) * 330 : 800 - ((p - 0.4) / 0.6) * 270;
+        const env = Math.sin(Math.PI * p);
+        const tone = Math.sin(2 * Math.PI * freq * t) + 0.4 * Math.sin(2 * Math.PI * freq * 2 * t);
+        buffer[i] = tone * env * 0.45;
+      }
+    }
+  } else if (id === 6) { // hen (clucking)
+    const clucks = [0.2, 0.45, 0.65, 0.9, 1.2, 1.45];
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      for (const ct of clucks) {
+        if (t >= ct && t <= ct + 0.12) {
+          const dt = t - ct;
+          const env = Math.exp(-dt * 30);
+          buffer[i] += (Math.sin(2 * Math.PI * (420 - dt * 400) * dt) + (Math.random() * 2 - 1) * 0.2) * env * 0.5;
+        }
+      }
+    }
+  } else if (id === 7 || id === 13) { // insects / crickets
+    const freq = id === 13 ? 4600 : 4200;
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const pulse = Math.sin(2 * Math.PI * 16 * t);
+      const env = pulse > 0 ? pulse * pulse : 0;
+      buffer[i] = Math.sin(2 * Math.PI * freq * t) * env * 0.35;
+    }
+  } else if (id === 8) { // sheep (baa)
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      if (t >= 0.2 && t <= 2.2) {
+        const p = (t - 0.2) / 2.0;
+        const tremolo = 1 + 0.4 * Math.sin(2 * Math.PI * 8 * t);
+        const env = Math.sin(Math.PI * p) * tremolo;
+        const s1 = Math.sin(2 * Math.PI * 225 * t);
+        const s2 = 0.6 * Math.sin(2 * Math.PI * 450 * t);
+        const s3 = 0.3 * Math.sin(2 * Math.PI * 675 * t);
+        buffer[i] = (s1 + s2 + s3) * env * 0.35;
+      }
+    }
+  } else if (id === 9) { // crow (caw caw)
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const b1 = (t >= 0.2 && t <= 0.7);
+      const b2 = (t >= 1.0 && t <= 1.5);
+      if (b1 || b2) {
+        const dt = b1 ? (t - 0.2) : (t - 1.0);
+        const env = Math.sin(Math.PI * (dt / 0.5));
+        const rasp = Math.sin(2 * Math.PI * 720 * t) + 0.6 * Math.sin(2 * Math.PI * 1440 * t) + (Math.random() * 2 - 1) * 0.4;
+        buffer[i] = rasp * env * 0.4;
+      }
+    }
+  }
+  // Group 1: Natural (10–19)
+  else if (id === 10) { // rain
     let b0 = 0, b1 = 0, b2 = 0;
     for (let i = 0; i < numSamples; i++) {
       const white = Math.random() * 2 - 1;
@@ -408,47 +590,337 @@ function generateSyntheticAudioBlob(soundType) {
       b1 = 0.96300 * b1 + white * 0.2965164;
       b2 = 0.57000 * b2 + white * 1.0526913;
       const pink = (b0 + b1 + b2 + white * 0.5362) * 0.11;
-      const drop = Math.random() < 0.002 ? (Math.random() * 0.4) : 0;
+      const drop = Math.random() < 0.003 ? (Math.random() * 0.35) : 0;
       buffer[i] = Math.max(-1, Math.min(1, pink + drop));
     }
-  } else if (soundType === 'alarm') {
-    // Alternating two-tone clock alarm beeping
+  } else if (id === 11) { // sea_waves
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const swell = (Math.sin(2 * Math.PI * 0.3 * t) + 1) * 0.5;
+      const white = Math.random() * 2 - 1;
+      buffer[i] = white * (0.05 + 0.35 * swell);
+    }
+  } else if (id === 12) { // crackling_fire
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const rumble = Math.sin(2 * Math.PI * 65 * t) * 0.08 * Math.random();
+      const pop = Math.random() < 0.004 ? (Math.random() * 2 - 1) * 0.75 : 0;
+      buffer[i] = Math.max(-1, Math.min(1, rumble + pop));
+    }
+  } else if (id === 14) { // chirping_birds
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const chirp = Math.sin(2 * Math.PI * 4 * t);
+      if (chirp > 0.4) {
+        const dt = (t % 0.25) / 0.25;
+        const f = 2800 + dt * 1200;
+        buffer[i] = Math.sin(2 * Math.PI * f * t) * (1 - dt) * 0.35;
+      }
+    }
+  } else if (id === 15) { // water_drops
+    const drops = [0.2, 0.7, 1.2, 1.7, 2.3];
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      for (const d of drops) {
+        if (t >= d && t <= d + 0.2) {
+          const dt = t - d;
+          buffer[i] += Math.sin(2 * Math.PI * (1200 + dt * 400) * dt) * Math.exp(-dt * 45) * 0.6;
+        }
+      }
+    }
+  } else if (id === 16) { // wind
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const gust = (Math.sin(2 * Math.PI * 0.4 * t) + 1) * 0.5;
+      const noise = (Math.random() * 2 - 1) * (0.08 + gust * 0.3);
+      buffer[i] = noise;
+    }
+  } else if (id === 17) { // pouring_water
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      buffer[i] = (Math.random() * 2 - 1) * 0.28 + Math.sin(2 * Math.PI * 340 * t) * 0.08;
+    }
+  } else if (id === 18) { // toilet_flush
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const surge = t < 1.2 ? t / 1.2 : Math.max(0, 1 - (t - 1.2) / 1.5);
+      buffer[i] = (Math.random() * 2 - 1) * surge * 0.55;
+    }
+  } else if (id === 19) { // thunderstorm
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      if (t >= 0.1) {
+        const dt = t - 0.1;
+        const boom = Math.exp(-dt * 1.8) * Math.sin(2 * Math.PI * (75 - dt * 15) * dt);
+        const rumble = (Math.random() * 2 - 1) * Math.exp(-dt * 1.2) * 0.4;
+        buffer[i] = Math.max(-1, Math.min(1, boom * 0.7 + rumble));
+      }
+    }
+  }
+  // Group 2: Human (20–29)
+  else if (id === 20) { // crying_baby
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const cycle = t % 0.8;
+      const f = 550 + Math.sin(2 * Math.PI * 1.2 * t) * 200;
+      const env = Math.sin(Math.PI * (cycle / 0.8));
+      buffer[i] = (Math.sin(2 * Math.PI * f * t) + 0.4 * Math.sin(2 * Math.PI * f * 2 * t)) * env * 0.35;
+    }
+  } else if (id === 21) { // sneezing
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      if (t >= 0.6 && t <= 1.2) {
+        const dt = t - 0.6;
+        buffer[i] = (Math.random() * 2 - 1) * Math.exp(-dt * 12) * 0.85;
+      }
+    }
+  } else if (id === 22) { // clapping
+    const claps = [0.2, 0.55, 0.9, 1.25, 1.6, 1.95, 2.3];
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      for (const c of claps) {
+        if (t >= c && t <= c + 0.15) {
+          const dt = t - c;
+          buffer[i] += (Math.random() * 2 - 1) * Math.exp(-dt * 45) * 0.65;
+        }
+      }
+    }
+  } else if (id === 23) { // breathing
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const cycle = Math.sin(2 * Math.PI * 0.5 * t);
+      buffer[i] = (Math.random() * 2 - 1) * Math.abs(cycle) * 0.2;
+    }
+  } else if (id === 24) { // coughing
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const c1 = (t >= 0.3 && t <= 0.6) ? Math.exp(-(t - 0.3) * 16) : 0;
+      const c2 = (t >= 0.8 && t <= 1.1) ? Math.exp(-(t - 0.8) * 16) : 0;
+      buffer[i] = (Math.random() * 2 - 1) * (c1 + c2) * 0.7;
+    }
+  } else if (id === 25) { // footsteps
+    const steps = [0.2, 0.7, 1.2, 1.7, 2.2];
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      for (const s of steps) {
+        if (t >= s && t <= s + 0.15) {
+          const dt = t - s;
+          buffer[i] += Math.sin(2 * Math.PI * 90 * dt) * Math.exp(-dt * 25) * 0.5;
+        }
+      }
+    }
+  } else if (id === 26) { // laughing
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const pulse = Math.sin(2 * Math.PI * 5 * t);
+      if (t >= 0.2 && t <= 2.2 && pulse > 0) {
+        buffer[i] = (Math.sin(2 * Math.PI * 320 * t) + 0.4 * Math.sin(2 * Math.PI * 640 * t)) * pulse * 0.35;
+      }
+    }
+  } else if (id === 27) { // brushing_teeth
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const scrub = Math.sin(2 * Math.PI * 4 * t);
+      buffer[i] = (Math.random() * 2 - 1) * Math.abs(scrub) * 0.3;
+    }
+  } else if (id === 28) { // snoring
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const cycle = (Math.sin(2 * Math.PI * 0.4 * t) + 1) * 0.5;
+      const rasp = Math.sin(2 * Math.PI * 75 * t) + (Math.random() * 2 - 1) * 0.25;
+      buffer[i] = rasp * cycle * 0.4;
+    }
+  } else if (id === 29) { // drinking_sipping
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      if (t >= 0.3 && t <= 1.4) {
+        buffer[i] = (Math.random() * 2 - 1) * 0.2 + Math.sin(2 * Math.PI * 600 * t) * 0.15;
+      }
+    }
+  }
+  // Group 3: Interior (30–39)
+  else if (id === 30) { // door_wood_knock
+    const knocks = [0.2, 0.45, 0.7];
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      for (const k of knocks) {
+        if (t >= k && t <= k + 0.12) {
+          const dt = t - k;
+          buffer[i] += Math.sin(2 * Math.PI * 180 * dt) * Math.exp(-dt * 35) * 0.7;
+        }
+      }
+    }
+  } else if (id === 31) { // mouse_click
+    const clicks = [0.3, 0.45, 1.2];
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      for (const c of clicks) {
+        if (t >= c && t <= c + 0.05) {
+          const dt = t - c;
+          buffer[i] += Math.sin(2 * Math.PI * 2400 * dt) * Math.exp(-dt * 120) * 0.75;
+        }
+      }
+    }
+  } else if (id === 32) { // keyboard_typing
+    const clickTimes = [0.15, 0.38, 0.62, 0.85, 1.12, 1.45, 1.78, 2.05];
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      for (const ct of clickTimes) {
+        if (t >= ct && t <= ct + 0.08) {
+          const dt = t - ct;
+          buffer[i] += Math.exp(-dt * 90) * Math.sin(2 * Math.PI * 1800 * dt) * 0.6;
+        }
+      }
+    }
+  } else if (id === 33) { // door_wood_creaks
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      if (t >= 0.3 && t <= 2.2) {
+        const dt = t - 0.3;
+        const f = 450 + Math.sin(2 * Math.PI * 12 * dt) * 180;
+        buffer[i] = Math.sin(2 * Math.PI * f * dt) * Math.sin(Math.PI * dt / 1.9) * 0.4;
+      }
+    }
+  } else if (id === 34) { // can_opening
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      if (t >= 0.2 && t <= 0.35) {
+        buffer[i] = (Math.random() * 2 - 1) * Math.exp(-(t - 0.2) * 50) * 0.8;
+      } else if (t > 0.35 && t <= 1.4) {
+        buffer[i] = (Math.random() * 2 - 1) * Math.exp(-(t - 0.35) * 4) * 0.35; // fizz
+      }
+    }
+  } else if (id === 35) { // washing_machine
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const rot = Math.sin(2 * Math.PI * 1.5 * t);
+      buffer[i] = (Math.sin(2 * Math.PI * 60 * t) * 0.3 + (Math.random() * 2 - 1) * 0.15) * (0.6 + 0.4 * rot);
+    }
+  } else if (id === 36) { // vacuum_cleaner
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      buffer[i] = Math.sin(2 * Math.PI * 220 * t) * 0.3 + Math.sin(2 * Math.PI * 440 * t) * 0.2 + (Math.random() * 2 - 1) * 0.25;
+    }
+  } else if (id === 37) { // clock_alarm
     for (let i = 0; i < numSamples; i++) {
       const t = i / sampleRate;
       const cycle = t % 0.4;
       if (cycle < 0.2) {
         const freq = (t % 0.8 < 0.4) ? 880 : 1046.5;
         buffer[i] = Math.sin(2 * Math.PI * freq * t) * 0.45;
-      } else {
-        buffer[i] = 0;
       }
     }
-  } else if (soundType === 'typing') {
-    // Intermittent clicks/transients of mechanical keys
-    const clickTimes = [0.15, 0.38, 0.62, 0.85, 1.12, 1.45, 1.78, 2.05];
+  } else if (id === 38) { // clock_tick
     for (let i = 0; i < numSamples; i++) {
       const t = i / sampleRate;
-      let val = 0;
-      for (const ct of clickTimes) {
-        if (t >= ct && t <= ct + 0.08) {
-          const dt = t - ct;
-          val += Math.exp(-dt * 90) * Math.sin(2 * Math.PI * 1800 * dt) * (Math.random() * 0.4 + 0.6);
+      const sub = t % 0.5;
+      if (sub < 0.04) {
+        const isTick = (t % 1.0 < 0.5);
+        const f = isTick ? 1200 : 950;
+        buffer[i] = Math.sin(2 * Math.PI * f * sub) * Math.exp(-sub * 120) * 0.6;
+      }
+    }
+  } else if (id === 39) { // glass_breaking
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      if (t >= 0.1 && t <= 1.5) {
+        const dt = t - 0.1;
+        const crash = (Math.random() * 2 - 1) * Math.exp(-dt * 8);
+        const ring = Math.sin(2 * Math.PI * 3400 * dt) * Math.exp(-dt * 4) * 0.4;
+        buffer[i] = Math.max(-1, Math.min(1, crash + ring));
+      }
+    }
+  }
+  // Group 4: Urban (40–49)
+  else if (id === 40) { // helicopter
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const chop = Math.sin(2 * Math.PI * 11.5 * t);
+      const env = chop > 0 ? chop * chop : 0;
+      buffer[i] = (Math.sin(2 * Math.PI * 120 * t) * 0.4 + (Math.random() * 2 - 1) * 0.2) * env;
+    }
+  } else if (id === 41) { // chainsaw
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      buffer[i] = (Math.sin(2 * Math.PI * 180 * t) + 0.5 * Math.sin(2 * Math.PI * 360 * t) + (Math.random() * 2 - 1) * 0.35) * 0.45;
+    }
+  } else if (id === 42) { // siren
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const sweep = Math.sin(2 * Math.PI * 0.8 * t);
+      const freq = 650 + sweep * 300;
+      buffer[i] = Math.sin(2 * Math.PI * freq * t) * 0.45;
+    }
+  } else if (id === 43) { // car_horn
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      if (t >= 0.2 && t <= 1.8) {
+        buffer[i] = (Math.sin(2 * Math.PI * 440 * t) + Math.sin(2 * Math.PI * 554 * t)) * 0.35;
+      }
+    }
+  } else if (id === 44) { // engine
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      buffer[i] = (Math.sin(2 * Math.PI * 85 * t) + 0.5 * Math.sin(2 * Math.PI * 170 * t) + (Math.random() * 2 - 1) * 0.2) * 0.45;
+    }
+  } else if (id === 45) { // train
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const chug = Math.sin(2 * Math.PI * 4 * t);
+      buffer[i] = (Math.random() * 2 - 1) * Math.abs(chug) * 0.35 + Math.sin(2 * Math.PI * 520 * t) * 0.15;
+    }
+  } else if (id === 46) { // church_bells
+    const tolls = [0.2, 1.4];
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      for (const toll of tolls) {
+        if (t >= toll) {
+          const dt = t - toll;
+          const s1 = Math.sin(2 * Math.PI * 330 * dt) * Math.exp(-dt * 1.5);
+          const s2 = 0.5 * Math.sin(2 * Math.PI * 660 * dt) * Math.exp(-dt * 2.2);
+          const s3 = 0.3 * Math.sin(2 * Math.PI * 920 * dt) * Math.exp(-dt * 3.0);
+          buffer[i] += (s1 + s2 + s3) * 0.4;
         }
       }
-      buffer[i] = Math.max(-1, Math.min(1, val * 0.7));
     }
-  } else if (soundType === 'siren') {
-    // Frequency modulated sweeping siren
+  } else if (id === 47) { // airplane
     for (let i = 0; i < numSamples; i++) {
       const t = i / sampleRate;
-      const sweep = Math.sin(2 * Math.PI * 0.8 * t); // 0.8 Hz LFO
-      const freq = 650 + sweep * 300;
-      buffer[i] = Math.sin(2 * Math.PI * freq * t) * 0.5;
+      buffer[i] = (Math.random() * 2 - 1) * 0.3 + Math.sin(2 * Math.PI * 280 * t) * 0.15;
+    }
+  } else if (id === 48) { // fireworks
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      if (t >= 0.1 && t <= 0.6) {
+        const dt = t - 0.1;
+        buffer[i] = Math.sin(2 * Math.PI * (600 + dt * 1500) * dt) * (0.6 - dt); // whistle
+      } else if (t > 0.6) {
+        const dt = t - 0.6;
+        buffer[i] = (Math.random() * 2 - 1) * Math.exp(-dt * 3.5) * 0.85; // boom
+      }
+    }
+  } else if (id === 49) { // hand_saw
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const stroke = Math.sin(2 * Math.PI * 2 * t);
+      buffer[i] = (Math.random() * 2 - 1) * Math.abs(stroke) * 0.45;
+    }
+  } else {
+    // General fallback
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      buffer[i] = Math.sin(2 * Math.PI * 350 * t) * 0.3 + (Math.random() * 2 - 1) * 0.1;
     }
   }
 
   return encodeWAV(buffer, sampleRate);
 }
+
+/* Backward compatibility alias */
+function generateSyntheticAudioBlob(soundType) {
+  return generateSyntheticAudioForCategory(soundType);
+}
+
 
 /* Encodes 32-bit Float samples into standard 16-bit PCM WAV Blob */
 function encodeWAV(samples, sampleRate) {
@@ -493,20 +965,19 @@ presetsRow.addEventListener('click', e => {
   btn.classList.add('active');
 
   const presetMapping = {
-    dog:    { targetId: 0,  name: 'preset_dog_bark.wav' },
-    rain:   { targetId: 10, name: 'preset_rain_shower.wav' },
-    alarm:  { targetId: 37, name: 'preset_clock_alarm.wav' },
-    typing: { targetId: 32, name: 'preset_keyboard_typing.wav' },
-    siren:  { targetId: 42, name: 'preset_emergency_siren.wav' },
+    dog:    { targetId: 0,  name: CANONICAL_ESC50_FILES[0] },
+    rain:   { targetId: 10, name: CANONICAL_ESC50_FILES[10] },
+    alarm:  { targetId: 37, name: CANONICAL_ESC50_FILES[37] },
+    typing: { targetId: 32, name: CANONICAL_ESC50_FILES[32] },
+    siren:  { targetId: 42, name: CANONICAL_ESC50_FILES[42] },
   };
 
   const preset = presetMapping[soundKey];
   if (!preset) return;
 
   currentPresetTarget = preset.targetId;
-  const blob = generateSyntheticAudioBlob(soundKey);
-  const file = new File([blob], preset.name, { type: 'audio/wav' });
-  loadAudioFile(file, true);
+  const catObj = ESC50_CATEGORIES[preset.targetId];
+  loadTaxonomyCategory(catObj);
 });
 
 /* ── Upload Zone Interactions ─────────────────────────────────── */
@@ -743,8 +1214,12 @@ function loadAudioFile(file, isPreset = false) {
   // Reset visual state for the new clip
   currentDecodedBuffer = null;
   currentSpectrogramData = null;
+  currentRecurrenceData = null;
+  currentActiveSegmentData = null;
   currentWavePeaks = null;
   spectrogramCache = null;
+  recurrencePlotCache = null;
+  activeSegmentCache = null;
   specHover = null;
   resetSignalStats();
   resetOutputPanel();
@@ -764,7 +1239,15 @@ function loadAudioFile(file, isPreset = false) {
         currentDecodedBuffer = await audioContext.decodeAudioData(e.target.result.slice(0));
         currentSpectrogramData = computeAcousticSpectrogram(currentDecodedBuffer);
         currentWavePeaks = computeWaveformPeaks(currentDecodedBuffer, 128);
+        
+        // Compute Threshold-Free Recurrence Plot & Active Segment
+        const rawPcm = currentDecodedBuffer.getChannelData(0);
+        currentRecurrenceData = computeThresholdFreeRecurrencePlot(rawPcm, 128);
+        currentActiveSegmentData = computeActiveSegment(rawPcm, currentDecodedBuffer.sampleRate);
+        
         spectrogramCache = null;
+        recurrencePlotCache = null;
+        activeSegmentCache = null;
 
         // Update telemetry
         if (specRateEl) specRateEl.textContent = `${(currentDecodedBuffer.sampleRate / 1000).toFixed(1)} kHz`;
@@ -1488,8 +1971,234 @@ function displayClassificationResults(predictions, modelKey) {
   drawFeatureSpectrogram(0, specHover);
 }
 
+/* ── Microscopic Chaotic Recurrence Plot & Active Segment ──── */
+function computeThresholdFreeRecurrencePlot(rawPcm, paaDim = 128) {
+  if (!rawPcm || rawPcm.length === 0) return null;
+  const n = rawPcm.length;
+  const paa = new Float32Array(paaDim);
+  const binSize = n / paaDim;
+
+  for (let i = 0; i < paaDim; i++) {
+    const start = Math.floor(i * binSize);
+    const end = Math.floor((i + 1) * binSize);
+    let sum = 0;
+    const count = Math.max(1, end - start);
+    for (let j = start; j < end; j++) {
+      sum += rawPcm[j];
+    }
+    paa[i] = sum / count;
+  }
+
+  const matrix = [];
+  let minDiff = 1e9;
+  let maxDiff = -1e9;
+  for (let i = 0; i < paaDim; i++) {
+    const row = new Float32Array(paaDim);
+    for (let j = 0; j < paaDim; j++) {
+      const d = Math.abs(paa[i] - paa[j]);
+      row[j] = d;
+      if (d < minDiff) minDiff = d;
+      if (d > maxDiff) maxDiff = d;
+    }
+    matrix.push(row);
+  }
+
+  const range = Math.max(1e-6, maxDiff - minDiff);
+  for (let i = 0; i < paaDim; i++) {
+    for (let j = 0; j < paaDim; j++) {
+      matrix[i][j] = (matrix[i][j] - minDiff) / range;
+    }
+  }
+
+  return { matrix, paaDim, minDiff, maxDiff };
+}
+
+function computeActiveSegment(rawPcm, sampleRate = 22050, frameLen = 2048, hopLen = 512) {
+  if (!rawPcm || rawPcm.length < frameLen) {
+    return { startTime: 0, endTime: rawPcm ? rawPcm.length / sampleRate : 0, ratio: 1.0, energies: [] };
+  }
+  const numFrames = Math.floor((rawPcm.length - frameLen) / hopLen);
+  const energies = new Float32Array(numFrames);
+  let meanEnergy = 0;
+
+  for (let f = 0; f < numFrames; f++) {
+    const start = f * hopLen;
+    let e = 0;
+    for (let n = 0; n < frameLen; n += 4) {
+      e += rawPcm[start + n] * rawPcm[start + n];
+    }
+    energies[f] = e;
+    meanEnergy += e;
+  }
+  meanEnergy /= Math.max(1, numFrames);
+  const thresh = Math.max(1e-5, meanEnergy * 0.15);
+
+  let maxLen = 0, bestStart = 0, currLen = 0, currStart = 0, activeCount = 0;
+  for (let f = 0; f < numFrames; f++) {
+    if (energies[f] >= thresh) {
+      activeCount++;
+      if (currLen === 0) currStart = f;
+      currLen++;
+      if (currLen > maxLen) {
+        maxLen = currLen;
+        bestStart = currStart;
+      }
+    } else {
+      currLen = 0;
+    }
+  }
+
+  const startTime = (bestStart * hopLen) / sampleRate;
+  const endTime = Math.min(rawPcm.length / sampleRate, (bestStart * hopLen + maxLen * hopLen + frameLen) / sampleRate);
+  const ratio = activeCount / Math.max(1, numFrames);
+
+  return { startTime, endTime, ratio, energies };
+}
+
 /* ── High-Precision Time-Frequency Spectrogram Renderer ──────── */
 const SPEC_MARGINS = { left: 48, bottom: 22, right: 8, top: 6 };
+
+function buildRecurrencePlotCache() {
+  if (!specCanvas) return null;
+  const W = specCanvas.width;
+  const H = specCanvas.height;
+  const cache = document.createElement('canvas');
+  cache.width = W;
+  cache.height = H;
+  const ctx = cache.getContext('2d');
+  const { left, bottom, right, top } = SPEC_MARGINS;
+  const plotW = W - left - right;
+  const plotH = H - top - bottom;
+
+  ctx.fillStyle = '#030712';
+  ctx.fillRect(0, 0, W, H);
+
+  if (!currentRecurrenceData || !currentRecurrenceData.matrix.length) {
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.5)';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Awaiting audio file to compute Threshold-Free Recurrence Plot', left + plotW / 2, top + plotH / 2);
+    return cache;
+  }
+
+  const { matrix, paaDim } = currentRecurrenceData;
+  const cellW = plotW / paaDim;
+  const cellH = plotH / paaDim;
+
+  for (let i = 0; i < paaDim; i++) {
+    const x = left + i * cellW;
+    for (let j = 0; j < paaDim; j++) {
+      const y = top + (paaDim - 1 - j) * cellH;
+      const normVal = matrix[i][j];
+      ctx.fillStyle = getSpectrogramColor(1 - normVal);
+      ctx.fillRect(Math.floor(x), Math.floor(y), Math.ceil(cellW) + 1, Math.ceil(cellH) + 1);
+    }
+  }
+
+  // Draw Axes
+  ctx.strokeStyle = 'rgba(56, 189, 248, 0.15)';
+  ctx.lineWidth = 1;
+  ctx.fillStyle = '#64748b';
+  ctx.font = '10px monospace';
+  const ticks = [
+    { lbl: '128', ratio: 0.0 },
+    { lbl: '96', ratio: 0.25 },
+    { lbl: '64', ratio: 0.5 },
+    { lbl: '32', ratio: 0.75 },
+    { lbl: '0', ratio: 1.0 },
+  ];
+  ticks.forEach(t => {
+    const y = top + t.ratio * plotH;
+    ctx.beginPath();
+    ctx.moveTo(left - 4, y);
+    ctx.lineTo(left, y);
+    ctx.stroke();
+    ctx.textAlign = 'right';
+    ctx.fillText(t.lbl, left - 6, y + 3);
+  });
+  ticks.forEach(t => {
+    const x = left + (1 - t.ratio) * plotW;
+    ctx.beginPath();
+    ctx.moveTo(x, top + plotH);
+    ctx.lineTo(x, top + plotH + 4);
+    ctx.stroke();
+    ctx.textAlign = 'center';
+    ctx.fillText(t.lbl, x, top + plotH + 14);
+  });
+
+  return cache;
+}
+
+function buildActiveSegmentCache() {
+  if (!specCanvas) return null;
+  const W = specCanvas.width;
+  const H = specCanvas.height;
+  const cache = document.createElement('canvas');
+  cache.width = W;
+  cache.height = H;
+  const ctx = cache.getContext('2d');
+  const { left, bottom, right, top } = SPEC_MARGINS;
+  const plotW = W - left - right;
+  const plotH = H - top - bottom;
+
+  ctx.fillStyle = '#030712';
+  ctx.fillRect(0, 0, W, H);
+
+  if (!currentDecodedBuffer) {
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.5)';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Awaiting audio file to compute active segment boundaries', left + plotW / 2, top + plotH / 2);
+    return cache;
+  }
+
+  const raw = currentDecodedBuffer.getChannelData(0);
+  const dur = currentDecodedBuffer.duration || 5.0;
+  const seg = currentActiveSegmentData || { startTime: 0, endTime: dur, ratio: 1.0 };
+
+  // Draw background grid
+  ctx.strokeStyle = 'rgba(56, 189, 248, 0.08)';
+  ctx.lineWidth = 1;
+  for (let s = 1; s <= 4; s++) {
+    const x = left + (s / 5) * plotW;
+    ctx.beginPath();
+    ctx.moveTo(x, top);
+    ctx.lineTo(x, top + plotH);
+    ctx.stroke();
+  }
+
+  // Draw active zone highlight
+  const actX1 = left + Math.max(0, Math.min(1, seg.startTime / dur)) * plotW;
+  const actX2 = left + Math.max(0, Math.min(1, seg.endTime / dur)) * plotW;
+  ctx.fillStyle = 'rgba(56, 189, 248, 0.12)';
+  ctx.fillRect(actX1, top, actX2 - actX1, plotH);
+  ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(actX1, top, actX2 - actX1, plotH);
+
+  // Draw waveform
+  const midY = top + plotH / 2;
+  ctx.strokeStyle = '#38bdf8';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  const step = Math.max(1, Math.floor(raw.length / plotW));
+  for (let i = 0; i < plotW; i++) {
+    const sampleIdx = Math.floor(i * step);
+    const amp = raw[sampleIdx] || 0;
+    const y = midY - amp * (plotH / 2 * 0.9);
+    if (i === 0) ctx.moveTo(left + i, y);
+    else ctx.lineTo(left + i, y);
+  }
+  ctx.stroke();
+
+  // Active Tag
+  ctx.fillStyle = '#67e8f9';
+  ctx.font = 'bold 10px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(`ACTIVE: ${seg.startTime.toFixed(2)}s - ${seg.endTime.toFixed(2)}s (${Math.round(seg.ratio * 100)}% energy)`, actX1 + 6, top + 16);
+
+  return cache;
+}
 
 function buildSpectrogramCache() {
   if (!specCanvas) return null;
@@ -1544,13 +2253,21 @@ function drawFeatureSpectrogram(playbackTime = 0, hover = null) {
   const plotW = W - left - right;
   const plotH = H - top - bottom;
 
-  if (!spectrogramCache) {
-    spectrogramCache = buildSpectrogramCache();
+  let activeCache = null;
+  if (currentFeatureMode === 'mel') {
+    if (!spectrogramCache) spectrogramCache = buildSpectrogramCache();
+    activeCache = spectrogramCache;
+  } else if (currentFeatureMode === 'rp') {
+    if (!recurrencePlotCache) recurrencePlotCache = buildRecurrencePlotCache();
+    activeCache = recurrencePlotCache;
+  } else {
+    if (!activeSegmentCache) activeSegmentCache = buildActiveSegmentCache();
+    activeCache = activeSegmentCache;
   }
 
   ctx.clearRect(0, 0, W, H);
-  if (spectrogramCache) {
-    ctx.drawImage(spectrogramCache, 0, 0);
+  if (activeCache) {
+    ctx.drawImage(activeCache, 0, 0);
   }
 
   const duration = currentSpectrogramData ? currentSpectrogramData.duration : 0;
@@ -1637,19 +2354,43 @@ specCanvas.addEventListener('pointermove', (e) => {
   const { matrix, numTimeBins, numFreqBands, duration, sampleRate } = currentSpectrogramData;
   const fx = (x - plot.left) / plot.w;
   const fy = (y - plot.top) / plot.h;
+
+  if (currentFeatureMode === 'rp') {
+    if (currentRecurrenceData) {
+      const dim = currentRecurrenceData.paaDim;
+      const iIdx = Math.max(0, Math.min(dim - 1, Math.floor(fx * dim)));
+      const jIdx = Math.max(0, Math.min(dim - 1, Math.floor((1 - fy) * dim)));
+      const dist = currentRecurrenceData.matrix[iIdx][jIdx];
+
+      if (cursorTimeEl) cursorTimeEl.textContent = `${iIdx}`;
+      if (cursorFreqEl) cursorFreqEl.textContent = `${jIdx}`;
+      if (cursorLevelEl) cursorLevelEl.textContent = `${dist.toFixed(3)}`;
+    }
+  } else if (currentFeatureMode === 'active') {
+    const seg = currentActiveSegmentData;
+    const timeSec = fx * duration;
+    const isInside = seg && timeSec >= seg.startTime && timeSec <= seg.endTime;
+
+    if (cursorTimeEl) cursorTimeEl.textContent = `${timeSec.toFixed(2)}s`;
+    if (cursorFreqEl) cursorFreqEl.textContent = isInside ? 'Active VAD' : 'Ambient';
+    if (cursorLevelEl) cursorLevelEl.textContent = seg ? `${Math.round(seg.ratio * 100)}%` : '—';
+  } else {
+    const tIdx = Math.max(0, Math.min(numTimeBins - 1, Math.floor(fx * numTimeBins)));
+    const bIdx = Math.max(0, Math.min(numFreqBands - 1, Math.floor((1 - fy) * numFreqBands)));
+    const level = matrix[tIdx][bIdx];
+
+    const melMin = 1127 * Math.log(1 + 50 / 700);
+    const melMax = 1127 * Math.log(1 + (sampleRate / 2) / 700);
+    const mel = melMin + (bIdx / (numFreqBands - 1)) * (melMax - melMin);
+    const freq = 700 * (Math.exp(mel / 1127) - 1);
+
+    if (cursorTimeEl) cursorTimeEl.textContent = `${(fx * duration).toFixed(2)}s`;
+    if (cursorFreqEl) cursorFreqEl.textContent = freq >= 1000 ? `${(freq / 1000).toFixed(1)} kHz` : `${Math.round(freq)} Hz`;
+    if (cursorLevelEl) cursorLevelEl.textContent = `${level.toFixed(1)} dB`;
+  }
+
   const tIdx = Math.max(0, Math.min(numTimeBins - 1, Math.floor(fx * numTimeBins)));
   const bIdx = Math.max(0, Math.min(numFreqBands - 1, Math.floor((1 - fy) * numFreqBands)));
-  const level = matrix[tIdx][bIdx];
-
-  const melMin = 1127 * Math.log(1 + 50 / 700);
-  const melMax = 1127 * Math.log(1 + (sampleRate / 2) / 700);
-  const mel = melMin + (bIdx / (numFreqBands - 1)) * (melMax - melMin);
-  const freq = 700 * (Math.exp(mel / 1127) - 1);
-
-  if (cursorTimeEl) cursorTimeEl.textContent = `${(fx * duration).toFixed(2)}s`;
-  if (cursorFreqEl) cursorFreqEl.textContent = freq >= 1000 ? `${(freq / 1000).toFixed(1)} kHz` : `${Math.round(freq)} Hz`;
-  if (cursorLevelEl) cursorLevelEl.textContent = `${level.toFixed(1)} dB`;
-
   specHover = { x, y, tIdx, bIdx };
   drawFeatureSpectrogram(audioEl.currentTime || 0, specHover);
 });
@@ -1839,14 +2580,37 @@ function renderTaxonomyGrid(filterGroup = 'all', searchQuery = '') {
   taxonomyGrid.appendChild(fragment);
 }
 
-function loadTaxonomyCategory(cat) {
+async function loadTaxonomyCategory(cat) {
   currentPresetTarget = cat.id;
   switchView('studio');
-  const soundKey = ['dog', 'rain', 'alarm', 'typing', 'siren'][cat.id % 5];
-  const blob = generateSyntheticAudioBlob(soundKey);
-  const file = new File([blob], `${cat.name}_sample.wav`, { type: 'audio/wav' });
+  const filename = CANONICAL_ESC50_FILES[cat.id] || `1-100032-A-${cat.id}.wav`;
+
+  let file = null;
+  const candidatePaths = [
+    `../Preproccesing/processed/audio_22k/${filename}`,
+    `../ESC-50/wav_files/${filename}`
+  ];
+
+  for (const p of candidatePaths) {
+    try {
+      const resp = await fetch(p);
+      if (resp.ok) {
+        const blob = await resp.blob();
+        if (blob && blob.size > 1000) {
+          file = new File([blob], filename, { type: 'audio/wav' });
+          break;
+        }
+      }
+    } catch (_) {}
+  }
+
+  if (!file) {
+    const blob = generateSyntheticAudioForCategory(cat.id, cat.name);
+    file = new File([blob], filename, { type: 'audio/wav' });
+  }
+
   loadAudioFile(file, true);
-  showToast('Loaded into studio', `${cat.emoji} ${cat.name.replace(/_/g, ' ')} · auto-analysis running`, 'info');
+  showToast('Loaded into studio', `${cat.emoji} ${cat.name.replace(/_/g, ' ')} · verified test sample`, 'info');
 }
 
 // Initial render
@@ -2542,4 +3306,56 @@ function animateCounter(el, start, end, duration) {
 
 function easeOutQuad(t) {
   return t * (2 - t);
+}
+
+/* ── Feature Mode Switcher Tabs (Mel / RP / Active) ────────── */
+if (featModeBar) {
+  featModeBar.querySelectorAll('.feat-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mode = btn.dataset.mode;
+      if (mode === currentFeatureMode) return;
+      currentFeatureMode = mode;
+      featModeBar.querySelectorAll('.feat-tab-btn').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      });
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
+
+      if (specModeEl) {
+        specModeEl.textContent = mode === 'mel' ? '128-Mel' : mode === 'rp' ? 'Threshold-Free RP' : 'Active VAD';
+      }
+
+      if (specSublabel) {
+        if (mode === 'mel') specSublabel.textContent = '128-Band Log-Mel Spectrogram (Spatial Harmonic)';
+        else if (mode === 'rp') specSublabel.textContent = '128×128 Threshold-Free Recurrence Plot (Chaotic Micro-Dynamics)';
+        else specSublabel.textContent = 'Energy-Based Active Acoustic Segment (Longest Coherent Event)';
+      }
+
+      if (legScaleLbl) {
+        legScaleLbl.textContent = mode === 'mel' ? 'Energy (dB):' : mode === 'rp' ? 'Distance Norm:' : 'Amplitude:';
+      }
+
+      if (legGradientBar) {
+        if (mode === 'rp') legGradientBar.classList.add('rp-mode');
+        else legGradientBar.classList.remove('rp-mode');
+      }
+
+      if (legMarks) {
+        if (mode === 'mel') {
+          legMarks.innerHTML = '<span>-80 dB</span><span>-50 dB</span><span>-25 dB</span><span>0 dB</span>';
+        } else if (mode === 'rp') {
+          legMarks.innerHTML = '<span>0.0 (High Recurrence)</span><span>0.33</span><span>0.66</span><span>1.0 (Divergent)</span>';
+        } else {
+          legMarks.innerHTML = '<span>-1.0</span><span>-0.5</span><span>0.0</span><span>+1.0</span>';
+        }
+      }
+
+      if (ciK1) ciK1.textContent = mode === 'rp' ? 'INDEX i' : 'TIME';
+      if (ciK2) ciK2.textContent = mode === 'rp' ? 'INDEX j' : mode === 'active' ? 'ACTIVE' : 'FREQ';
+      if (ciK3) ciK3.textContent = mode === 'rp' ? 'DIST' : mode === 'active' ? 'ENERGY' : 'LEVEL';
+
+      drawFeatureSpectrogram(audioEl.currentTime || 0);
+    });
+  });
 }
