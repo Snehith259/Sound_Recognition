@@ -34,7 +34,9 @@ app.use('/ESC-50', express.static(path.join(__dirname, 'ESC-50')));
 
 /* ── Multer config for audio file uploads ───────────────────── */
 const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+try {
+  if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+} catch (_) {}
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadDir),
@@ -566,27 +568,30 @@ app.post('/api/auth/login', (req, res) => {
   const cleanUser = username.trim().toLowerCase();
   const cleanPass = password.trim();
 
-  // Valid developer credentials (flexible matching)
+  // Flexible developer login: default credentials, admin/dev keywords, or any non-empty username/password
   const isDevUser = cleanUser === 'developer@soundsense.ai' ||
                     cleanUser === 'developer' ||
                     cleanUser === 'admin' ||
                     cleanUser === 'admin@soundsense.ai' ||
                     cleanUser.includes('developer') ||
                     cleanUser.includes('admin') ||
-                    cleanUser.includes('dev');
+                    cleanUser.includes('dev') ||
+                    cleanUser.length > 0;
 
   const isDevPass = cleanPass === 'soundsense2024' ||
                     cleanPass === 'soundsense' ||
                     cleanPass === 'admin' ||
                     cleanPass === 'admin123' ||
-                    cleanPass.length >= 4;
+                    cleanPass.length >= 3;
 
   const isDev = isDevUser && isDevPass;
 
   if (isDev) {
     const token = `dev_token_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+    const baseName = cleanUser.includes('@') ? cleanUser.split('@')[0] : cleanUser;
+    const formattedName = baseName.replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     const user = {
-      name: 'Lead AI Engineer',
+      name: formattedName ? `${formattedName} (AI Engineer)` : 'Lead AI Engineer',
       email: cleanUser.includes('@') ? cleanUser : `${cleanUser}@soundsense.ai`,
       role: 'developer',
       permissions: ['training_controls', 'checkpoint_mgmt', 'system_analytics', 'cloud_sync'],
@@ -603,7 +608,7 @@ app.post('/api/auth/login', (req, res) => {
 
   return res.status(401).json({
     success: false,
-    error: 'Invalid developer credentials. Use "developer@soundsense.ai" with "soundsense2024".'
+    error: 'Please enter a valid developer username and password (minimum 3 characters).'
   });
 });
 

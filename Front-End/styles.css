@@ -3844,6 +3844,25 @@ kbd {
   flex-shrink: 0;
 }
 
+/* ════════════ DEVELOPER MODE VISIBILITY RULES ════════════
+   Completely hidden by default for normal users.
+   Applied ONLY when authenticated via the developer profile icon.
+   ════════════════════════════════════════════════════════ */
+.dev-tab,
+.dev-only-feature,
+.dev-feature {
+  display: none !important;
+}
+
+body.dev-authenticated .dev-tab {
+  display: inline-flex !important;
+}
+
+body.dev-authenticated .dev-only-feature,
+body.dev-authenticated .dev-feature {
+  display: flex !important;
+}
+
 /* Google-style circular account button */
 .account-btn {
   width: 38px;
@@ -3944,6 +3963,14 @@ kbd {
   color: var(--purple-bright);
   border: 1px solid rgba(168, 85, 247, 0.4);
   line-height: 1.2;
+  transition: all var(--transition);
+}
+
+.nav-dev-tag.unlocked {
+  background: rgba(16, 185, 129, 0.25);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.35);
 }
 
 /* Google-Style Account Popover with full zoom & responsive auto-fit */

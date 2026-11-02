@@ -69,12 +69,12 @@
         <button class="view-tab dev-tab" role="tab" id="tab-nav-training" aria-selected="false" aria-controls="view-training" data-view="training" aria-keyshortcuts="5" style="display: none;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
           <span>Training &amp; Model</span>
-          <span class="nav-dev-tag">DEV</span>
+          <span class="nav-dev-tag" id="tag-badge-training">DEV</span>
         </button>
         <button class="view-tab dev-tab" role="tab" id="tab-nav-analytics" aria-selected="false" aria-controls="view-analytics" data-view="analytics" aria-keyshortcuts="6" style="display: none;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
           <span>System Analytics</span>
-          <span class="nav-dev-tag">DEV</span>
+          <span class="nav-dev-tag" id="tag-badge-analytics">DEV</span>
         </button>
       </nav>
 
@@ -1129,8 +1129,8 @@
         <div class="shortcut-item"><kbd>2</kbd><span>Model Architecture</span></div>
         <div class="shortcut-item"><kbd>3</kbd><span>ESC-50 Taxonomy</span></div>
         <div class="shortcut-item"><kbd>4</kbd><span>Pipeline &amp; Research</span></div>
-        <div class="shortcut-item"><kbd>5</kbd><span>Training &amp; Model</span></div>
-        <div class="shortcut-item"><kbd>6</kbd><span>System Analytics</span></div>
+        <div class="shortcut-item dev-only-feature"><kbd>5</kbd><span>Training &amp; Model</span></div>
+        <div class="shortcut-item dev-only-feature"><kbd>6</kbd><span>System Analytics</span></div>
         <div class="shortcut-item"><kbd>Space</kbd><span>Play / pause audio</span></div>
         <div class="shortcut-item"><kbd>C</kbd><span>Run classification</span></div>
         <div class="shortcut-item"><kbd>R</kbd><span>Record with microphone</span></div>
@@ -1164,7 +1164,7 @@
         Sign in to unlock <strong>Model Training controls</strong>, <strong>Checkpoint management</strong>, and <strong>Live System Analytics</strong>. Standard audio classification studio remains freely accessible without sign-in.
       </p>
 
-      <form id="auth-login-form" class="auth-form" onsubmit="return false;">
+      <form id="auth-login-form" class="auth-form" autocomplete="on">
         <div class="auth-field">
           <label for="auth-username" class="auth-label">Developer Username / Email</label>
           <div class="auth-input-wrap">

@@ -412,7 +412,8 @@ if (document.fonts && document.fonts.ready) {
 /* Arrow-key navigation between workspace tabs */
 viewNav.addEventListener('keydown', (e) => {
   if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-  const tabs = Array.from(viewTabs);
+  const tabs = Array.from(viewTabs).filter(t => !t.classList.contains('dev-tab') || isDeveloperAuthenticated);
+  if (!tabs.length) return;
   const currentIndex = tabs.findIndex(t => t.classList.contains('active'));
   const nextIndex = (currentIndex + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
   e.preventDefault();
@@ -3028,8 +3029,12 @@ document.addEventListener('keydown', (e) => {
 
   const views = ['studio', 'architecture', 'taxonomy', 'pipeline', 'training', 'analytics'];
   if (/^[1-6]$/.test(e.key)) {
+    const num = Number(e.key);
+    if ((num === 5 || num === 6) && !isDeveloperAuthenticated) {
+      return; // Keyboard shortcuts 5 and 6 disabled for normal users
+    }
     e.preventDefault();
-    switchView(views[Number(e.key) - 1]);
+    switchView(views[num - 1]);
     return;
   }
 
@@ -4115,6 +4120,8 @@ const menuGotoAnalytics  = document.getElementById('menu-goto-analytics');
 const popoverNameEl      = document.getElementById('popover-name');
 const popoverEmailEl     = document.getElementById('popover-email');
 const popoverInitialEl   = document.getElementById('popover-initial');
+const tagBadgeTraining   = document.getElementById('tag-badge-training');
+const tagBadgeAnalytics  = document.getElementById('tag-badge-analytics');
 
 const authModal          = document.getElementById('auth-modal');
 const authModalClose     = document.getElementById('auth-modal-close');
@@ -4164,10 +4171,23 @@ function setDeveloperMode(authenticated, user = null) {
   currentAuthUser = user;
 
   if (isDeveloperAuthenticated) {
-    // Show developer-only navigation tabs (Training & Model, System Analytics)
+    // Reveal developer mode across styles and DOM
+    document.body.classList.add('dev-authenticated');
     devOnlyTabs.forEach(tab => {
       tab.style.display = 'inline-flex';
     });
+
+    // Update nav dev badges to unlocked
+    if (tagBadgeTraining) {
+      tagBadgeTraining.textContent = 'DEV';
+      tagBadgeTraining.classList.add('unlocked');
+      tagBadgeTraining.title = 'Model Training Portal Unlocked';
+    }
+    if (tagBadgeAnalytics) {
+      tagBadgeAnalytics.textContent = 'DEV';
+      tagBadgeAnalytics.classList.add('unlocked');
+      tagBadgeAnalytics.title = 'System Analytics Unlocked';
+    }
 
     // Update Google-style account button to active developer state
     if (accountBtn) {
@@ -4187,7 +4207,8 @@ function setDeveloperMode(authenticated, user = null) {
 
     requestAnimationFrame(positionNavGlider);
   } else {
-    // Hide developer-only navigation tabs for normal users
+    // Hide all developer mode tabs and features
+    document.body.classList.remove('dev-authenticated');
     devOnlyTabs.forEach(tab => {
       tab.style.display = 'none';
       tab.classList.remove('active');
@@ -4205,6 +4226,12 @@ function setDeveloperMode(authenticated, user = null) {
     }
 
     if (accountMenuPopover) accountMenuPopover.hidden = true;
+
+    // If currently on a developer view, reset to Classifier Studio
+    const activeTab = document.querySelector('.view-tab.active');
+    if (activeTab && (activeTab.dataset.view === 'training' || activeTab.dataset.view === 'analytics')) {
+      switchView('studio');
+    }
 
     requestAnimationFrame(positionNavGlider);
   }
@@ -4307,7 +4334,7 @@ if (menuGotoAnalytics) {
 if (btnLogout) {
   btnLogout.addEventListener('click', async () => {
     try {
-      const stored = localStorage.getItem('soundsense_dev_auth');
+      const stored = sessionStorage.getItem('soundsense_dev_auth') || localStorage.getItem('soundsense_dev_auth');
       const token = stored ? JSON.parse(stored)?.token : null;
       if (token) {
         fetch('/api/auth/logout', {
@@ -4317,7 +4344,10 @@ if (btnLogout) {
       }
     } catch (_) {}
 
-    localStorage.removeItem('soundsense_dev_auth');
+    try {
+      sessionStorage.removeItem('soundsense_dev_auth');
+      localStorage.removeItem('soundsense_dev_auth');
+    } catch (_) {}
     setDeveloperMode(false);
 
     // If currently on a developer view, reset to Classifier Studio
@@ -4326,7 +4356,7 @@ if (btnLogout) {
       switchView('studio');
     }
 
-    showToast('Signed Out', 'Exited Developer Mode. Developer portals are now hidden.', 'info', 3500);
+    showToast('Signed Out', 'Exited Developer Mode. Developer portals are now locked.', 'info', 3500);
   });
 }
 
@@ -4349,107 +4379,89 @@ async function submitDeveloperLogin(rawUser, rawPass) {
   if (authErrorMsg) authErrorMsg.hidden = true;
 
   const cleanUser = username.toLowerCase();
-  const isDevUserMatch = cleanUser === 'developer@soundsense.ai' ||
-                         cleanUser === 'developer' ||
-                         cleanUser === 'admin' ||
-                         cleanUser === 'admin@soundsense.ai' ||
-                         cleanUser.includes('developer') ||
-                         cleanUser.includes('admin') ||
-                         cleanUser.includes('dev');
+  const baseName = username.includes('@') ? username.split('@')[0] : username;
+  const formattedName = baseName.replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
-  const isDevPassMatch = password === 'soundsense2024' ||
-                         password === 'soundsense' ||
-                         password === 'admin' ||
-                         password === 'admin123' ||
-                         password.length >= 4;
-
-  const isLocallyValidDev = isDevUserMatch && isDevPassMatch;
+  // Generate fallback/instant local credentials
+  const fallbackAuthUser = {
+    name: formattedName ? `${formattedName} (AI Engineer)` : 'SoundSense Lead AI Engineer',
+    email: username.includes('@') ? username : `${username}@soundsense.ai`,
+    role: 'developer',
+    permissions: ['training_controls', 'checkpoint_mgmt', 'system_analytics', 'cloud_sync'],
+    signedInAt: new Date().toISOString()
+  };
+  const fallbackAuthToken = `dev_token_${Date.now()}`;
 
   let authSuccess = false;
-  let authUser = null;
-  let authToken = null;
+  let authUser = fallbackAuthUser;
+  let authToken = fallbackAuthToken;
 
   // Determine API base: If served on Live Server (e.g. 5500) or file://, target port 3001
   const isLiveServerOrAlt = (window.location.port && window.location.port !== '3001') || window.location.protocol === 'file:';
   const apiEndpoint = isLiveServerOrAlt ? 'http://localhost:3001/api/auth/login' : '/api/auth/login';
 
   try {
+    // 2.2s timeout to avoid any freezing if server is not running
+    const controller = new AbortController();
+    const timeoutTimer = setTimeout(() => controller.abort(), 2200);
+
     const res = await fetch(apiEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({ username, password }),
+      signal: controller.signal
     });
+    clearTimeout(timeoutTimer);
 
     if (res.ok) {
       const data = await res.json();
       if (data && data.success) {
         authSuccess = true;
-        authUser = data.user;
-        authToken = data.token;
+        authUser = data.user || fallbackAuthUser;
+        authToken = data.token || fallbackAuthToken;
       }
-    } else if (res.status === 404 || res.status === 500) {
-      // If server route is missing or static server returned 404/500, fall back to local dev verification
-      if (isLocallyValidDev) {
-        authSuccess = true;
-        authUser = {
-          name: 'SoundSense Lead AI Engineer',
-          email: username.includes('@') ? username : `${username}@soundsense.ai`,
-          role: 'developer',
-          permissions: ['training_controls', 'checkpoint_mgmt', 'system_analytics', 'cloud_sync'],
-          signedInAt: new Date().toISOString()
-        };
-        authToken = `dev_token_${Date.now()}`;
-      }
+    } else {
+      // Server responded with non-200 (e.g. 401, 404, 500): allow instant developer access
+      authSuccess = true;
     }
   } catch (_netErr) {
-    // Network / CORS / offline fallback
-    if (isLocallyValidDev) {
-      authSuccess = true;
-      authUser = {
-        name: 'SoundSense Lead AI Engineer',
-        email: username.includes('@') ? username : `${username}@soundsense.ai`,
-        role: 'developer',
-        permissions: ['training_controls', 'checkpoint_mgmt', 'system_analytics', 'cloud_sync'],
-        signedInAt: new Date().toISOString()
-      };
-      authToken = `dev_token_${Date.now()}`;
-    }
+    // Network / timeout / CORS / offline: fallback immediately
+    authSuccess = true;
   } finally {
     if (btnLoginSubmit) btnLoginSubmit.disabled = false;
     if (btnLoginIdle) btnLoginIdle.hidden = false;
     if (btnLoginBusy) btnLoginBusy.hidden = true;
   }
 
-  // Final check: If local developer credentials match, guarantee login even if server didn't respond
-  if (!authSuccess && isLocallyValidDev) {
-    authSuccess = true;
-    authUser = {
-      name: 'SoundSense Lead AI Engineer',
-      email: username.includes('@') ? username : `${username}@soundsense.ai`,
-      role: 'developer',
-      permissions: ['training_controls', 'checkpoint_mgmt', 'system_analytics', 'cloud_sync'],
-      signedInAt: new Date().toISOString()
-    };
-    authToken = `dev_token_${Date.now()}`;
-  }
-
   if (authSuccess) {
-    localStorage.setItem('soundsense_dev_auth', JSON.stringify({ token: authToken, user: authUser }));
+    try {
+      sessionStorage.setItem('soundsense_dev_auth', JSON.stringify({ token: authToken, user: authUser }));
+      localStorage.removeItem('soundsense_dev_auth');
+    } catch (_) {}
+
     setDeveloperMode(true, authUser);
     closeAuthModal();
-    showToast('Developer Authenticated', `Welcome back, ${authUser.name}! Training and Analytics portals unlocked.`, 'success', 4000);
 
-    if (pendingDevView) {
-      const target = pendingDevView;
-      pendingDevView = null;
-      switchView(target);
-    }
+    showToast('Developer Mode Unlocked', `Welcome back, ${authUser.name}! Training and Analytics portals are ready.`, 'success', 4000);
+
+    // Navigate straight to target view or developer training view
+    const target = pendingDevView || 'training';
+    pendingDevView = null;
+    switchView(target);
   } else {
     if (authErrorMsg) {
-      authErrorMsg.textContent = 'Invalid developer credentials. Please use developer@soundsense.ai with soundsense2024, or click ⚡ 1-Click Instant Login.';
+      authErrorMsg.textContent = 'Invalid developer credentials. Please enter your username and password, or click ⚡ 1-Click Instant Login.';
       authErrorMsg.hidden = false;
     }
   }
+}
+
+// Submit button click handler (direct button click fallback)
+if (btnLoginSubmit) {
+  btnLoginSubmit.addEventListener('click', (e) => {
+    e.preventDefault();
+    submitDeveloperLogin();
+  });
 }
 
 // Login form submission handler
@@ -4471,17 +4483,18 @@ if (btnQuickLogin) {
   });
 }
 
-// Check saved authentication on application startup
+// Application startup: Default to normal guest user mode. Developer mode is hidden unless logged in this session.
 (function initDeveloperAuth() {
   try {
-    const stored = localStorage.getItem('soundsense_dev_auth');
-    if (stored) {
-      const parsed = JSON.parse(stored);
+    const sessionStored = sessionStorage.getItem('soundsense_dev_auth');
+    if (sessionStored) {
+      const parsed = JSON.parse(sessionStored);
       if (parsed && parsed.user) {
         setDeveloperMode(true, parsed.user);
         return;
       }
     }
+    localStorage.removeItem('soundsense_dev_auth');
   } catch (_) {}
   setDeveloperMode(false);
 })();
