@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  soundsense-app:
+    build: .
+    container_name: soundsense-suite
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - CORS_ORIGIN=*
+    volumes:
+      - ./uploads:/app/uploads
+      - ./Preproccesing/processed:/app/Preproccesing/processed:ro
