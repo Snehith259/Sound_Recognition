@@ -2747,32 +2747,27 @@ if (surpriseBtn) {
   });
 }
 
-/* ── Ambient Background Canvas Particles ─────────────────────── */
+/* ── Ambient Background Canvas Particles (Lag-Free & Optimized) ── */
 (function initAmbientParticles() {
   if (!bgCanvas) return;
   const ctx = bgCanvas.getContext('2d');
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let W = 0;
   let H = 0;
-  let dpr = 1;
   let particles = [];
+  let lastTime = 0;
 
   function onResize() {
-    dpr = Math.min(2, window.devicePixelRatio || 1);
     W = window.innerWidth;
     H = window.innerHeight;
-    bgCanvas.width = Math.round(W * dpr);
-    bgCanvas.height = Math.round(H * dpr);
+    bgCanvas.width = W;
+    bgCanvas.height = H;
     bgCanvas.style.width = `${W}px`;
     bgCanvas.style.height = `${H}px`;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    const target = W < 700 ? 14 : 24;
+    const target = W < 700 ? 6 : 10;
     while (particles.length < target) particles.push(new NodeParticle());
     if (particles.length > target) particles.length = target;
-    particles.forEach(p => {
-      if (p.x > W || p.y > H) p.spawn();
-    });
   }
 
   class NodeParticle {
@@ -2780,28 +2775,16 @@ if (surpriseBtn) {
     spawn() {
       this.x = Math.random() * W;
       this.y = Math.random() * H;
-      this.radius = Math.random() * 1.4 + 0.6;
-      this.vx = (Math.random() - 0.5) * 0.22;
-      this.vy = (Math.random() - 0.5) * 0.22;
-      this.alpha = Math.random() * 0.35 + 0.15;
+      this.radius = Math.random() * 1.2 + 0.6;
+      this.vx = (Math.random() - 0.5) * 0.15;
+      this.vy = (Math.random() - 0.5) * 0.15;
+      this.alpha = Math.random() * 0.25 + 0.1;
       this.color = Math.random() > 0.5 ? '#38bdf8' : '#a855f7';
     }
     update() {
       this.x += this.vx;
       this.y += this.vy;
-
-      if (pointer.active) {
-        const dx = pointer.x - this.x;
-        const dy = pointer.y - this.y;
-        const distSq = dx * dx + dy * dy;
-        if (distSq < 22500 && distSq > 1) { // 150px
-          const dist = Math.sqrt(distSq);
-          this.x += (dx / dist) * 0.2;
-          this.y += (dy / dist) * 0.2;
-        }
-      }
-
-      if (this.x < -20 || this.x > W + 20 || this.y < -20 || this.y > H + 20) this.spawn();
+      if (this.x < -10 || this.x > W + 10 || this.y < -10 || this.y > H + 10) this.spawn();
     }
     draw() {
       ctx.globalAlpha = this.alpha;
@@ -2812,39 +2795,17 @@ if (surpriseBtn) {
     }
   }
 
-  function connect() {
-    const MAX_DIST = 85;
-    const MAX_DIST_SQ = MAX_DIST * MAX_DIST;
-    for (let i = 0; i < particles.length; i++) {
-      const p1 = particles[i];
-      for (let j = i + 1; j < particles.length; j++) {
-        const p2 = particles[j];
-        const dx = p1.x - p2.x;
-        const dy = p1.y - p2.y;
-        const distSq = dx * dx + dy * dy;
-        if (distSq < MAX_DIST_SQ) {
-          const dist = Math.sqrt(distSq);
-          ctx.globalAlpha = (1 - dist / MAX_DIST) * 0.12;
-          ctx.strokeStyle = '#38bdf8';
-          ctx.lineWidth = 0.5;
-          ctx.beginPath();
-          ctx.moveTo(p1.x, p1.y);
-          ctx.lineTo(p2.x, p2.y);
-          ctx.stroke();
-        }
-      }
-    }
-    ctx.globalAlpha = 1;
-  }
-
   function render() {
     ctx.clearRect(0, 0, W, H);
-    particles.forEach(p => { p.update(); p.draw(); });
-    connect();
+    for (let i = 0; i < particles.length; i++) {
+      particles[i].update();
+      particles[i].draw();
+    }
   }
 
-  function animate() {
-    if (!document.hidden) {
+  function animate(time) {
+    if (!document.hidden && time - lastTime > 40) { // Throttled to ~25fps for 0% CPU consumption
+      lastTime = time;
       render();
     }
     requestAnimationFrame(animate);
@@ -2856,7 +2817,7 @@ if (surpriseBtn) {
   if (reduceMotion) {
     render();
   } else {
-    animate();
+    requestAnimationFrame(animate);
   }
 })();
 
@@ -3007,6 +2968,7 @@ if (shortcutsModal) {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     closeShortcuts();
+    if (typeof closeAuthModal === 'function') closeAuthModal();
     hideDropOverlay();
     return;
   }
@@ -3226,11 +3188,9 @@ document.addEventListener('pointerdown', (e) => {
       ctx.globalAlpha = layer.alpha;
       ctx.lineWidth = layer.width;
       ctx.strokeStyle = layer.color;
-      ctx.shadowColor = li === 0 ? '#38bdf8' : '#a855f7';
-      ctx.shadowBlur = li === 0 ? 14 : 8;
       ctx.beginPath();
 
-      for (let x = 0; x <= w; x += 1.4) {
+      for (let x = 0; x <= w; x += 4.5) {
         const nx = x / w;
         const env = Math.sin(Math.PI * nx);
         const near = Math.exp(-Math.pow(nx - mx, 2) * 15);
@@ -3260,7 +3220,10 @@ document.addEventListener('pointerdown', (e) => {
   }
 
   function loop() {
-    drawFrame();
+    const studioPanel = document.getElementById('view-studio');
+    if (!document.hidden && studioPanel && !studioPanel.hidden) {
+      drawFrame();
+    }
     requestAnimationFrame(loop);
   }
 
@@ -4135,26 +4098,51 @@ const btnLoginBusy       = document.getElementById('btn-login-busy');
 const devOnlyTabs        = document.querySelectorAll('.dev-tab');
 
 function openAuthModal() {
-  if (!authModal) return;
-  authModal.hidden = false;
-  if (authErrorMsg) authErrorMsg.hidden = true;
-  if (accountMenuPopover) accountMenuPopover.hidden = true;
-  if (authUsernameInput && !authUsernameInput.value) {
-    authUsernameInput.value = 'developer@soundsense.ai';
+  const modal = authModal || document.getElementById('auth-modal');
+  if (!modal) return;
+  modal.removeAttribute('hidden');
+  modal.hidden = false;
+  modal.style.display = 'grid';
+  document.body.style.overflow = 'hidden';
+
+  const errEl = authErrorMsg || document.getElementById('auth-error-msg');
+  if (errEl) {
+    errEl.setAttribute('hidden', '');
+    errEl.hidden = true;
+    errEl.style.display = 'none';
   }
-  if (authPasswordInput && !authPasswordInput.value) {
-    authPasswordInput.value = 'soundsense2024';
+
+  const popover = accountMenuPopover || document.getElementById('account-menu-popover');
+  if (popover) {
+    popover.setAttribute('hidden', '');
+    popover.hidden = true;
+    popover.style.display = 'none';
+  }
+
+  const userInput = authUsernameInput || document.getElementById('auth-username');
+  const passInput = authPasswordInput || document.getElementById('auth-password');
+  if (userInput && !userInput.value) {
+    userInput.value = 'developer@soundsense.ai';
+  }
+  if (passInput && !passInput.value) {
+    passInput.value = 'soundsense2024';
   }
   setTimeout(() => {
-    if (authUsernameInput) authUsernameInput.focus();
-  }, 100);
+    if (userInput) userInput.focus();
+  }, 60);
 }
+window.openAuthModal = openAuthModal;
 
 function closeAuthModal() {
-  if (!authModal) return;
-  authModal.hidden = true;
+  const modal = authModal || document.getElementById('auth-modal');
+  if (!modal) return;
+  modal.setAttribute('hidden', '');
+  modal.hidden = true;
+  modal.style.display = 'none';
+  document.body.style.overflow = '';
   pendingDevView = null;
 }
+window.closeAuthModal = closeAuthModal;
 
 if (authModalClose) {
   authModalClose.addEventListener('click', closeAuthModal);
@@ -4276,41 +4264,62 @@ function fitAccountMenuPopover() {
   }
 }
 
-// Account button click handler
+// Global handler for developer account button clicks (works via direct click or inline onclick fallback)
+window.handleAccountBtnClick = function(e) {
+  if (e) {
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+  }
+  if (isDeveloperAuthenticated) {
+    const popover = accountMenuPopover || document.getElementById('account-menu-popover');
+    if (popover) {
+      const isCurrentlyOpen = !popover.hasAttribute('hidden') && popover.style.display !== 'none' && !popover.hidden;
+      if (isCurrentlyOpen) {
+        popover.setAttribute('hidden', '');
+        popover.hidden = true;
+        popover.style.display = 'none';
+      } else {
+        popover.removeAttribute('hidden');
+        popover.hidden = false;
+        popover.style.display = 'block';
+        requestAnimationFrame(fitAccountMenuPopover);
+      }
+    }
+  } else {
+    openAuthModal();
+  }
+};
+
+// Account button click listener
 if (accountBtn) {
   accountBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (isDeveloperAuthenticated) {
-      if (accountMenuPopover) {
-        const willOpen = accountMenuPopover.hidden;
-        accountMenuPopover.hidden = !willOpen;
-        if (willOpen) {
-          requestAnimationFrame(fitAccountMenuPopover);
-        }
-      }
-    } else {
-      openAuthModal();
-    }
+    window.handleAccountBtnClick(e);
   });
 }
 
 // Re-adjust popover on window resize and scroll for zoom stability
 window.addEventListener('resize', () => {
-  if (accountMenuPopover && !accountMenuPopover.hidden) {
+  const popover = accountMenuPopover || document.getElementById('account-menu-popover');
+  if (popover && !popover.hidden && popover.style.display !== 'none') {
     fitAccountMenuPopover();
   }
 });
 window.addEventListener('scroll', () => {
-  if (accountMenuPopover && !accountMenuPopover.hidden) {
+  const popover = accountMenuPopover || document.getElementById('account-menu-popover');
+  if (popover && !popover.hidden && popover.style.display !== 'none') {
     fitAccountMenuPopover();
   }
 }, { passive: true });
 
 // Close account menu popover when clicking anywhere outside
 document.addEventListener('click', (e) => {
-  if (accountMenuPopover && !accountMenuPopover.hidden) {
-    if (!accountMenuPopover.contains(e.target) && !accountBtn.contains(e.target)) {
-      accountMenuPopover.hidden = true;
+  const popover = accountMenuPopover || document.getElementById('account-menu-popover');
+  const btn = accountBtn || document.getElementById('account-btn');
+  if (popover && !popover.hidden && popover.style.display !== 'none') {
+    if (!popover.contains(e.target) && (!btn || !btn.contains(e.target))) {
+      popover.setAttribute('hidden', '');
+      popover.hidden = true;
+      popover.style.display = 'none';
     }
   }
 });
@@ -4318,15 +4327,37 @@ document.addEventListener('click', (e) => {
 // Quick navigation links inside account popover
 if (menuGotoTraining) {
   menuGotoTraining.addEventListener('click', () => {
-    if (accountMenuPopover) accountMenuPopover.hidden = true;
+    if (accountMenuPopover) {
+      accountMenuPopover.setAttribute('hidden', '');
+      accountMenuPopover.hidden = true;
+      accountMenuPopover.style.display = 'none';
+    }
     switchView('training');
   });
 }
 
 if (menuGotoAnalytics) {
   menuGotoAnalytics.addEventListener('click', () => {
-    if (accountMenuPopover) accountMenuPopover.hidden = true;
+    if (accountMenuPopover) {
+      accountMenuPopover.setAttribute('hidden', '');
+      accountMenuPopover.hidden = true;
+      accountMenuPopover.style.display = 'none';
+    }
     switchView('analytics');
+  });
+}
+
+// Switch / Re-authenticate option in developer popover
+const menuSwitchAccount = document.getElementById('menu-switch-account');
+if (menuSwitchAccount) {
+  menuSwitchAccount.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (accountMenuPopover) {
+      accountMenuPopover.setAttribute('hidden', '');
+      accountMenuPopover.hidden = true;
+      accountMenuPopover.style.display = 'none';
+    }
+    openAuthModal();
   });
 }
 

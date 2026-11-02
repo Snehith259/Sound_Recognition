@@ -2052,11 +2052,10 @@ body {
 .aurora {
   position: absolute;
   border-radius: 50%;
-  filter: blur(90px);
-  opacity: 0.4;
+  filter: blur(80px);
+  opacity: 0.35;
   mix-blend-mode: screen;
-  animation: auroraDrift 24s ease-in-out infinite alternate;
-  will-change: transform;
+  pointer-events: none;
 }
 
 .aurora-1 {
@@ -2064,7 +2063,7 @@ body {
   height: 640px;
   top: -260px;
   left: -160px;
-  background: radial-gradient(circle at 35% 35%, rgba(56, 189, 248, 0.6), transparent 66%);
+  background: radial-gradient(circle at 35% 35%, rgba(56, 189, 248, 0.55), transparent 66%);
 }
 
 .aurora-2 {
@@ -2072,9 +2071,7 @@ body {
   height: 560px;
   top: -180px;
   right: -140px;
-  background: radial-gradient(circle at 60% 40%, rgba(168, 85, 247, 0.55), transparent 68%);
-  animation-delay: -7s;
-  animation-duration: 28s;
+  background: radial-gradient(circle at 60% 40%, rgba(168, 85, 247, 0.5), transparent 68%);
 }
 
 .aurora-3 {
@@ -2082,31 +2079,16 @@ body {
   height: 520px;
   bottom: -260px;
   left: 32%;
-  background: radial-gradient(circle at 50% 50%, rgba(45, 212, 191, 0.34), transparent 68%);
-  animation-delay: -13s;
-  animation-duration: 32s;
-}
-
-@keyframes auroraDrift {
-  0% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(40px, 30px, 0) scale(1.08); }
-  100% { transform: translate3d(-30px, 50px, 0) scale(0.96); }
+  background: radial-gradient(circle at 50% 50%, rgba(45, 212, 191, 0.3), transparent 68%);
 }
 
 .grain {
   position: absolute;
-  inset: -50%;
-  opacity: 0.05;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
-  animation: grainShift 8s steps(6) infinite;
-}
-
-@keyframes grainShift {
-  0%, 100% { transform: translate(0, 0); }
-  20% { transform: translate(-2%, 1%); }
-  40% { transform: translate(1%, -2%); }
-  60% { transform: translate(-1%, 2%); }
-  80% { transform: translate(2%, -1%); }
+  inset: 0;
+  opacity: 0.035;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px);
+  background-size: 24px 24px;
+  pointer-events: none;
 }
 
 /* Refined chrome */
@@ -4130,6 +4112,33 @@ body.dev-authenticated .dev-feature {
 .account-signout-btn:hover {
   background: rgba(251, 113, 133, 0.2);
   border-color: var(--rose);
+}
+
+/* Ensure Developer Auth Modal always displays above everything with zero ambiguity */
+#auth-modal {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+}
+
+#auth-modal:not([hidden]) {
+  display: grid !important;
+}
+
+#auth-modal[hidden] {
+  display: none !important;
+}
+
+#account-menu-popover {
+  z-index: 9990 !important;
+}
+
+#account-menu-popover:not([hidden]) {
+  display: block !important;
+}
+
+#account-menu-popover[hidden] {
+  display: none !important;
 }
 
 /* ════════════ DEVELOPER AUTH MODAL ════════════ */
