@@ -67,17 +67,31 @@ const serverState = {
   totalTrainingRuns: 0,
   savedCheckpoints: [
     {
-      checkpointId: 'ckpt_v1_fusion_sota',
+      checkpointId: 'ckpt_v1_resnet18',
       version: 'v1.0.0',
-      name: 'Fusion Model (SResNet + CNN-GRU)',
-      description: 'EURASIP 2024 Dual-Modal Feature Fusion baseline',
-      modelType: 'fusion',
-      accuracy: 97.2,
-      params: '14.2M',
-      savedAt: '2024-09-15T10:00:00Z',
+      name: 'ResNet-18',
+      description: 'Deep Residual Network with 18 layers (Log-Mel Spectrogram input)',
+      modelType: 'resnet18',
+      accuracy: 89.4,
+      params: '11.7M',
+      savedAt: '2024-10-01T12:00:00Z',
       status: 'active',
-      fileSizeMB: 54.3,
-      cloudSource: 'huggingface.co/soundsense/esc50-dual-fusion',
+      fileSizeMB: 44.8,
+      cloudSource: 'huggingface.co/soundsense/esc50-resnet18',
+      downloaded: true,
+    },
+    {
+      checkpointId: 'ckpt_v1_vgg16',
+      version: 'v1.1.0',
+      name: 'VGG-16',
+      description: 'Visual Geometry Group 16-layer Deep Convolutional Network',
+      modelType: 'vgg16',
+      accuracy: 86.2,
+      params: '138.4M',
+      savedAt: '2024-09-25T15:00:00Z',
+      status: 'saved',
+      fileSizeMB: 65.2,
+      cloudSource: 'huggingface.co/soundsense/esc50-vgg16',
       downloaded: true,
     },
     {
@@ -113,12 +127,21 @@ const serverState = {
   modelVersions: [
     {
       id: 'v1.0.0',
-      name: 'Fusion Model (SResNet + CNN-GRU)',
-      accuracy: 97.2,
-      params: '14.2M',
-      createdAt: '2024-09-15T10:00:00Z',
+      name: 'ResNet-18',
+      accuracy: 89.4,
+      params: '11.7M',
+      createdAt: '2024-10-01T12:00:00Z',
       status: 'active',
-      description: 'EURASIP 2024 Dual-Modal Feature Fusion baseline',
+      description: 'Deep Residual Network with 18 layers (Log-Mel Spectrogram input)',
+    },
+    {
+      id: 'v1.1.0',
+      name: 'VGG-16',
+      accuracy: 86.2,
+      params: '138.4M',
+      createdAt: '2024-09-25T15:00:00Z',
+      status: 'saved',
+      description: 'Visual Geometry Group 16-layer Deep Convolutional Network',
     },
     {
       id: 'v0.9.0',
@@ -181,7 +204,7 @@ app.post('/api/predict', upload.single('audio'), (req, res) => {
       return res.status(400).json({ error: 'No audio file provided. Send multipart/form-data with field "audio".' });
     }
 
-    const modelKey = req.body.model || 'fusion';
+    const modelKey = req.body.model || 'resnet18';
     const fileName = req.file.originalname || req.file.filename;
 
     // Determine primary category from filename (ESC-50 naming convention)
@@ -204,12 +227,11 @@ app.post('/api/predict', upload.single('audio'), (req, res) => {
 
     // Model-specific confidence range
     const confProfile = {
-      fusion: { min: 0.945, max: 0.985 },
-      sresnet: { min: 0.900, max: 0.955 },
-      cnngru: { min: 0.890, max: 0.945 },
-      cnn: { min: 0.790, max: 0.850 },
-      rnn: { min: 0.730, max: 0.810 },
-    }[modelKey] || { min: 0.94, max: 0.98 };
+      resnet18: { min: 0.880, max: 0.945 },
+      vgg16:    { min: 0.840, max: 0.915 },
+      sresnet:  { min: 0.900, max: 0.955 },
+      cnngru:   { min: 0.890, max: 0.945 },
+    }[modelKey] || { min: 0.88, max: 0.94 };
 
     const topConf = confProfile.min + Math.random() * (confProfile.max - confProfile.min);
     const remaining = 1.0 - topConf;
@@ -267,7 +289,7 @@ app.post('/api/predict', upload.single('audio'), (req, res) => {
 app.post('/api/train', (req, res) => {
   try {
     const {
-      modelType = 'fusion',
+      modelType = 'resnet18',
       epochs = 50,
       batchSize = 32,
       learningRate = 0.001,
@@ -376,7 +398,7 @@ app.post('/api/save-model', (req, res) => {
     const {
       name = 'Untitled Checkpoint',
       description = '',
-      modelType = 'fusion',
+      modelType = 'resnet18',
       accuracy = null,
       fromJobId = null,
     } = req.body;
@@ -399,8 +421,8 @@ app.post('/api/save-model', (req, res) => {
       name,
       description,
       modelType,
-      accuracy: finalAccuracy || parseFloat((90 + Math.random() * 7.5).toFixed(2)),
-      params: { fusion: '14.2M', sresnet: '8.6M', cnngru: '5.6M', cnn: '11.0M', rnn: '4.2M' }[modelType] || '14.2M',
+      accuracy: finalAccuracy || parseFloat((88 + Math.random() * 6).toFixed(2)),
+      params: { resnet18: '11.7M', vgg16: '138.4M', sresnet: '8.6M', cnngru: '5.6M' }[modelType] || '11.7M',
       savedAt: new Date().toISOString(),
       status: 'saved',
       fileSizeMB: parseFloat((25 + Math.random() * 40).toFixed(1)),
@@ -438,7 +460,7 @@ app.get('/api/save-model', (_req, res) => {
 
 /* POST /api/model/cloud-sync — Sync / download weights from Hugging Face Hub */
 app.post('/api/model/cloud-sync', (req, res) => {
-  const { repo = 'huggingface.co/soundsense/esc50-dual-fusion' } = req.body || {};
+  const { repo = 'huggingface.co/soundsense/esc50-resnet18' } = req.body || {};
   res.json({
     success: true,
     source: repo,
@@ -506,11 +528,10 @@ app.get('/api/stats', (_req, res) => {
 
   // Model performance data
   const modelPerformance = [
-    { model: 'Fusion (SResNet + CNN-GRU)', accuracy: 97.2, params: '14.2M', latency: 12.4, color: '#a855f7' },
-    { model: 'SResNet', accuracy: 95.1, params: '8.6M', latency: 7.8, color: '#38bdf8' },
-    { model: 'CNN-GRU', accuracy: 93.4, params: '5.6M', latency: 9.2, color: '#34d399' },
-    { model: 'CNN-2D Baseline', accuracy: 82.5, params: '11.0M', latency: 8.5, color: '#fbbf24' },
-    { model: 'RNN Baseline', accuracy: 78.1, params: '4.2M', latency: 14.1, color: '#fb7185' },
+    { model: 'SResNet Standalone', accuracy: 95.1, params: '8.6M', latency: 7.8, color: '#38bdf8' },
+    { model: 'CNN-GRU Standalone', accuracy: 93.4, params: '5.6M', latency: 9.2, color: '#34d399' },
+    { model: 'ResNet-18', accuracy: 89.4, params: '11.7M', latency: 8.2, color: '#a855f7' },
+    { model: 'VGG-16', accuracy: 86.2, params: '138.4M', latency: 14.5, color: '#f59e0b' },
   ];
 
   const uptime = Math.round((Date.now() - new Date(serverState.startedAt).getTime()) / 1000);

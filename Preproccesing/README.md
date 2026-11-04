@@ -33,6 +33,8 @@ Preproccesing/
 ├── dataset_splits.py                  # ESC-50 5-fold cross-validation split generator
 ├── dataset_loader.py                  # High-throughput PyTorch Dataset & DataLoader
 ├── batch_preprocessor.py              # Multi-threaded batch processor runner
+├── models.py                          # PyTorch models: ResNet-18, VGG-16, SResNet, CNN-GRU
+├── download_checkpoints.py            # Checkpoint retriever & cache manager
 └── verify_and_report.py               # Feature integrity verification and plotting script
 ```
 
@@ -93,18 +95,23 @@ python Preproccesing/batch_preprocessor.py --workers 8
 python Preproccesing/verify_and_report.py
 ```
 
-### PyTorch Model Training Integration
+### PyTorch Model Training & Inference Integration
 ```python
-from Preproccesing.dataset_loader import get_dataloaders
+from Preproccesing import get_dataloaders, ResNet18_ESC50, VGG16_ESC50
 
-# Load fold 1 dataloaders
+# 1. Initialize models
+resnet18 = ResNet18_ESC50(in_channels=1, num_classes=50)
+vgg16 = VGG16_ESC50(in_channels=1, num_classes=50)
+
+# 2. Load fold 1 dataloaders
 loaders = get_dataloaders(fold=1, batch_size=32)
 train_loader = loaders["train"]
 
 for batch in train_loader:
     log_mel = batch["log_mel"]            # torch.Size([32, 1, 128, 216])
-    mfcc = batch["mfcc"]                  # torch.Size([32, 40, 216])
-    rp = batch["recurrence_plot"]         # torch.Size([32, 1, 128, 128])
     labels = batch["target"]              # torch.Size([32])
+    
+    # Forward pass
+    outputs = resnet18(log_mel)           # torch.Size([32, 50])
     break
 ```

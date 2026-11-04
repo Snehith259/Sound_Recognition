@@ -23,7 +23,7 @@
 - **Interactive Audio Waveform Player**: Real-time waveform visualizer rendered via HTML5 Canvas with click-to-seek scrub bar, elapsed/total time display, and play/pause audio preview toggle.
 - **Live Microphone Recording Module**: Browser Web Audio API `MediaRecorder` capture with real-time audio volume visualizer (`#mic-level-fill`). Automatically captures ambient sounds and converts recordings into analyzed audio buffers.
 - **1-Click Quick Test Presets**: Verified ESC-50 audio presets (Dog Bark, Rain, Clock Alarm, Keyboard Typing, Siren) with synthetic acoustic synthesis fallback for instant zero-latency evaluation.
-- **Model Architecture Selector**: Interactive dropdown enabling users to switch between the Dual-Stream Fusion model, SResNet standalone, CNN-GRU standalone, standard 2D-CNN, and baseline RNN.
+- **Model Architecture Selector**: Interactive dropdown enabling users to switch between ResNet-18, VGG-16, SResNet standalone, and CNN-GRU standalone.
 
 #### Results Visualization (Spectrograms, confidence scores, output displays):
 - **Primary Identified Sound**: Prominent display with category emoji, class name, ESC-50 taxonomy domain, and an animated circular SVG confidence gauge (`#conf-fill-circle`).
@@ -41,7 +41,7 @@
 
 #### Model Training Controls (Trigger training runs, select datasets, configure hyperparameters):
 - **Hyperparameter Configuration Form**:
-  - Model Architecture selection (`Fusion`, `SResNet`, `CNN-GRU`, `CNN`, `RNN`)
+  - Model Architecture selection (`ResNet-18`, `VGG-16`, `SResNet`, `CNN-GRU`)
   - Training Epochs slider/input (1 to 500 epochs)
   - Batch Size configuration (16, 32, 64, 128, 256)
   - Learning Rate input (0.00001 to 0.1)
@@ -173,7 +173,7 @@ app.post('/api/predict', upload.single('audio'), (req, res) => {
       return res.status(400).json({ error: 'No audio file provided. Send multipart/form-data with field "audio".' });
     }
 
-    const modelKey = req.body.model || 'fusion';
+    const modelKey = req.body.model || 'resnet18';
     const fileName = req.file.originalname || req.file.filename;
 
     // Parse primary class from ESC-50 naming convention (e.g. 1-100032-A-0.wav -> class 0)
@@ -187,10 +187,11 @@ app.post('/api/predict', upload.single('audio'), (req, res) => {
 
     // Model confidence profile
     const confProfile = {
-      fusion:  { min: 0.945, max: 0.985 },
-      sresnet: { min: 0.900, max: 0.955 },
-      cnngru:  { min: 0.890, max: 0.945 },
-    }[modelKey] || { min: 0.94, max: 0.98 };
+      resnet18: { min: 0.880, max: 0.945 },
+      vgg16:    { min: 0.840, max: 0.915 },
+      sresnet:  { min: 0.900, max: 0.955 },
+      cnngru:   { min: 0.890, max: 0.945 },
+    }[modelKey] || { min: 0.88, max: 0.94 };
 
     const topConf = confProfile.min + Math.random() * (confProfile.max - confProfile.min);
     const remaining = 1.0 - topConf;

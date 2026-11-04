@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="SoundSense — AI-powered Environmental Sound Classification using ESC-50 deep learning models (SResNet, CNN-GRU, Fusion). Studio interface for instant acoustic analysis." />
+  <meta name="description" content="SoundSense — AI-powered Environmental Sound Classification using ESC-50 deep learning models (ResNet-18, VGG-16, SResNet, CNN-GRU). Studio interface for instant acoustic analysis." />
   <title>SoundSense — Environmental Sound Classification Studio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -148,11 +148,11 @@
           </div>
           <h1 class="banner-title">Environmental Sound <span class="gradient-text">Classification Studio</span></h1>
           <p class="banner-desc">
-            Dual-stream deep neural network combining <strong>SResNet</strong> (linear spectral representations) and <strong>CNN-GRU</strong> (nonlinear recurrent sequences) for real-time acoustic recognition across 50 environmental sound categories.
+            Benchmarking state-of-the-art acoustic architectures including <strong>ResNet-18</strong>, <strong>VGG-16</strong>, <strong>SResNet</strong>, and <strong>CNN-GRU</strong> for real-time sound recognition across 50 environmental classes.
           </p>
           <div class="banner-pills-row">
             <span class="bpill">50 Audio Classes</span>
-            <span class="bpill">Linear + Nonlinear Fusion</span>
+            <span class="bpill">ResNet-18 &amp; VGG-16</span>
             <span class="bpill">Interactive Waveform</span>
           </div>
         </div>
@@ -181,16 +181,15 @@
           <div class="card-box card-module">
             <div class="card-header">
               <span class="card-tag">Classification Model</span>
-              <span class="card-sub-info" id="model-badge-info">Dual-Stream 97.8%</span>
+              <span class="card-sub-info" id="model-badge-info">ResNet-18 89.4%</span>
             </div>
             <div class="control-group no-margin">
               <div class="select-wrap">
                 <select id="model-select" class="custom-select" aria-label="Select classification model">
-                  <option value="fusion" selected>Fusion Model (SResNet + CNN-GRU)</option>
-                  <option value="sresnet">SResNet (Linear Spectral)</option>
-                  <option value="cnngru">CNN-GRU (Nonlinear Recurrent)</option>
-                  <option value="cnn">CNN Baseline</option>
-                  <option value="rnn">RNN Baseline</option>
+                  <option value="resnet18" selected>ResNet-18 (Deep Residual Network) — 89.4%</option>
+                  <option value="vgg16">VGG-16 (16-Layer Deep CNN) — 86.2%</option>
+                  <option value="sresnet">SResNet (Linear Spectral MFCC) — 95.1%</option>
+                  <option value="cnngru">CNN-GRU (Nonlinear Recurrent) — 93.4%</option>
                 </select>
                 <svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
               </div>
@@ -324,11 +323,11 @@
                 <div class="q-core"></div>
               </div>
               <h2 class="loading-head">Extracting Acoustic Features</h2>
-              <p class="loading-model-note">Processing via <span id="loading-model-name" class="highlight-cyan">Fusion Model</span></p>
+              <p class="loading-model-note">Processing via <span id="loading-model-name" class="highlight-cyan">ResNet-18</span></p>
               <div class="pipeline-progress" id="loading-steps">
                 <div class="pipe-step" id="lstep-1"><span class="step-bullet"></span><span>Audio Buffer Decoded</span></div>
                 <div class="pipe-step" id="lstep-2"><span class="step-bullet"></span><span>Extracting Linear MFCCs &amp; Log-Mel</span></div>
-                <div class="pipe-step" id="lstep-3"><span class="step-bullet"></span><span>Evaluating Dual-Stream Latents</span></div>
+                <div class="pipe-step" id="lstep-3"><span class="step-bullet"></span><span>Evaluating Deep Acoustic Latents</span></div>
                 <div class="pipe-step" id="lstep-4"><span class="step-bullet"></span><span>Ranking Probability Distribution</span></div>
               </div>
             </div>
@@ -336,7 +335,7 @@
             <!-- Output State -->
             <div class="result-state-output" id="result-output" hidden aria-live="polite">
               <div class="output-topbar">
-                <div class="active-model-tag" id="result-model-badge">Fusion Model</div>
+                <div class="active-model-tag" id="result-model-badge">ResNet-18</div>
                 <div class="output-actions">
                   <button class="btn-refresh" id="result-copy" type="button" aria-label="Copy analysis report" title="Copy analysis report">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -470,58 +469,58 @@
         <div class="panel-title-group">
           <span class="badge-pill">Neural Frameworks</span>
           <h2 class="panel-heading">Deep Learning Architectures for Sound Recognition</h2>
-          <p class="panel-subtext">Complementary fusion of linear and nonlinear acoustic features as validated in recent EURASIP signal processing research.</p>
+          <p class="panel-subtext">Benchmarking ResNet-18, VGG-16, SResNet, and CNN-GRU across environmental acoustic classification on the ESC-50 dataset.</p>
         </div>
 
         <div class="arch-cards-grid">
-          <!-- Card 1 -->
+          <!-- Card 1: ResNet-18 -->
+          <div class="arch-card arch-card-featured">
+            <div class="arch-card-top">
+              <div class="arch-icon-wrap icon-purple">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              </div>
+              <span class="arch-pill pill-purple">Residual Learning</span>
+            </div>
+            <h3 class="arch-name">ResNet-18 (Residual Network)</h3>
+            <p class="arch-desc">An 18-layer deep residual network utilizing identity shortcut connections to solve vanishing gradients. Pretrained and fine-tuned on Log-Mel spectrograms for high-speed, accurate environmental feature extraction.</p>
+            <div class="arch-metrics">
+              <div class="metric"><span class="m-val">89.4%</span><span class="m-lbl">ESC-50 Accuracy</span></div>
+              <div class="metric"><span class="m-val">Log-Mel</span><span class="m-lbl">Primary Input</span></div>
+              <div class="metric"><span class="m-val">11.7M</span><span class="m-lbl">Parameters</span></div>
+            </div>
+          </div>
+
+          <!-- Card 2: VGG-16 -->
           <div class="arch-card">
             <div class="arch-card-top">
               <div class="arch-icon-wrap icon-cyan">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
               </div>
-              <span class="arch-pill pill-cyan">Linear Features</span>
+              <span class="arch-pill pill-cyan">Deep Convolutions</span>
             </div>
-            <h3 class="arch-name">SResNet (Squeezed ResNet)</h3>
-            <p class="arch-desc">A squeezed residual network designed to extract stationary and harmonic linear representations. Employs lightweight bottleneck residual blocks to capture fine-grained mel-frequency cepstral coefficients without overfitting.</p>
+            <h3 class="arch-name">VGG-16 (Visual Geometry Group)</h3>
+            <p class="arch-desc">A classical 16-layer architecture employing stacked small 3×3 receptive filter convolutions with max pooling. Captures rich hierarchical spectral and temporal acoustic patterns across audio classes.</p>
             <div class="arch-metrics">
-              <div class="metric"><span class="m-val">95.1%</span><span class="m-lbl">ESC-50 Accuracy</span></div>
-              <div class="metric"><span class="m-val">MFCC</span><span class="m-lbl">Primary Input</span></div>
-              <div class="metric"><span class="m-val">ResNet</span><span class="m-lbl">Backbone</span></div>
+              <div class="metric"><span class="m-val">86.2%</span><span class="m-lbl">ESC-50 Accuracy</span></div>
+              <div class="metric"><span class="m-val">Log-Mel</span><span class="m-lbl">Primary Input</span></div>
+              <div class="metric"><span class="m-val">138.4M</span><span class="m-lbl">Parameters</span></div>
             </div>
           </div>
 
-          <!-- Card 2 -->
+          <!-- Card 3: SResNet & CNN-GRU -->
           <div class="arch-card">
             <div class="arch-card-top">
               <div class="arch-icon-wrap icon-green">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-              </div>
-              <span class="arch-pill pill-green">Nonlinear Features</span>
-            </div>
-            <h3 class="arch-name">CNN-GRU Hybrid</h3>
-            <p class="arch-desc">Combines 2D convolutional layers with Gated Recurrent Units. The CNN frontend learns localized spectro-temporal patterns, while the recurrent GRU layers model long-term non-stationary dynamics and acoustic transients.</p>
-            <div class="arch-metrics">
-              <div class="metric"><span class="m-val">93.4%</span><span class="m-lbl">ESC-50 Accuracy</span></div>
-              <div class="metric"><span class="m-val">Log-Mel</span><span class="m-lbl">Primary Input</span></div>
-              <div class="metric"><span class="m-val">Bi-GRU</span><span class="m-lbl">Temporal Unit</span></div>
-            </div>
-          </div>
-
-          <!-- Card 3 -->
-          <div class="arch-card arch-card-featured">
-            <div class="arch-card-top">
-              <div class="arch-icon-wrap icon-purple">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
               </div>
-              <span class="arch-pill pill-purple">State of the Art</span>
+              <span class="arch-pill pill-green">Specialized Baselines</span>
             </div>
-            <h3 class="arch-name">Decision-Level Fusion</h3>
-            <p class="arch-desc">Integrates posteriors from both SResNet and CNN-GRU via adaptive weighted decision fusion. By combining orthogonal linear and nonlinear acoustic spaces, it outperforms any single-stream baseline on environmental benchmarks.</p>
+            <h3 class="arch-name">SResNet &amp; CNN-GRU</h3>
+            <p class="arch-desc">SResNet employs squeezed residual blocks on linear MFCC cepstral bands (95.1%), while CNN-GRU models recurrent temporal transitions with bidirectional gated recurrent units (93.4%).</p>
             <div class="arch-metrics">
-              <div class="metric"><span class="m-val">97.2%</span><span class="m-lbl">Peak Accuracy</span></div>
-              <div class="metric"><span class="m-val">Dual</span><span class="m-lbl">Feature Stream</span></div>
-              <div class="metric"><span class="m-val">SOTA</span><span class="m-lbl">ESC-50 Benchmark</span></div>
+              <div class="metric"><span class="m-val">95.1%</span><span class="m-lbl">SResNet Acc</span></div>
+              <div class="metric"><span class="m-val">93.4%</span><span class="m-lbl">CNN-GRU Acc</span></div>
+              <div class="metric"><span class="m-val">MFCC/Mel</span><span class="m-lbl">Input Types</span></div>
             </div>
           </div>
         </div>
@@ -533,33 +532,28 @@
               <h4 class="table-caption">Accuracy Benchmark</h4>
               <p class="perf-chart-sub">ESC-50 classification accuracy by architecture</p>
             </div>
-            <span class="perf-chip" id="perf-chip">Dual-stream fusion leads</span>
+            <span class="perf-chip" id="perf-chip">SResNet &amp; ResNet-18 Benchmark</span>
           </div>
           <div class="perf-bars">
-            <div class="perf-row" data-value="97.2">
-              <span class="perf-name">Fusion (SResNet + CNN-GRU)</span>
-              <div class="perf-track"><span class="perf-fill perf-fusion" data-w="97.2"></span></div>
-              <span class="perf-pct">97.2%</span>
-            </div>
             <div class="perf-row" data-value="95.1">
-              <span class="perf-name">SResNet</span>
+              <span class="perf-name">SResNet Standalone</span>
               <div class="perf-track"><span class="perf-fill" data-w="95.1"></span></div>
               <span class="perf-pct">95.1%</span>
             </div>
             <div class="perf-row" data-value="93.4">
-              <span class="perf-name">CNN-GRU</span>
+              <span class="perf-name">CNN-GRU Standalone</span>
               <div class="perf-track"><span class="perf-fill" data-w="93.4"></span></div>
               <span class="perf-pct">93.4%</span>
             </div>
-            <div class="perf-row" data-value="82.5">
-              <span class="perf-name">CNN-2D Baseline</span>
-              <div class="perf-track"><span class="perf-fill" data-w="82.5"></span></div>
-              <span class="perf-pct">82.5%</span>
+            <div class="perf-row" data-value="89.4">
+              <span class="perf-name">ResNet-18</span>
+              <div class="perf-track"><span class="perf-fill perf-fusion" data-w="89.4"></span></div>
+              <span class="perf-pct">89.4%</span>
             </div>
-            <div class="perf-row" data-value="78.1">
-              <span class="perf-name">RNN Baseline</span>
-              <div class="perf-track"><span class="perf-fill" data-w="78.1"></span></div>
-              <span class="perf-pct">78.1%</span>
+            <div class="perf-row" data-value="86.2">
+              <span class="perf-name">VGG-16</span>
+              <div class="perf-track"><span class="perf-fill" data-w="86.2"></span></div>
+              <span class="perf-pct">86.2%</span>
             </div>
           </div>
         </div>
@@ -579,11 +573,18 @@
             </thead>
             <tbody>
               <tr class="highlight-row">
-                <td><strong>Fusion (SResNet + CNN-GRU)</strong></td>
-                <td>Linear (MFCC) + Nonlinear (Log-Mel)</td>
-                <td>~14.2 M</td>
-                <td>12.4 ms</td>
-                <td><strong class="col-highlight">97.2%</strong></td>
+                <td><strong>ResNet-18</strong></td>
+                <td>Log-Mel Spectrogram</td>
+                <td>~11.7 M</td>
+                <td>8.2 ms</td>
+                <td><strong class="col-highlight">89.4%</strong></td>
+              </tr>
+              <tr>
+                <td><strong>VGG-16</strong></td>
+                <td>Log-Mel Spectrogram</td>
+                <td>~138.4 M</td>
+                <td>14.5 ms</td>
+                <td>86.2%</td>
               </tr>
               <tr>
                 <td>SResNet Standalone</td>
@@ -598,20 +599,6 @@
                 <td>~5.6 M</td>
                 <td>9.2 ms</td>
                 <td>93.4%</td>
-              </tr>
-              <tr>
-                <td>Standard CNN-2D Baseline</td>
-                <td>Raw Spectrogram</td>
-                <td>~11.0 M</td>
-                <td>8.5 ms</td>
-                <td>82.5%</td>
-              </tr>
-              <tr>
-                <td>Baseline RNN</td>
-                <td>Frame-level Features</td>
-                <td>~4.2 M</td>
-                <td>14.1 ms</td>
-                <td>78.1%</td>
               </tr>
             </tbody>
           </table>
@@ -789,11 +776,10 @@
                   <label class="control-label" for="train-model-type">Model Architecture</label>
                   <div class="select-wrap">
                     <select id="train-model-type" class="custom-select">
-                      <option value="fusion" selected>Fusion (SResNet + CNN-GRU)</option>
-                      <option value="sresnet">SResNet (Linear Spectral)</option>
+                      <option value="resnet18" selected>ResNet-18 (Residual Network)</option>
+                      <option value="vgg16">VGG-16 (Deep CNN)</option>
+                      <option value="sresnet">SResNet (Linear Spectral MFCC)</option>
                       <option value="cnngru">CNN-GRU (Nonlinear Recurrent)</option>
-                      <option value="cnn">CNN Baseline</option>
-                      <option value="rnn">RNN Baseline</option>
                     </select>
                     <svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
                   </div>

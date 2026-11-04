@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════
    SoundSense · app.js
    Acoustic Intelligence Studio Client Logic
-   ESC-50 Deep Learning Model Simulation (SResNet + CNN-GRU)
+   ESC-50 Deep Learning Model Suite (ResNet-18, VGG-16, SResNet, CNN-GRU)
 ═══════════════════════════════════════════════════════ */
 
 'use strict';
@@ -125,11 +125,10 @@ const CANONICAL_ESC50_FILES = {
 
 
 const MODEL_INFO = {
-  fusion:  { name: 'Fusion Model (SResNet + CNN-GRU)', short: 'Fusion Model', latency: 12.4, params: '14.2 M' },
-  sresnet: { name: 'SResNet',                          short: 'SResNet',      latency: 7.8,  params: '8.6 M' },
-  cnngru:  { name: 'CNN-GRU',                          short: 'CNN-GRU',      latency: 9.2,  params: '5.6 M' },
-  cnn:     { name: 'CNN Baseline',                     short: 'CNN Baseline', latency: 8.5,  params: '11.0 M' },
-  rnn:     { name: 'RNN Baseline',                     short: 'RNN Baseline', latency: 14.1, params: '4.2 M' },
+  resnet18: { name: 'ResNet-18',          short: 'ResNet-18', latency: 8.2,  params: '11.7 M' },
+  vgg16:    { name: 'VGG-16',             short: 'VGG-16',    latency: 14.5, params: '138.4 M' },
+  sresnet:  { name: 'SResNet Standalone', short: 'SResNet',   latency: 7.8,  params: '8.6 M' },
+  cnngru:   { name: 'CNN-GRU Standalone', short: 'CNN-GRU',   latency: 9.2,  params: '5.6 M' },
 };
 
 
@@ -210,7 +209,7 @@ let timerInterval = null;
 let audioContext = null;
 let isClassifying = false;
 let currentResult = null;
-let currentModelKey = 'fusion';
+let currentModelKey = 'resnet18';
 let decodePromise = Promise.resolve();
 let classificationToken = 0;
 
@@ -1680,7 +1679,7 @@ async function executeClassification() {
   isClassifying = true;
   const token = ++classificationToken;
   const modelKey = modelSelect.value;
-  const modelSpec = MODEL_INFO[modelKey] || MODEL_INFO.fusion;
+  const modelSpec = MODEL_INFO[modelKey] || MODEL_INFO.resnet18;
   currentModelKey = modelKey;
 
   // Set loading state
@@ -1953,12 +1952,11 @@ function generateModelPredictions(modelKey, audioFile = currentAudioFile) {
 
   // Model-specific confidence profiling
   const confProfile = {
-    fusion:  { min: 0.945, max: 0.985 },
-    sresnet: { min: 0.900, max: 0.955 },
-    cnngru:  { min: 0.890, max: 0.945 },
-    cnn:     { min: 0.790, max: 0.850 },
-    rnn:     { min: 0.730, max: 0.810 },
-  }[modelKey] || { min: 0.94, max: 0.98 };
+    resnet18: { min: 0.880, max: 0.945 },
+    vgg16:    { min: 0.840, max: 0.915 },
+    sresnet:  { min: 0.900, max: 0.955 },
+    cnngru:   { min: 0.890, max: 0.945 },
+  }[modelKey] || { min: 0.88, max: 0.94 };
 
   const topConfidence = confProfile.min + Math.random() * (confProfile.max - confProfile.min);
 
@@ -1994,7 +1992,7 @@ function displayClassificationResults(predictions, modelKey) {
   resultOutput.hidden = false;
 
   const winner = predictions[0];
-  const modelSpec = MODEL_INFO[modelKey] || MODEL_INFO.fusion;
+  const modelSpec = MODEL_INFO[modelKey] || MODEL_INFO.resnet18;
   currentResult = {
     predictions,
     modelKey,
@@ -3439,16 +3437,28 @@ async function refreshCheckpoints() {
   if (checkpoints.length === 0) {
     checkpoints = [
       {
-        checkpointId: 'ckpt_v1_fusion_sota',
+        checkpointId: 'ckpt_v1_resnet18',
         version: 'v1.0.0',
-        name: 'Fusion Model (SResNet + CNN-GRU)',
-        description: 'EURASIP 2024 Dual-Modal Feature Fusion baseline',
-        modelType: 'fusion',
-        accuracy: 97.2,
-        params: '14.2M',
-        savedAt: '2024-09-15T10:00:00Z',
+        name: 'ResNet-18',
+        description: 'Deep Residual Network with 18 layers (Log-Mel Spectrogram input)',
+        modelType: 'resnet18',
+        accuracy: 89.4,
+        params: '11.7M',
+        savedAt: '2024-10-01T12:00:00Z',
         status: 'active',
-        fileSizeMB: 54.3,
+        fileSizeMB: 44.8,
+      },
+      {
+        checkpointId: 'ckpt_v1_vgg16',
+        version: 'v1.1.0',
+        name: 'VGG-16',
+        description: 'Visual Geometry Group 16-layer Deep Convolutional Network',
+        modelType: 'vgg16',
+        accuracy: 86.2,
+        params: '138.4M',
+        savedAt: '2024-09-25T15:00:00Z',
+        status: 'saved',
+        fileSizeMB: 65.2,
       },
       {
         checkpointId: 'ckpt_v09_sresnet',
@@ -3501,10 +3511,10 @@ function renderCheckpoints(checkpoints) {
         <span class="ckpt-meta-item">Acc: <strong>${ckpt.accuracy ? ckpt.accuracy + '%' : '96.5%'}</strong></span>
         <span class="ckpt-meta-item">Params: <strong>${escapeHtml(ckpt.params || '14.2M')}</strong></span>
         <span class="ckpt-meta-item">Size: <strong>${ckpt.fileSizeMB ? ckpt.fileSizeMB + ' MB' : '45.0 MB'}</strong></span>
-        <span class="ckpt-meta-item">Type: <strong>${escapeHtml(ckpt.modelType || 'fusion')}</strong></span>
+        <span class="ckpt-meta-item">Type: <strong>${escapeHtml(ckpt.modelType || 'resnet18')}</strong></span>
       </div>
       <div style="display: flex; gap: 8px; margin-top: 14px;">
-        <button type="button" class="ghost-btn btn-load-ckpt" data-model="${escapeHtml(ckpt.modelType || 'fusion')}" style="flex: 1; justify-content: center; font-size: 0.76rem;">
+        <button type="button" class="ghost-btn btn-load-ckpt" data-model="${escapeHtml(ckpt.modelType || 'resnet18')}" style="flex: 1; justify-content: center; font-size: 0.76rem;">
           Load in Studio
         </button>
         <button type="button" class="ghost-btn btn-export-ckpt" data-id="${escapeHtml(ckpt.checkpointId || '')}" title="Download Weights Manifest" style="padding: 6px 10px;">
@@ -3559,7 +3569,7 @@ if (btnStartTraining) {
   btnStartTraining.addEventListener('click', async () => {
     if (btnStartTraining.disabled) return;
 
-    const modelType = trainModelTypeEl ? trainModelTypeEl.value : 'fusion';
+    const modelType = trainModelTypeEl ? trainModelTypeEl.value : 'resnet18';
     const epochs = trainEpochsEl ? parseInt(trainEpochsEl.value, 10) || 50 : 50;
     const batchSize = trainBatchSizeEl ? parseInt(trainBatchSizeEl.value, 10) || 32 : 32;
     const learningRate = trainLrEl ? parseFloat(trainLrEl.value) || 0.001 : 0.001;
@@ -3834,12 +3844,12 @@ function drawCurve(ctx, data, startX, width, height, maxVal, color, _label) {
  */
 if (btnSaveCheckpoint) {
   btnSaveCheckpoint.addEventListener('click', async () => {
-    const name = prompt('Enter a name for this model checkpoint:', 'Fusion Dual-Modal Checkpoint');
+    const name = prompt('Enter a name for this model checkpoint:', 'ResNet-18 Checkpoint');
     if (!name || !name.trim()) return;
 
-    const desc = prompt('Enter a brief description for this checkpoint:', 'Trained on 5-fold stratified ESC-50 dataset with SwiGLU fusion');
+    const desc = prompt('Enter a brief description for this checkpoint:', 'Trained on 5-fold stratified ESC-50 dataset with residual learning');
 
-    const modelType = trainModelTypeEl ? trainModelTypeEl.value : 'fusion';
+    const modelType = trainModelTypeEl ? trainModelTypeEl.value : 'resnet18';
     const fromJobId = lastCompletedJob ? lastCompletedJob.jobId : null;
 
     try {
@@ -4017,11 +4027,10 @@ function drawModelPerformanceChart(perfList) {
   ctx.fillRect(0, 0, w, h);
 
   const models = perfList || [
-    { model: 'Fusion (Dual-Stream)', accuracy: 97.2, latency: 12.4, color: '#a855f7' },
-    { model: 'SResNet Standalone',   accuracy: 95.1, latency: 7.8,  color: '#38bdf8' },
-    { model: 'CNN-GRU Standalone',   accuracy: 93.4, latency: 9.2,  color: '#34d399' },
-    { model: 'CNN-2D Baseline',      accuracy: 82.5, latency: 8.5,  color: '#fbbf24' },
-    { model: 'RNN Baseline',         accuracy: 78.1, latency: 14.1, color: '#fb7185' },
+    { model: 'SResNet Standalone', accuracy: 95.1, latency: 7.8,  color: '#38bdf8' },
+    { model: 'CNN-GRU Standalone', accuracy: 93.4, latency: 9.2,  color: '#34d399' },
+    { model: 'ResNet-18',          accuracy: 89.4, latency: 8.2,  color: '#a855f7' },
+    { model: 'VGG-16',             accuracy: 86.2, latency: 14.5, color: '#f59e0b' },
   ];
 
   const rowHeight = 32;
