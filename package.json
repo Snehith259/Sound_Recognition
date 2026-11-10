@@ -2,10 +2,12 @@
   "name": "soundsense-backend",
   "version": "1.0.0",
   "description": "SoundSense — Express.js Backend for ESC-50 Environmental Sound Classification",
-  "main": "server.js",
+  "main": "main.py",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "python main.py",
+    "dev": "python main.py",
+    "start:node": "node server.js",
+    "start:py": "python main.py"
   },
   "dependencies": {
     "cors": "^2.8.5",

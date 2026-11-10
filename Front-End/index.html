@@ -89,7 +89,7 @@
 
         <!-- Google-Style Developer Profile Account Button -->
         <div class="auth-account-wrapper" id="auth-account-wrapper">
-          <button class="account-btn" id="account-btn" type="button" aria-label="Developer Account" aria-haspopup="dialog" title="Developer Sign In" onclick="handleAccountBtnClick(event)">
+          <button class="account-btn" id="account-btn" type="button" aria-label="Developer Account" aria-haspopup="dialog" aria-expanded="false" aria-controls="account-menu-popover" title="Developer Sign In">
             <span class="account-avatar" id="account-avatar">
               <!-- Default Google-style user profile silhouette -->
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -181,15 +181,15 @@
           <div class="card-box card-module">
             <div class="card-header">
               <span class="card-tag">Classification Model</span>
-              <span class="card-sub-info" id="model-badge-info">ResNet-18 89.4%</span>
+              <span class="card-sub-info" id="model-badge-info">ResNet-18</span>
             </div>
             <div class="control-group no-margin">
               <div class="select-wrap">
                 <select id="model-select" class="custom-select" aria-label="Select classification model">
-                  <option value="resnet18" selected>ResNet-18 (Deep Residual Network) — 89.4%</option>
-                  <option value="vgg16">VGG-16 (16-Layer Deep CNN) — 86.2%</option>
-                  <option value="sresnet">SResNet (Linear Spectral MFCC) — 95.1%</option>
-                  <option value="cnngru">CNN-GRU (Nonlinear Recurrent) — 93.4%</option>
+                  <option value="resnet18" selected>ResNet-18</option>
+                  <option value="vgg16">VGG-16</option>
+                  <option value="sresnet">SResNet</option>
+                  <option value="cnngru">CNN-GRU</option>
                 </select>
                 <svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
               </div>
@@ -368,6 +368,15 @@
                 </div>
               </div>
 
+              <!-- Out-of-Scope / Unrecognized Category Notification Banner -->
+              <div class="out-of-scope-banner" id="out-of-scope-banner" hidden>
+                <div class="oos-icon" aria-hidden="true">⚠️</div>
+                <div class="oos-content">
+                  <div class="oos-title">Acoustic Signal Not in ESC-50 Classes</div>
+                  <div class="oos-desc" id="oos-desc-text">The acoustic characteristics (frequency envelope, harmonics, and temporal dynamics) do not match any of the 50 standardized environmental categories in ESC-50.</div>
+                </div>
+              </div>
+
               <!-- Signal telemetry mini stats -->
               <div class="signal-stats" id="signal-stats" aria-label="Signal statistics">
                 <div class="stat-tile">
@@ -536,12 +545,12 @@
           </div>
           <div class="perf-bars">
             <div class="perf-row" data-value="95.1">
-              <span class="perf-name">SResNet Standalone</span>
+              <span class="perf-name">SResNet</span>
               <div class="perf-track"><span class="perf-fill" data-w="95.1"></span></div>
               <span class="perf-pct">95.1%</span>
             </div>
             <div class="perf-row" data-value="93.4">
-              <span class="perf-name">CNN-GRU Standalone</span>
+              <span class="perf-name">CNN-GRU</span>
               <div class="perf-track"><span class="perf-fill" data-w="93.4"></span></div>
               <span class="perf-pct">93.4%</span>
             </div>
@@ -587,14 +596,14 @@
                 <td>86.2%</td>
               </tr>
               <tr>
-                <td>SResNet Standalone</td>
+                <td>SResNet</td>
                 <td>Linear MFCC Filterbanks</td>
                 <td>~8.6 M</td>
                 <td>7.8 ms</td>
                 <td>95.1%</td>
               </tr>
               <tr>
-                <td>CNN-GRU Standalone</td>
+                <td>CNN-GRU</td>
                 <td>Nonlinear Log-Mel Spectrograms</td>
                 <td>~5.6 M</td>
                 <td>9.2 ms</td>
@@ -776,10 +785,10 @@
                   <label class="control-label" for="train-model-type">Model Architecture</label>
                   <div class="select-wrap">
                     <select id="train-model-type" class="custom-select">
-                      <option value="resnet18" selected>ResNet-18 (Residual Network)</option>
-                      <option value="vgg16">VGG-16 (Deep CNN)</option>
-                      <option value="sresnet">SResNet (Linear Spectral MFCC)</option>
-                      <option value="cnngru">CNN-GRU (Nonlinear Recurrent)</option>
+                      <option value="resnet18" selected>ResNet-18</option>
+                      <option value="vgg16">VGG-16</option>
+                      <option value="sresnet">SResNet</option>
+                      <option value="cnngru">CNN-GRU</option>
                     </select>
                     <svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
                   </div>

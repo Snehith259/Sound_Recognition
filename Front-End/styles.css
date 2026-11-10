@@ -115,7 +115,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .brand {
@@ -2464,6 +2464,53 @@ body {
   margin: 0 3px;
 }
 
+/* Out-of-Scope / Not in ESC-50 Notification Banner */
+.out-of-scope-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.14), rgba(239, 68, 68, 0.08));
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-top: 14px;
+  margin-bottom: 14px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.08);
+  animation: fadeInOOS 0.3s ease-out;
+}
+
+.oos-icon {
+  font-size: 1.35rem;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.oos-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.oos-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #fbbf24;
+  letter-spacing: -0.01em;
+  margin-bottom: 3px;
+}
+
+.oos-desc {
+  font-size: 0.81rem;
+  color: rgba(255, 255, 255, 0.82);
+  line-height: 1.45;
+}
+
+@keyframes fadeInOOS {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* Signal telemetry tiles */
 .signal-stats {
   display: grid;
@@ -3843,6 +3890,95 @@ body.dev-authenticated .dev-tab {
 body.dev-authenticated .dev-only-feature,
 body.dev-authenticated .dev-feature {
   display: flex !important;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   DEVELOPER SYSTEM HEADER LAYOUT (EXCLUSIVE TO DEVELOPER MODE)
+   Top Row: SoundSense Brand (left) and Header Actions (right:
+   Engine Ready status, Keyboard shortcut, Developer account icon)
+   aligned strictly on the top line.
+   Second Row: The 6 Navigation Tabs (.view-nav) placed cleanly
+   below them without crowding or wrapping actions downward.
+   Only applies within the developer system (not the user one).
+   ════════════════════════════════════════════════════════════════ */
+
+body.dev-authenticated .app-header {
+  padding-bottom: 2px;
+}
+
+body.dev-authenticated .header-inner {
+  display: grid !important;
+  grid-template-columns: auto 1fr auto !important;
+  grid-template-areas:
+    "brand . actions"
+    "nav   nav nav" !important;
+  align-items: center !important;
+  row-gap: 12px !important;
+  column-gap: 16px !important;
+  padding: 10px 24px 14px !important;
+  min-height: auto !important;
+}
+
+body.dev-authenticated .brand {
+  grid-area: brand !important;
+  align-self: center !important;
+}
+
+body.dev-authenticated .header-actions {
+  grid-area: actions !important;
+  justify-self: end !important;
+  align-self: center !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+/* Ensure Engine Ready status is visible and prominent on top right in developer system */
+body.dev-authenticated .header-status {
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+body.dev-authenticated .header-status .status-label {
+  display: inline !important;
+}
+
+/* Developer system navigation tabs row */
+body.dev-authenticated .view-nav {
+  grid-area: nav !important;
+  justify-self: center !important;
+  width: auto !important;
+  max-width: 100% !important;
+  margin: 0 auto !important;
+  padding: 5px 6px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Ensure developer tabs maintain full labels across standard screen sizes */
+@media (min-width: 641px) {
+  body.dev-authenticated .view-tab span {
+    display: inline !important;
+  }
+}
+
+/* Responsive adjustments for developer header on smaller screens */
+@media (max-width: 860px) {
+  body.dev-authenticated .header-inner {
+    padding: 8px 16px 12px !important;
+    row-gap: 10px !important;
+  }
+  body.dev-authenticated .view-nav {
+    justify-self: stretch !important;
+    width: 100% !important;
+    justify-content: flex-start !important;
+    border-radius: var(--radius-lg) !important;
+  }
+}
+
+@media (max-width: 520px) {
+  body.dev-authenticated .header-status .status-label {
+    display: none !important;
+  }
 }
 
 /* Google-style circular account button */

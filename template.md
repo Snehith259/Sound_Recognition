@@ -23,7 +23,7 @@
 - **Interactive Audio Waveform Player**: Real-time waveform visualizer rendered via HTML5 Canvas with click-to-seek scrub bar, elapsed/total time display, and play/pause audio preview toggle.
 - **Live Microphone Recording Module**: Browser Web Audio API `MediaRecorder` capture with real-time audio volume visualizer (`#mic-level-fill`). Automatically captures ambient sounds and converts recordings into analyzed audio buffers.
 - **1-Click Quick Test Presets**: Verified ESC-50 audio presets (Dog Bark, Rain, Clock Alarm, Keyboard Typing, Siren) with synthetic acoustic synthesis fallback for instant zero-latency evaluation.
-- **Model Architecture Selector**: Interactive dropdown enabling users to switch between ResNet-18, VGG-16, SResNet standalone, and CNN-GRU standalone.
+- **Model Architecture Selector**: Interactive dropdown enabling users to switch between ResNet-18, VGG-16, SResNet, and CNN-GRU.
 
 #### Results Visualization (Spectrograms, confidence scores, output displays):
 - **Primary Identified Sound**: Prominent display with category emoji, class name, ESC-50 taxonomy domain, and an animated circular SVG confidence gauge (`#conf-fill-circle`).

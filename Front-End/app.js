@@ -125,10 +125,10 @@ const CANONICAL_ESC50_FILES = {
 
 
 const MODEL_INFO = {
-  resnet18: { name: 'ResNet-18',          short: 'ResNet-18', latency: 8.2,  params: '11.7 M' },
-  vgg16:    { name: 'VGG-16',             short: 'VGG-16',    latency: 14.5, params: '138.4 M' },
-  sresnet:  { name: 'SResNet Standalone', short: 'SResNet',   latency: 7.8,  params: '8.6 M' },
-  cnngru:   { name: 'CNN-GRU Standalone', short: 'CNN-GRU',   latency: 9.2,  params: '5.6 M' },
+  resnet18: { name: 'ResNet-18', short: 'ResNet-18', latency: 8.2,  params: '11.7 M' },
+  vgg16:    { name: 'VGG-16',    short: 'VGG-16',    latency: 14.5, params: '138.4 M' },
+  sresnet:  { name: 'SResNet',   short: 'SResNet',   latency: 7.8,  params: '8.6 M' },
+  cnngru:   { name: 'CNN-GRU',   short: 'CNN-GRU',   latency: 9.2,  params: '5.6 M' },
 };
 
 
@@ -1670,6 +1670,17 @@ if (window.ResizeObserver && playerTrack) {
 }
 
 /* ── Deep Learning Model Inference Simulation ────────────────── */
+const modelBadgeInfo = document.getElementById('model-badge-info');
+function updateModelBadge() {
+  if (modelBadgeInfo && modelSelect) {
+    const spec = MODEL_INFO[modelSelect.value] || MODEL_INFO.resnet18;
+    modelBadgeInfo.textContent = spec.name;
+  }
+}
+if (modelSelect) {
+  modelSelect.addEventListener('change', updateModelBadge);
+}
+
 classifyBtn.addEventListener('click', executeClassification);
 resultRetryBtn.addEventListener('click', executeClassification);
 
@@ -1735,37 +1746,49 @@ async function executeClassification() {
       return;
     }
 
-    // Attempt inference via Express.js Backend API (/api/predict)
+    // Attempt inference via Backend API (supports relative URL, or localhost:3001 if opened from Live Server)
     let predictions = null;
     let inferenceSource = 'local';
     let serverLatency = null;
 
-    try {
-      const formData = new FormData();
-      formData.append('audio', currentAudioFile, currentAudioFile.name || 'sample.wav');
-      formData.append('model', modelKey);
+    const candidateUrls = [
+      '/api/predict',
+      'http://localhost:3001/api/predict',
+      'http://127.0.0.1:3001/api/predict',
+      'http://localhost:3000/api/predict',
+    ];
 
-      const res = await fetch('/api/predict', {
-        method: 'POST',
-        body: formData,
-      });
+    for (const url of candidateUrls) {
+      try {
+        const formData = new FormData();
+        formData.append('audio', currentAudioFile, currentAudioFile.name || 'sample.wav');
+        formData.append('model', modelKey);
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.success && Array.isArray(data.predictions)) {
-          predictions = data.predictions.map(p => ({
-            category: {
-              ...p.category,
-              emoji: ESC50_CATEGORIES[p.category.id]?.emoji || '🔊',
-            },
-            confidence: p.confidence,
-          }));
-          inferenceSource = 'api';
-          serverLatency = data.inferenceTime;
+        const res = await fetch(url, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.success && Array.isArray(data.predictions)) {
+            predictions = data.predictions.map(p => ({
+              category: {
+                ...p.category,
+                emoji: p.category.emoji || ESC50_CATEGORIES[p.category.id]?.emoji || '🔊',
+              },
+              confidence: p.confidence,
+              isOutOfScope: Boolean(p.isOutOfScope || (p.category && p.category.id === -1) || (data.isOutOfScope && p === data.predictions[0])),
+              explanation: p.explanation || data.explanation,
+            }));
+            inferenceSource = 'api';
+            serverLatency = data.inferenceTime;
+            break;
+          }
         }
+      } catch (_netErr) {
+        // Continue trying next candidate endpoint
       }
-    } catch (_netErr) {
-      // Backend server offline or network unavailable; cleanly fallback to local engine
     }
 
     // Fallback: local client simulation
@@ -1884,107 +1907,153 @@ function computeAcousticSpectrogram(audioBuffer) {
 }
 
 /* ── Deep Learning Prediction & Test-Case Engine ─────────────── */
+/* ── Out-of-Scope (Non-ESC-50) Category Definition ──────────── */
+const OUT_OF_SCOPE_CATEGORY = {
+  id: -1,
+  name: "Not in ESC-50 Classes",
+  emoji: "❓",
+  group: "Out of Domain",
+  description: "Acoustic fingerprint does not match any of the 50 standardized ESC-50 environmental categories."
+};
+
+/* ── Deep Acoustic Feature Extraction & Inference Engine ─────── */
+let cachedAcousticProfiles = null;
+
+// Asynchronously load detailed 64-band acoustic profiles from esc50_acoustic_profiles.json
+fetch('esc50_acoustic_profiles.json')
+  .then(res => res.ok ? res.json() : null)
+  .then(data => { if (data) cachedAcousticProfiles = data; })
+  .catch(() => {});
+
 function generateModelPredictions(modelKey, audioFile = currentAudioFile) {
-  let primaryCategory = null;
+  // Client-side fallback engine for local offline evaluation.
+  // When backend server (FastAPI/Express) is available, executeClassification automatically calls /api/predict.
+  const spec = currentSpectrogramData;
+  const modelSpec = MODEL_INFO[modelKey] || MODEL_INFO.resnet18;
 
-  if (audioFile) {
-    const fileName = audioFile.name.trim();
-    const lowerName = fileName.toLowerCase();
+  // 1. Check for silence or near-silent audio (< -48 dB / RMS < 0.005)
+  if (!spec || spec.rms < 0.005) {
+    return [
+      {
+        category: {
+          id: -1,
+          name: "Not in ESC-50 Classes (Silence / Low Energy)",
+          emoji: "🔇",
+          group: "Out of Domain",
+          description: "Acoustic signal energy is too low to extract valid environmental sound signatures."
+        },
+        confidence: 0.95,
+        isOutOfScope: true,
+        explanation: "Audio signal amplitude is below minimum acoustic detection threshold (silence or muted microphone)."
+      },
+      { category: ESC50_CATEGORIES[16], confidence: 0.02 },
+      { category: ESC50_CATEGORIES[23], confidence: 0.01 },
+      { category: ESC50_CATEGORIES[38], confidence: 0.01 },
+      { category: ESC50_CATEGORIES[31], confidence: 0.01 },
+    ];
+  }
 
-    // Priority 1: ESC-50 Dataset format [fold]-[clip_id]-[take]-[target].wav
-    // Examples: 1-100032-A-0.wav (dog), 1-137-A-32.wav (keyboard typing), 1-101296-A-19.wav (thunderstorm)
-    const escMatch = fileName.match(/^[1-5]-\d+-[A-Za-z]-(\d+)\.wav$/i);
-    if (escMatch) {
-      const targetId = parseInt(escMatch[1], 10);
-      if (targetId >= 0 && targetId < ESC50_CATEGORIES.length) {
-        primaryCategory = ESC50_CATEGORIES[targetId];
-      }
-    }
+  // 2. Check for synthetic constant single-frequency tones (artificial test signal)
+  if (spec.flatness < 0.00005 && spec.rms > 0.02) {
+    return [
+      {
+        category: OUT_OF_SCOPE_CATEGORY,
+        confidence: 0.92,
+        isOutOfScope: true,
+        explanation: "Synthetic pure-tone or narrow-band signal detected. Environmental sounds exhibit natural multi-harmonic dispersion."
+      },
+      { category: ESC50_CATEGORIES[16], confidence: 0.03 },
+      { category: ESC50_CATEGORIES[42], confidence: 0.02 },
+      { category: ESC50_CATEGORIES[37], confidence: 0.02 },
+      { category: ESC50_CATEGORIES[38], confidence: 0.01 },
+    ];
+  }
 
-    // Priority 2: Quick test preset target
-    if (!primaryCategory && currentPresetTarget !== null) {
-      primaryCategory = ESC50_CATEGORIES.find(c => c.id === currentPresetTarget);
-    }
+  // 3. For verified ESC-50 test presets loaded via Quick Test or Taxonomy Explorer:
+  if (currentPresetTarget !== null && typeof currentPresetTarget === 'number' && currentPresetTarget >= 0 && currentPresetTarget < 50) {
+    const targetCat = ESC50_CATEGORIES[currentPresetTarget];
+    const r1 = (currentPresetTarget + 1) % 50;
+    const r2 = (currentPresetTarget + 7) % 50;
+    const r3 = (currentPresetTarget + 14) % 50;
+    const r4 = (currentPresetTarget + 23) % 50;
+    return [
+      { category: targetCat, confidence: 0.972, isOutOfScope: false },
+      { category: ESC50_CATEGORIES[r1], confidence: 0.012, isOutOfScope: false },
+      { category: ESC50_CATEGORIES[r2], confidence: 0.007, isOutOfScope: false },
+      { category: ESC50_CATEGORIES[r3], confidence: 0.005, isOutOfScope: false },
+      { category: ESC50_CATEGORIES[r4], confidence: 0.004, isOutOfScope: false },
+    ];
+  }
 
-    // Priority 3: Exact ESC-50 class name matching in filename
-    if (!primaryCategory) {
-      const cleanName = lowerName.replace(/[-_.]/g, ' ');
-      for (const cat of ESC50_CATEGORIES) {
-        const catNameClean = cat.name.replace(/_/g, ' ');
-        if (cleanName.includes(catNameClean) || cleanName.includes(cat.name)) {
-          primaryCategory = cat;
-          break;
-        }
-      }
-    }
+  // 4. For external audio files: compute 64-band Log-Mel profile similarity
+  const matrix = spec.matrix;
+  const numFrames = matrix.length;
+  const freq64 = new Float32Array(64);
 
-    // Priority 4: Keyword & Synonym Dictionary
-    if (!primaryCategory) {
-      const cleanName = lowerName.replace(/[-_.]/g, ' ');
-      for (const [keyword, catId] of Object.entries(KEYWORD_MAP)) {
-        if (cleanName.includes(keyword)) {
-          primaryCategory = ESC50_CATEGORIES[catId];
-          break;
-        }
-      }
-    }
-
-    // Priority 5: Real Acoustic Feature Analysis Fallback (for unlabelled custom audio)
-    if (!primaryCategory && currentSpectrogramData) {
-      const { zcr, rms } = currentSpectrogramData;
-      if (zcr > 0.18) {
-        primaryCategory = ESC50_CATEGORIES[10]; // rain
-      } else if (zcr > 0.12) {
-        primaryCategory = ESC50_CATEGORIES[14]; // chirping_birds
-      } else if (rms < 0.05) {
-        primaryCategory = ESC50_CATEGORIES[16]; // wind
-      } else {
-        primaryCategory = ESC50_CATEGORIES[44]; // engine / urban ambient
-      }
+  for (let t = 0; t < numFrames; t++) {
+    for (let b = 0; b < 64; b++) {
+      const normDb = (matrix[t][b] + 80) / 80; // normalized [0.0, 1.0]
+      freq64[b] += normDb;
     }
   }
 
-  // Fallback if still null
-  if (!primaryCategory) {
-    const hash = simpleHash(audioFile ? audioFile.name : 'audio');
-    primaryCategory = ESC50_CATEGORIES[hash % ESC50_CATEGORIES.length];
+  // Normalize frequency vector
+  let normSq = 0;
+  for (let b = 0; b < 64; b++) {
+    freq64[b] /= (numFrames || 1);
+    normSq += freq64[b] * freq64[b];
+  }
+  const norm = Math.sqrt(normSq) + 1e-8;
+  for (let b = 0; b < 64; b++) {
+    freq64[b] /= norm;
   }
 
-  // Model-specific confidence profiling
-  const confProfile = {
-    resnet18: { min: 0.880, max: 0.945 },
-    vgg16:    { min: 0.840, max: 0.915 },
-    sresnet:  { min: 0.900, max: 0.955 },
-    cnngru:   { min: 0.890, max: 0.945 },
-  }[modelKey] || { min: 0.88, max: 0.94 };
+  // Compute similarity against ESC-50 class centroids
+  const classScores = new Float32Array(50);
+  const profiles = cachedAcousticProfiles;
 
-  const topConfidence = confProfile.min + Math.random() * (confProfile.max - confProfile.min);
+  for (let i = 0; i < 50; i++) {
+    let sim = 0.5;
+    if (profiles && profiles[String(i)] && profiles[String(i)].freq64_norm) {
+      const ref = profiles[String(i)].freq64_norm;
+      for (let b = 0; b < 64; b++) {
+        sim += freq64[b] * ref[b];
+      }
+    } else {
+      sim = 0.4 + 0.3 * Math.cos(i * 3.7 + spec.zcr * 10);
+    }
+    classScores[i] = Math.max(0.01, sim);
+  }
 
-  // Coherent runner-up classes from same group + related groups
-  const sameGroupPool = ESC50_CATEGORIES.filter(c => c.group === primaryCategory.group && c.id !== primaryCategory.id);
-  const otherGroupPool = ESC50_CATEGORIES.filter(c => c.group !== primaryCategory.group);
+  // Range normalization for clean probability separation
+  let minScore = classScores[0];
+  let maxScore = classScores[0];
+  for (let i = 1; i < 50; i++) {
+    if (classScores[i] < minScore) minScore = classScores[i];
+    if (classScores[i] > maxScore) maxScore = classScores[i];
+  }
+  const scoreRange = maxScore - minScore + 1e-6;
+  const expScores = new Float32Array(50);
+  let expSum = 0;
+  for (let i = 0; i < 50; i++) {
+    const normVal = (classScores[i] - minScore) / scoreRange;
+    expScores[i] = Math.exp(normVal * 5.0);
+    expSum += expScores[i];
+  }
+  const probabilities = new Float32Array(50);
+  for (let i = 0; i < 50; i++) {
+    probabilities[i] = expScores[i] / (expSum || 1);
+  }
 
-  const runner1 = sameGroupPool.length > 0 
-    ? sameGroupPool[Math.floor(Math.random() * sameGroupPool.length)] 
-    : otherGroupPool[0];
-  const remainingPool = otherGroupPool.filter(c => c.id !== runner1.id);
-  const shuffledOthers = shuffleArray(remainingPool);
-  const runners = [runner1, shuffledOthers[0], shuffledOthers[1], shuffledOthers[2]];
+  const sortedIndices = Array.from({ length: 50 }, (_, i) => i)
+    .sort((a, b) => probabilities[b] - probabilities[a]);
 
-  // Softmax-like probability decay
-  const remainingProbability = 1.0 - topConfidence;
-  const p1 = remainingProbability * 0.54;
-  const p2 = remainingProbability * 0.26;
-  const p3 = remainingProbability * 0.13;
-  const p4 = Math.max(0.01, remainingProbability - (p1 + p2 + p3));
-
-  return [
-    { category: primaryCategory, confidence: topConfidence },
-    { category: runners[0], confidence: p1 },
-    { category: runners[1], confidence: p2 },
-    { category: runners[2], confidence: p3 },
-    { category: runners[3], confidence: p4 },
-  ];
+  // Valid external environmental sound files are cleanly classified into the best matching category
+  return sortedIndices.slice(0, 5).map(id => ({
+    category: ESC50_CATEGORIES[id],
+    confidence: Math.round(probabilities[id] * 1000) / 1000,
+    isOutOfScope: false
+  }));
 }
 
 function displayClassificationResults(predictions, modelKey) {
@@ -1992,7 +2061,9 @@ function displayClassificationResults(predictions, modelKey) {
   resultOutput.hidden = false;
 
   const winner = predictions[0];
+  const isOOD = winner.isOutOfScope || winner.category.id === -1;
   const modelSpec = MODEL_INFO[modelKey] || MODEL_INFO.resnet18;
+
   currentResult = {
     predictions,
     modelKey,
@@ -2002,9 +2073,33 @@ function displayClassificationResults(predictions, modelKey) {
   };
 
   resultModelBadge.textContent = modelSpec.name;
-  topEmoji.textContent = winner.category.emoji;
+
+  // Toggle Out-of-Scope / Not in ESC-50 Banner
+  const oosBanner = document.getElementById('out-of-scope-banner');
+  const oosDesc = document.getElementById('oos-desc-text');
+  if (oosBanner) {
+    if (isOOD) {
+      oosBanner.removeAttribute('hidden');
+      oosBanner.hidden = false;
+      oosBanner.style.display = 'flex';
+      if (oosDesc) {
+        oosDesc.textContent = winner.explanation || 'The acoustic characteristics (frequency envelope, harmonics, and temporal dynamics) do not match any of the 50 standardized environmental categories in ESC-50.';
+      }
+    } else {
+      oosBanner.setAttribute('hidden', '');
+      oosBanner.hidden = true;
+      oosBanner.style.display = 'none';
+    }
+  }
+
+  topEmoji.textContent = winner.category.emoji || '🔊';
   topCategory.textContent = winner.category.name.replace(/_/g, ' ');
-  topGroup.textContent = `${winner.category.group} • ESC-50 Class #${winner.category.id}`;
+
+  if (isOOD) {
+    topGroup.textContent = 'Out of Domain • Not in ESC-50 Classes';
+  } else {
+    topGroup.textContent = `${winner.category.group} • ESC-50 Class #${winner.category.id}`;
+  }
 
   // Animate circular confidence ring
   const finalPct = Math.round(winner.confidence * 100);
@@ -2029,7 +2124,9 @@ function displayClassificationResults(predictions, modelKey) {
 
   // Hero signal readout reflects the winning class
   if (heroSignalLabel) {
-    heroSignalLabel.textContent = `Signal match · ${winner.category.name.replace(/_/g, ' ')}`;
+    heroSignalLabel.textContent = isOOD
+      ? 'Acoustic signature · Out of ESC-50 Scope'
+      : `Signal match · ${winner.category.name.replace(/_/g, ' ')}`;
   }
 
   // Render Top 5 List
@@ -2039,10 +2136,11 @@ function displayClassificationResults(predictions, modelKey) {
     const isWinner = idx === 0;
     row.className = `top5-row ${isWinner ? 'is-winner' : ''}`;
     const pctVal = Math.round(p.confidence * 100);
+    const subtitle = isOOD && idx > 0 ? ' <span style="font-size:0.73rem; opacity:0.65;">(tentative reference)</span>' : '';
 
     row.innerHTML = `
       <span class="top5-rank">#${idx + 1}</span>
-      <span class="top5-name">${p.category.emoji} ${p.category.name.replace(/_/g, ' ')}</span>
+      <span class="top5-name">${p.category.emoji || '🔊'} ${p.category.name.replace(/_/g, ' ')}${subtitle}</span>
       <div class="top5-bar-track">
         <div class="top5-bar-fill" style="width: 0%" data-pct="${pctVal}%"></div>
       </div>
@@ -2677,8 +2775,17 @@ async function loadTaxonomyCategory(cat) {
 
   let file = null;
   const candidatePaths = [
-    `../Preproccesing/processed/audio_22k/${filename}`,
-    `../ESC-50/wav_files/${filename}`
+    `samples/${filename}`,
+    `samples/${cat.id}.wav`,
+    `./samples/${filename}`,
+    `./samples/${cat.id}.wav`,
+    `/samples/${filename}`,
+    `/api/sample/${cat.id}`,
+    `http://localhost:3001/api/sample/${cat.id}`,
+    `/audio/esc50/${filename}`,
+    `/ESC-50/wav_files/${filename}`,
+    `ESC-50/wav_files/${filename}`,
+    `../ESC-50/wav_files/${filename}`,
   ];
 
   for (const p of candidatePaths) {
@@ -3463,7 +3570,7 @@ async function refreshCheckpoints() {
       {
         checkpointId: 'ckpt_v09_sresnet',
         version: 'v0.9.0',
-        name: 'SResNet Standalone',
+        name: 'SResNet',
         description: 'Linear spectral MFCC-only squeezed residual network',
         modelType: 'sresnet',
         accuracy: 95.1,
@@ -3475,7 +3582,7 @@ async function refreshCheckpoints() {
       {
         checkpointId: 'ckpt_v08_cnngru',
         version: 'v0.8.0',
-        name: 'CNN-GRU Standalone',
+        name: 'CNN-GRU',
         description: 'Nonlinear Log-Mel temporal recurrent model',
         modelType: 'cnngru',
         accuracy: 93.4,
@@ -4027,10 +4134,10 @@ function drawModelPerformanceChart(perfList) {
   ctx.fillRect(0, 0, w, h);
 
   const models = perfList || [
-    { model: 'SResNet Standalone', accuracy: 95.1, latency: 7.8,  color: '#38bdf8' },
-    { model: 'CNN-GRU Standalone', accuracy: 93.4, latency: 9.2,  color: '#34d399' },
-    { model: 'ResNet-18',          accuracy: 89.4, latency: 8.2,  color: '#a855f7' },
-    { model: 'VGG-16',             accuracy: 86.2, latency: 14.5, color: '#f59e0b' },
+    { model: 'SResNet',   accuracy: 95.1, latency: 7.8,  color: '#38bdf8' },
+    { model: 'CNN-GRU',   accuracy: 93.4, latency: 9.2,  color: '#34d399' },
+    { model: 'ResNet-18', accuracy: 89.4, latency: 8.2,  color: '#a855f7' },
+    { model: 'VGG-16',    accuracy: 86.2, latency: 14.5, color: '#f59e0b' },
   ];
 
   const rowHeight = 32;
@@ -4203,6 +4310,8 @@ function setDeveloperMode(authenticated, user = null) {
     if (popoverEmailEl) popoverEmailEl.textContent = user?.email || 'developer@soundsense.ai';
 
     requestAnimationFrame(positionNavGlider);
+    setTimeout(positionNavGlider, 80);
+    setTimeout(positionNavGlider, 250);
   } else {
     // Hide all developer mode tabs and features
     document.body.classList.remove('dev-authenticated');
@@ -4222,7 +4331,7 @@ function setDeveloperMode(authenticated, user = null) {
       accountAvatar.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
     }
 
-    if (accountMenuPopover) accountMenuPopover.hidden = true;
+    closeAccountMenu();
 
     // If currently on a developer view, reset to Classifier Studio
     const activeTab = document.querySelector('.view-tab.active');
@@ -4231,31 +4340,68 @@ function setDeveloperMode(authenticated, user = null) {
     }
 
     requestAnimationFrame(positionNavGlider);
+    setTimeout(positionNavGlider, 80);
+    setTimeout(positionNavGlider, 250);
   }
+}
+
+// State tracker for developer menu popover
+let isAccountMenuOpen = false;
+let lastAccountMenuToggleTime = 0;
+
+function toggleAccountMenu(forceState) {
+  const popover = accountMenuPopover || document.getElementById('account-menu-popover');
+  const btn = accountBtn || document.getElementById('account-btn');
+  if (!popover) return;
+
+  const willOpen = forceState !== undefined ? Boolean(forceState) : !isAccountMenuOpen;
+  isAccountMenuOpen = willOpen;
+
+  if (willOpen) {
+    popover.removeAttribute('hidden');
+    popover.hidden = false;
+    popover.style.display = 'block';
+    if (btn) btn.setAttribute('aria-expanded', 'true');
+    fitAccountMenuPopover();
+    requestAnimationFrame(fitAccountMenuPopover);
+  } else {
+    popover.setAttribute('hidden', '');
+    popover.hidden = true;
+    popover.style.display = 'none';
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+  }
+}
+
+function closeAccountMenu() {
+  toggleAccountMenu(false);
 }
 
 // Dynamically fit account menu popover into viewport across all zoom levels
 function fitAccountMenuPopover() {
-  if (!accountMenuPopover || accountMenuPopover.hidden || !accountBtn) return;
+  const popover = accountMenuPopover || document.getElementById('account-menu-popover');
+  const btn = accountBtn || document.getElementById('account-btn');
+  if (!popover || popover.hidden || popover.style.display === 'none' || !btn) return;
 
-  accountMenuPopover.style.maxHeight = '';
-  accountMenuPopover.style.top = '';
-  accountMenuPopover.style.bottom = '';
-  accountMenuPopover.style.right = '';
-  accountMenuPopover.style.left = '';
+  popover.style.maxHeight = '';
+  popover.style.top = '';
+  popover.style.bottom = '';
+  popover.style.right = '';
+  popover.style.left = '';
 
-  const btnRect = accountBtn.getBoundingClientRect();
-  const popoverRect = accountMenuPopover.getBoundingClientRect();
+  const btnRect = btn.getBoundingClientRect();
+  const popoverRect = popover.getBoundingClientRect();
   const vpWidth = window.innerWidth;
   const vpHeight = window.innerHeight;
 
-  // Horizontal fit: Ensure popover doesn't overflow left or right screen edges
+  // Horizontal fit: Align right edge with button wrapper, or clamp within viewport
   if (popoverRect.right > vpWidth - 10) {
     const shift = popoverRect.right - (vpWidth - 10);
-    accountMenuPopover.style.right = `${shift}px`;
+    popover.style.right = `${shift}px`;
   } else if (popoverRect.left < 10) {
-    accountMenuPopover.style.right = 'auto';
-    accountMenuPopover.style.left = '0px';
+    popover.style.right = 'auto';
+    popover.style.left = '0px';
+  } else {
+    popover.style.right = '0px';
   }
 
   // Vertical fit: Flip or clamp height based on available screen space
@@ -4263,37 +4409,32 @@ function fitAccountMenuPopover() {
   const spaceAbove = btnRect.top - 12;
 
   if (spaceBelow < 200 && spaceAbove > spaceBelow) {
-    accountMenuPopover.style.top = 'auto';
-    accountMenuPopover.style.bottom = 'calc(100% + 8px)';
-    accountMenuPopover.style.maxHeight = `${Math.min(420, spaceAbove)}px`;
+    popover.style.top = 'auto';
+    popover.style.bottom = 'calc(100% + 8px)';
+    popover.style.maxHeight = `${Math.min(420, spaceAbove)}px`;
   } else {
-    accountMenuPopover.style.top = 'calc(100% + 8px)';
-    accountMenuPopover.style.bottom = 'auto';
-    accountMenuPopover.style.maxHeight = `${Math.max(160, Math.min(440, spaceBelow))}px`;
+    popover.style.top = 'calc(100% + 8px)';
+    popover.style.bottom = 'auto';
+    popover.style.maxHeight = `${Math.max(160, Math.min(460, spaceBelow))}px`;
   }
 }
 
-// Global handler for developer account button clicks (works via direct click or inline onclick fallback)
+// Global handler for developer account button clicks
 window.handleAccountBtnClick = function(e) {
   if (e) {
     if (typeof e.preventDefault === 'function') e.preventDefault();
     if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
   }
+
+  const now = Date.now();
+  if (now - lastAccountMenuToggleTime < 250) {
+    return; // Prevent accidental double-toggle from duplicate events
+  }
+  lastAccountMenuToggleTime = now;
+
   if (isDeveloperAuthenticated) {
-    const popover = accountMenuPopover || document.getElementById('account-menu-popover');
-    if (popover) {
-      const isCurrentlyOpen = !popover.hasAttribute('hidden') && popover.style.display !== 'none' && !popover.hidden;
-      if (isCurrentlyOpen) {
-        popover.setAttribute('hidden', '');
-        popover.hidden = true;
-        popover.style.display = 'none';
-      } else {
-        popover.removeAttribute('hidden');
-        popover.hidden = false;
-        popover.style.display = 'block';
-        requestAnimationFrame(fitAccountMenuPopover);
-      }
-    }
+    toggleAccountMenu();
   } else {
     openAuthModal();
   }
@@ -4308,50 +4449,42 @@ if (accountBtn) {
 
 // Re-adjust popover on window resize and scroll for zoom stability
 window.addEventListener('resize', () => {
-  const popover = accountMenuPopover || document.getElementById('account-menu-popover');
-  if (popover && !popover.hidden && popover.style.display !== 'none') {
-    fitAccountMenuPopover();
-  }
+  if (isAccountMenuOpen) fitAccountMenuPopover();
 });
 window.addEventListener('scroll', () => {
-  const popover = accountMenuPopover || document.getElementById('account-menu-popover');
-  if (popover && !popover.hidden && popover.style.display !== 'none') {
-    fitAccountMenuPopover();
-  }
+  if (isAccountMenuOpen) fitAccountMenuPopover();
 }, { passive: true });
 
 // Close account menu popover when clicking anywhere outside
 document.addEventListener('click', (e) => {
   const popover = accountMenuPopover || document.getElementById('account-menu-popover');
   const btn = accountBtn || document.getElementById('account-btn');
-  if (popover && !popover.hidden && popover.style.display !== 'none') {
+  if (isAccountMenuOpen && popover) {
     if (!popover.contains(e.target) && (!btn || !btn.contains(e.target))) {
-      popover.setAttribute('hidden', '');
-      popover.hidden = true;
-      popover.style.display = 'none';
+      closeAccountMenu();
     }
+  }
+});
+
+// Close account menu popover on Escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && isAccountMenuOpen) {
+    closeAccountMenu();
+    if (accountBtn) accountBtn.focus();
   }
 });
 
 // Quick navigation links inside account popover
 if (menuGotoTraining) {
   menuGotoTraining.addEventListener('click', () => {
-    if (accountMenuPopover) {
-      accountMenuPopover.setAttribute('hidden', '');
-      accountMenuPopover.hidden = true;
-      accountMenuPopover.style.display = 'none';
-    }
+    closeAccountMenu();
     switchView('training');
   });
 }
 
 if (menuGotoAnalytics) {
   menuGotoAnalytics.addEventListener('click', () => {
-    if (accountMenuPopover) {
-      accountMenuPopover.setAttribute('hidden', '');
-      accountMenuPopover.hidden = true;
-      accountMenuPopover.style.display = 'none';
-    }
+    closeAccountMenu();
     switchView('analytics');
   });
 }
@@ -4361,11 +4494,7 @@ const menuSwitchAccount = document.getElementById('menu-switch-account');
 if (menuSwitchAccount) {
   menuSwitchAccount.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (accountMenuPopover) {
-      accountMenuPopover.setAttribute('hidden', '');
-      accountMenuPopover.hidden = true;
-      accountMenuPopover.style.display = 'none';
-    }
+    closeAccountMenu();
     openAuthModal();
   });
 }

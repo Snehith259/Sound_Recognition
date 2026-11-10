@@ -12,6 +12,7 @@ __pycache__/
 # Checkpoint caches & downloaded weights
 checkpoints/.cache/
 checkpoints/*.pt
+!checkpoints/acoustic_classifier.pt
 checkpoints/*.bin
 
 # Node & dependencies
