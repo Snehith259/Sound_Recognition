@@ -5,27 +5,32 @@
 ═══════════════════════════════════════════════════════ */
 
 :root {
-  --bg-deep: #050a18;
-  --bg-card: rgba(13, 22, 48, 0.78);
-  --bg-card-hover: rgba(18, 30, 64, 0.88);
-  --bg-elevated: #0f1b3d;
-  --bg-input: #0a132c;
+  --bg-deep: #060b17;
+  --bg-card: rgba(12, 19, 39, 0.82);
+  --bg-card-hover: rgba(16, 26, 52, 0.92);
+  --bg-elevated: #0f1a36;
+  --bg-input: #091024;
   
   --border: rgba(56, 189, 248, 0.14);
-  --border-focus: rgba(56, 189, 248, 0.45);
-  --border-purple: rgba(168, 85, 247, 0.28);
+  --border-focus: rgba(56, 189, 248, 0.48);
+  --border-amber: rgba(245, 158, 11, 0.32);
+  --border-subtle: rgba(255, 255, 255, 0.08);
 
   --cyan: #38bdf8;
-  --cyan-bright: #67e8f9;
+  --cyan-bright: #7dd3fc;
   --cyan-dim: #0284c7;
   
-  --purple: #a855f7;
-  --purple-bright: #c084fc;
-  --purple-dim: #7e22ce;
+  --amber: #f59e0b;
+  --amber-bright: #fbbf24;
+  --amber-dim: #d97706;
 
-  --emerald: #34d399;
-  --amber: #fbbf24;
-  --rose: #fb7185;
+  --purple: #818cf8;
+  --purple-bright: #a5b4fc;
+  --purple-dim: #4f46e5;
+
+  --emerald: #10b981;
+  --emerald-bright: #34d399;
+  --rose: #f43f5e;
 
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
@@ -36,9 +41,12 @@
   --radius-sm: 8px;
   --radius-full: 9999px;
 
-  --shadow-lg: 0 20px 50px -10px rgba(0, 0, 0, 0.65);
-  --shadow-glow: 0 0 30px rgba(56, 189, 248, 0.22);
-  --transition: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  --shadow-lg: 0 20px 50px -10px rgba(0, 0, 0, 0.75);
+  --shadow-glow: 0 0 35px rgba(56, 189, 248, 0.22);
+  --shadow-amber: 0 0 35px rgba(245, 158, 11, 0.20);
+  --transition: 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ambient-energy: 0;
 }
 
 /* CRITICAL: Force strict hidden state to eliminate any button / component clutter */
@@ -80,11 +88,12 @@ body {
   pointer-events: none;
   z-index: 0;
   opacity: 0.35;
+  will-change: opacity;
 }
 
-/* Text Gradients */
+/* Text Gradients (Acoustic Sonic Cyan -> Dusk Indigo -> Warm Studio Amber) */
 .gradient-text {
-  background: linear-gradient(135deg, var(--cyan) 0%, var(--purple) 100%);
+  background: linear-gradient(135deg, #38bdf8 0%, #818cf8 48%, #fbbf24 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -374,11 +383,21 @@ body {
   object-fit: cover;
   object-position: center;
   display: block;
-  transition: transform 0.5s ease;
+  transform: scale(1.02);
+  will-change: transform;
+  animation: bannerHeroBreathe 22s ease-in-out infinite alternate;
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), filter 0.6s ease;
+}
+
+@keyframes bannerHeroBreathe {
+  0% { transform: scale(1.02) translate3d(0, 0, 0); }
+  50% { transform: scale(1.06) translate3d(-3px, -2px, 0); }
+  100% { transform: scale(1.03) translate3d(2px, 1px, 0); }
 }
 
 .banner-visual-showcase:hover .banner-hero-img {
-  transform: scale(1.04);
+  transform: scale(1.09) translate3d(0, 0, 0);
+  filter: contrast(1.08) brightness(1.04);
 }
 
 .banner-img-overlay {
@@ -445,6 +464,7 @@ body {
   box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
+  contain: layout style;
 }
 
 .card-box.card-module {
@@ -579,32 +599,39 @@ body {
 }
 
 .preset-btn {
-  padding: 6px 12px;
-  background: rgba(15, 27, 61, 0.7);
-  border: 1px solid var(--border);
+  padding: 6px 13px;
+  background: rgba(14, 23, 48, 0.75);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-full);
   color: var(--text-muted);
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 500;
   font-family: inherit;
   cursor: pointer;
   transition: all var(--transition);
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .preset-btn:hover {
   background: rgba(56, 189, 248, 0.12);
   color: var(--cyan-bright);
   border-color: var(--border-focus);
-  transform: translateY(-1px);
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 12px rgba(56, 189, 248, 0.18);
+}
+
+.preset-btn:active {
+  transform: translateY(0.5px) scale(0.97);
 }
 
 .preset-btn.active {
-  background: rgba(56, 189, 248, 0.2);
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.28) 0%, rgba(245, 158, 11, 0.20) 100%);
   color: #fff;
   border-color: var(--cyan);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 /* Upload Zone */
@@ -1440,6 +1467,50 @@ body {
   line-height: 1.6;
 }
 
+/* Combined Architecture & Pipeline Subsection Headers */
+.combined-subhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+}
+
+.subhead-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.subhead-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--cyan);
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+}
+
+.subhead-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.2px;
+}
+
+.subhead-meta {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
 /* Model Architecture View */
 .arch-cards-grid {
   display: grid;
@@ -2029,65 +2100,185 @@ body {
    ═══════════════════════════════════════════════════════════════ */
 
 :root {
-  --glass-strong: rgba(10, 18, 40, 0.9);
-  --glass-soft: rgba(15, 27, 61, 0.55);
-  --hairline: rgba(148, 197, 255, 0.16);
-  --grad-live: linear-gradient(90deg, #38bdf8 0%, #818cf8 45%, #a855f7 75%, #f472b6 100%);
-  --shadow-float: 0 24px 60px -20px rgba(0, 0, 0, 0.8);
+  --glass-strong: rgba(10, 18, 40, 0.92);
+  --glass-soft: rgba(15, 27, 61, 0.58);
+  --hairline: rgba(148, 197, 255, 0.14);
+  --grad-live: linear-gradient(90deg, #38bdf8 0%, #818cf8 50%, #fbbf24 100%);
+  --shadow-float: 0 24px 60px -20px rgba(0, 0, 0, 0.85);
 }
 
-/* Ambient aurora field + film grain */
+/* ════════════ AMBIENT STUDIO SOUNDSCAPE BACKGROUND ════════════ */
+/* Fully GPU-Composited, 0% CPU Overhead, 60fps locked */
 .ambient-layer {
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
-  background:
-    radial-gradient(1100px 700px at 12% -10%, rgba(56, 189, 248, 0.1), transparent 62%),
-    radial-gradient(900px 600px at 95% 0%, rgba(168, 85, 247, 0.1), transparent 60%),
-    radial-gradient(900px 700px at 50% 120%, rgba(14, 116, 144, 0.12), transparent 65%);
+  background-color: var(--bg-deep);
+  background-image:
+    radial-gradient(1100px 700px at 12% -10%, rgba(56, 189, 248, 0.12), transparent 64%),
+    radial-gradient(950px 650px at 92% 10%, rgba(129, 140, 248, 0.10), transparent 60%),
+    radial-gradient(1000px 750px at 50% 120%, rgba(245, 158, 11, 0.08), transparent 65%);
+  transition: opacity 0.6s ease;
 }
 
+/* Cinematic Slow-Moving Background Image (Ken Burns drift) */
+.ambient-bg-image {
+  position: absolute;
+  inset: -6%;
+  width: 112%;
+  height: 112%;
+  background-image: url('hero_bg.jpg');
+  background-size: cover;
+  background-position: center 35%;
+  opacity: 0.18;
+  filter: saturate(0.85) contrast(1.15) brightness(0.65);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  animation: studioKenBurns 48s ease-in-out infinite alternate;
+}
+
+@keyframes studioKenBurns {
+  0% {
+    transform: scale(1.04) translate3d(-1.5%, -1%, 0);
+  }
+  50% {
+    transform: scale(1.10) translate3d(1.5%, 1.2%, 0);
+  }
+  100% {
+    transform: scale(1.06) translate3d(-0.8%, -1.5%, 0);
+  }
+}
+
+/* Flowing Acoustic Harmonic Wave Meshes (Dual-Plane Parallax) */
+.ambient-waves-wrap {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0.45;
+  mix-blend-mode: screen;
+}
+
+.ambient-wave-plane {
+  position: absolute;
+  inset: -40% -20%;
+  width: 140%;
+  height: 180%;
+  background-repeat: repeat;
+  will-change: transform;
+}
+
+.wave-plane-1 {
+  background-size: 800px 400px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='400' viewBox='0 0 800 400' fill='none'%3E%3Cpath d='M0 200 C 200 130, 400 270, 600 170 C 700 120, 760 180, 800 200' stroke='rgba(56,189,248,0.22)' stroke-width='1.5' stroke-dasharray='4 8'/%3E%3Cpath d='M0 240 C 240 310, 480 160, 720 230 L 800 240' stroke='rgba(245,158,11,0.14)' stroke-width='1.2'/%3E%3Cpath d='M0 160 C 180 85, 420 220, 640 135 L 800 160' stroke='rgba(129,140,248,0.15)' stroke-width='1'/%3E%3C/svg%3E");
+  animation: waveMeshFlow1 36s linear infinite;
+}
+
+.wave-plane-2 {
+  background-size: 960px 480px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='960' height='480' viewBox='0 0 960 480' fill='none'%3E%3Cpath d='M0 240 C 240 320, 480 140, 720 260 L 960 240' stroke='rgba(16,185,129,0.14)' stroke-width='1.4'/%3E%3Cpath d='M0 190 C 290 100, 580 280, 820 180 L 960 190' stroke='rgba(56,189,248,0.14)' stroke-width='1' stroke-dasharray='6 6'/%3E%3C/svg%3E");
+  animation: waveMeshFlow2 52s linear infinite reverse;
+  opacity: 0.65;
+}
+
+@keyframes waveMeshFlow1 {
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-400px, -200px, 0); }
+}
+
+@keyframes waveMeshFlow2 {
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(480px, 240px, 0); }
+}
+
+/* Breathing Acoustic Resonance Nodes (Organic Human Respiratory Rhythm) */
 .aurora {
   position: absolute;
   border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.35;
+  filter: blur(85px);
+  opacity: 0.32;
   mix-blend-mode: screen;
   pointer-events: none;
+  will-change: transform, opacity;
+  animation: auroraBreathe 14s ease-in-out infinite;
 }
 
 .aurora-1 {
-  width: 640px;
-  height: 640px;
-  top: -260px;
-  left: -160px;
-  background: radial-gradient(circle at 35% 35%, rgba(56, 189, 248, 0.55), transparent 66%);
+  width: 680px;
+  height: 680px;
+  top: -240px;
+  left: -140px;
+  background: radial-gradient(circle at 35% 35%, rgba(56, 189, 248, 0.55), rgba(14, 165, 233, 0.22) 50%, transparent 68%);
+  animation-duration: 16s;
 }
 
 .aurora-2 {
-  width: 560px;
-  height: 560px;
-  top: -180px;
-  right: -140px;
-  background: radial-gradient(circle at 60% 40%, rgba(168, 85, 247, 0.5), transparent 68%);
+  width: 600px;
+  height: 600px;
+  top: -160px;
+  right: -120px;
+  background: radial-gradient(circle at 60% 40%, rgba(129, 140, 248, 0.45), rgba(99, 102, 241, 0.18) 50%, transparent 70%);
+  animation-duration: 20s;
+  animation-delay: -4s;
 }
 
 .aurora-3 {
-  width: 520px;
-  height: 520px;
-  bottom: -260px;
-  left: 32%;
-  background: radial-gradient(circle at 50% 50%, rgba(45, 212, 191, 0.3), transparent 68%);
+  width: 580px;
+  height: 580px;
+  bottom: -220px;
+  left: 35%;
+  background: radial-gradient(circle at 50% 50%, rgba(245, 158, 11, 0.32), rgba(217, 119, 6, 0.12) 50%, transparent 70%);
+  animation-duration: 18s;
+  animation-delay: -9s;
 }
 
+@keyframes auroraBreathe {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.30;
+  }
+  50% {
+    transform: translate3d(24px, -16px, 0) scale(1.12);
+    opacity: 0.44;
+  }
+}
+
+/* Studio Vignette for Ocular Focus */
+.ambient-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 45%, transparent 35%, rgba(6, 11, 23, 0.85) 100%);
+  pointer-events: none;
+}
+
+/* Audio-Reactive Atmosphere (Gently blooms when sound is playing) */
+body.audio-playing .ambient-layer {
+  background-image:
+    radial-gradient(1100px 700px at 12% -10%, rgba(56, 189, 248, 0.18), transparent 64%),
+    radial-gradient(950px 650px at 92% 10%, rgba(129, 140, 248, 0.15), transparent 60%),
+    radial-gradient(1000px 750px at 50% 120%, rgba(245, 158, 11, 0.16), transparent 65%);
+}
+
+body.audio-playing .ambient-bg-image {
+  opacity: 0.24;
+  filter: saturate(1.05) contrast(1.2) brightness(0.75);
+}
+
+body.audio-playing .aurora {
+  opacity: 0.46;
+}
+
+/* Physical Micro-Grain for Authentic Texture */
 .grain {
   position: absolute;
   inset: 0;
-  opacity: 0.035;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px);
-  background-size: 24px 24px;
+  opacity: 0.032;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.20) 1px, transparent 1px);
+  background-size: 20px 20px;
   pointer-events: none;
 }
 
@@ -2216,7 +2407,7 @@ body {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.55), rgba(168, 85, 247, 0.45), transparent);
+  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.55), rgba(245, 158, 11, 0.35), transparent);
   opacity: 0.65;
   pointer-events: none;
 }
@@ -3246,8 +3437,11 @@ kbd {
     scroll-behavior: auto !important;
   }
   .aurora,
-  .grain {
-    animation: none;
+  .grain,
+  .ambient-bg-image,
+  .ambient-wave-plane,
+  .banner-hero-img {
+    animation: none !important;
   }
 }
 

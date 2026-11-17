@@ -347,12 +347,21 @@ viewTabs.forEach(tab => {
   });
 });
 
+const DEV_ONLY_VIEWS = ['training', 'analytics'];
+
 function switchView(viewName) {
+  // Map legacy architecture view to the combined pipeline view
+  if (viewName === 'architecture') viewName = 'pipeline';
+
   // Guard developer-only views if not authenticated
-  if ((viewName === 'training' || viewName === 'analytics') && !isDeveloperAuthenticated) {
+  if (DEV_ONLY_VIEWS.includes(viewName) && !isDeveloperAuthenticated) {
     pendingDevView = viewName;
     openAuthModal();
-    showToast('Developer Access Required', `Sign in to access ${viewName === 'training' ? 'Model Training' : 'System Analytics'}.`, 'warn', 4000);
+    const viewLabels = {
+      training: 'Model Training',
+      analytics: 'System Analytics'
+    };
+    showToast('Developer Access Required', `Sign in to access ${viewLabels[viewName] || 'Developer Mode'}.`, 'warn', 4000);
     return;
   }
 
@@ -374,7 +383,7 @@ function switchView(viewName) {
 
   requestAnimationFrame(positionNavGlider);
 
-  if (viewName === 'architecture') {
+  if (viewName === 'pipeline') {
     animateBenchmarkBars(true);
     animateArchMetrics();
   } else if (viewName === 'training') {
@@ -433,12 +442,12 @@ function animateBenchmarkBars(active) {
   });
 
   if (active) {
-    document.querySelectorAll('#view-architecture .perf-pct').forEach(animateMetricValue);
+    document.querySelectorAll('#view-pipeline .perf-pct, #view-architecture .perf-pct').forEach(animateMetricValue);
   }
 }
 
 function animateArchMetrics() {
-  document.querySelectorAll('#view-architecture .m-val').forEach(animateMetricValue);
+  document.querySelectorAll('#view-pipeline .m-val, #view-architecture .m-val').forEach(animateMetricValue);
 }
 
 function animateMetricValue(el) {
@@ -1571,6 +1580,7 @@ function setPlayIcon(playing) {
   const bar = playBtn.closest('.player-bar');
   if (bar) bar.classList.toggle('playing', playing);
   if (heroShowcase) heroShowcase.classList.toggle('live', playing);
+  document.body.classList.toggle('audio-playing', playing);
 }
 
 function startAudioPlayback() {
@@ -2852,15 +2862,16 @@ if (surpriseBtn) {
   });
 }
 
-/* ── Ambient Background Canvas Particles (Lag-Free & Optimized) ── */
+/* ── Ambient Background Canvas Particles (Lag-Free & Studio Optimized) ── */
 (function initAmbientParticles() {
   if (!bgCanvas) return;
-  const ctx = bgCanvas.getContext('2d');
+  const ctx = bgCanvas.getContext('2d', { alpha: true });
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let W = 0;
   let H = 0;
   let particles = [];
   let lastTime = 0;
+  let resizeTimer = null;
 
   function onResize() {
     W = window.innerWidth;
@@ -2870,9 +2881,14 @@ if (surpriseBtn) {
     bgCanvas.style.width = `${W}px`;
     bgCanvas.style.height = `${H}px`;
 
-    const target = W < 700 ? 6 : 10;
+    const target = W < 700 ? 5 : 8;
     while (particles.length < target) particles.push(new NodeParticle());
     if (particles.length > target) particles.length = target;
+  }
+
+  function debouncedResize() {
+    if (resizeTimer) cancelAnimationFrame(resizeTimer);
+    resizeTimer = requestAnimationFrame(onResize);
   }
 
   class NodeParticle {
@@ -2881,10 +2897,11 @@ if (surpriseBtn) {
       this.x = Math.random() * W;
       this.y = Math.random() * H;
       this.radius = Math.random() * 1.2 + 0.6;
-      this.vx = (Math.random() - 0.5) * 0.15;
-      this.vy = (Math.random() - 0.5) * 0.15;
-      this.alpha = Math.random() * 0.25 + 0.1;
-      this.color = Math.random() > 0.5 ? '#38bdf8' : '#a855f7';
+      this.vx = (Math.random() - 0.5) * 0.12;
+      this.vy = (Math.random() - 0.5) * 0.12;
+      this.alpha = Math.random() * 0.22 + 0.08;
+      // Acoustic studio color psychology: Sonic Cyan & Warm Analog Amber
+      this.color = Math.random() > 0.45 ? '#38bdf8' : '#fbbf24';
     }
     update() {
       this.x += this.vx;
@@ -2892,7 +2909,7 @@ if (surpriseBtn) {
       if (this.x < -10 || this.x > W + 10 || this.y < -10 || this.y > H + 10) this.spawn();
     }
     draw() {
-      ctx.globalAlpha = this.alpha;
+      ctx.globalAlpha = isPlaying ? Math.min(0.5, this.alpha * 1.5) : this.alpha;
       ctx.fillStyle = this.color;
       ctx.beginPath();
       ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
@@ -2909,14 +2926,14 @@ if (surpriseBtn) {
   }
 
   function animate(time) {
-    if (!document.hidden && time - lastTime > 40) { // Throttled to ~25fps for 0% CPU consumption
+    if (!document.hidden && time - lastTime > 45) { // Ultra-low CPU (~22fps, non-blocking)
       lastTime = time;
       render();
     }
     requestAnimationFrame(animate);
   }
 
-  window.addEventListener('resize', onResize);
+  window.addEventListener('resize', debouncedResize, { passive: true });
   onResize();
 
   if (reduceMotion) {
@@ -3090,16 +3107,15 @@ document.addEventListener('keydown', (e) => {
   if (e.key === '/') {
     e.preventDefault();
     switchView('taxonomy');
-    setTimeout(() => taxonomySearch.focus(), 140);
+    setTimeout(() => {
+      if (taxonomySearch) taxonomySearch.focus();
+    }, 140);
     return;
   }
 
-  const views = ['studio', 'architecture', 'taxonomy', 'pipeline', 'training', 'analytics'];
-  if (/^[1-6]$/.test(e.key)) {
+  const views = ['studio', 'pipeline', 'taxonomy', 'training', 'analytics'];
+  if (/^[1-5]$/.test(e.key)) {
     const num = Number(e.key);
-    if ((num === 5 || num === 6) && !isDeveloperAuthenticated) {
-      return; // Keyboard shortcuts 5 and 6 disabled for normal users
-    }
     e.preventDefault();
     switchView(views[num - 1]);
     return;
@@ -4194,13 +4210,19 @@ const accountAvatar      = document.getElementById('account-avatar');
 const devBadgeDot        = document.getElementById('dev-badge-dot');
 const accountMenuPopover = document.getElementById('account-menu-popover');
 const btnLogout          = document.getElementById('btn-logout');
-const menuGotoTraining   = document.getElementById('menu-goto-training');
-const menuGotoAnalytics  = document.getElementById('menu-goto-analytics');
+const menuGotoArchitecture = document.getElementById('menu-goto-architecture');
+const menuGotoTaxonomy     = document.getElementById('menu-goto-taxonomy');
+const menuGotoPipeline     = document.getElementById('menu-goto-pipeline');
+const menuGotoTraining     = document.getElementById('menu-goto-training');
+const menuGotoAnalytics    = document.getElementById('menu-goto-analytics');
 const popoverNameEl      = document.getElementById('popover-name');
 const popoverEmailEl     = document.getElementById('popover-email');
 const popoverInitialEl   = document.getElementById('popover-initial');
-const tagBadgeTraining   = document.getElementById('tag-badge-training');
-const tagBadgeAnalytics  = document.getElementById('tag-badge-analytics');
+const tagBadgeArchitecture = document.getElementById('tag-badge-architecture');
+const tagBadgeTaxonomy     = document.getElementById('tag-badge-taxonomy');
+const tagBadgePipeline     = document.getElementById('tag-badge-pipeline');
+const tagBadgeTraining     = document.getElementById('tag-badge-training');
+const tagBadgeAnalytics    = document.getElementById('tag-badge-analytics');
 
 const authModal          = document.getElementById('auth-modal');
 const authModalClose     = document.getElementById('auth-modal-close');
@@ -4281,17 +4303,12 @@ function setDeveloperMode(authenticated, user = null) {
       tab.style.display = 'inline-flex';
     });
 
-    // Update nav dev badges to unlocked
-    if (tagBadgeTraining) {
-      tagBadgeTraining.textContent = 'DEV';
-      tagBadgeTraining.classList.add('unlocked');
-      tagBadgeTraining.title = 'Model Training Portal Unlocked';
-    }
-    if (tagBadgeAnalytics) {
-      tagBadgeAnalytics.textContent = 'DEV';
-      tagBadgeAnalytics.classList.add('unlocked');
-      tagBadgeAnalytics.title = 'System Analytics Unlocked';
-    }
+    // Update all nav dev badges to unlocked
+    document.querySelectorAll('.nav-dev-tag').forEach(badge => {
+      badge.textContent = 'DEV';
+      badge.classList.add('unlocked');
+      badge.title = 'Developer Portal Unlocked';
+    });
 
     // Update Google-style account button to active developer state
     if (accountBtn) {
@@ -4333,9 +4350,16 @@ function setDeveloperMode(authenticated, user = null) {
 
     closeAccountMenu();
 
+    // Reset all nav dev badges to locked
+    document.querySelectorAll('.nav-dev-tag').forEach(badge => {
+      badge.textContent = 'DEV';
+      badge.classList.remove('unlocked');
+      badge.title = 'Developer Access Required';
+    });
+
     // If currently on a developer view, reset to Classifier Studio
     const activeTab = document.querySelector('.view-tab.active');
-    if (activeTab && (activeTab.dataset.view === 'training' || activeTab.dataset.view === 'analytics')) {
+    if (activeTab && DEV_ONLY_VIEWS.includes(activeTab.dataset.view)) {
       switchView('studio');
     }
 
@@ -4475,6 +4499,27 @@ document.addEventListener('keydown', (e) => {
 });
 
 // Quick navigation links inside account popover
+if (menuGotoArchitecture) {
+  menuGotoArchitecture.addEventListener('click', () => {
+    closeAccountMenu();
+    switchView('architecture');
+  });
+}
+
+if (menuGotoTaxonomy) {
+  menuGotoTaxonomy.addEventListener('click', () => {
+    closeAccountMenu();
+    switchView('taxonomy');
+  });
+}
+
+if (menuGotoPipeline) {
+  menuGotoPipeline.addEventListener('click', () => {
+    closeAccountMenu();
+    switchView('pipeline');
+  });
+}
+
 if (menuGotoTraining) {
   menuGotoTraining.addEventListener('click', () => {
     closeAccountMenu();
@@ -4519,9 +4564,16 @@ if (btnLogout) {
     } catch (_) {}
     setDeveloperMode(false);
 
+    // Reset all nav dev badges to locked
+    document.querySelectorAll('.nav-dev-tag').forEach(badge => {
+      badge.textContent = 'DEV';
+      badge.classList.remove('unlocked');
+      badge.title = 'Developer Access Required';
+    });
+
     // If currently on a developer view, reset to Classifier Studio
     const activeTab = document.querySelector('.view-tab.active');
-    if (activeTab && (activeTab.dataset.view === 'training' || activeTab.dataset.view === 'analytics')) {
+    if (activeTab && DEV_ONLY_VIEWS.includes(activeTab.dataset.view)) {
       switchView('studio');
     }
 
@@ -4611,7 +4663,7 @@ async function submitDeveloperLogin(rawUser, rawPass) {
     setDeveloperMode(true, authUser);
     closeAuthModal();
 
-    showToast('Developer Mode Unlocked', `Welcome back, ${authUser.name}! Training and Analytics portals are ready.`, 'success', 4000);
+    showToast('Developer Mode Unlocked', `Welcome back, ${authUser.name}! Developer sections & architecture tools are ready.`, 'success', 4000);
 
     // Navigate straight to target view or developer training view
     const target = pendingDevView || 'training';

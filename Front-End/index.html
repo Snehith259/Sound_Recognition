@@ -11,15 +11,21 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- Ambient aurora field -->
-  <div class="ambient-layer" aria-hidden="true">
+  <!-- Ambient Studio Atmospheric Soundscape (Moving Background & Harmonic Wave Parallax) -->
+  <div class="ambient-layer" id="ambient-layer" aria-hidden="true">
+    <div class="ambient-bg-image" id="ambient-bg-image"></div>
+    <div class="ambient-waves-wrap">
+      <div class="ambient-wave-plane wave-plane-1"></div>
+      <div class="ambient-wave-plane wave-plane-2"></div>
+    </div>
     <div class="aurora aurora-1"></div>
     <div class="aurora aurora-2"></div>
     <div class="aurora aurora-3"></div>
+    <div class="ambient-vignette"></div>
     <div class="grain"></div>
   </div>
 
-  <!-- Ambient background canvas -->
+  <!-- Ambient background canvas (High-performance audio-reactive layer) -->
   <canvas id="bg-canvas" aria-hidden="true"></canvas>
 
   <!-- Top Navigation & Workspace Header -->
@@ -36,14 +42,15 @@
             <defs>
               <linearGradient id="logo-grad" x1="8" y1="7" x2="26" y2="25" gradientUnits="userSpaceOnUse">
                 <stop stop-color="#38bdf8"/>
-                <stop offset="1" stop-color="#a855f7"/>
+                <stop offset="0.55" stop-color="#818cf8"/>
+                <stop offset="1" stop-color="#fbbf24"/>
               </linearGradient>
             </defs>
           </svg>
         </div>
         <div class="brand-text">
           <span class="brand-name">Sound<span class="gradient-text">Sense</span></span>
-          <span class="brand-tag">ESC-50 Acoustic AI</span>
+          <span class="brand-tag">ESC-50 Acoustic Studio</span>
         </div>
       </div>
 
@@ -54,24 +61,20 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
           <span>Classifier Studio</span>
         </button>
-        <button class="view-tab" role="tab" id="tab-nav-architecture" aria-selected="false" aria-controls="view-architecture" data-view="architecture" aria-keyshortcuts="2">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-          <span>Model Architecture</span>
+        <button class="view-tab" role="tab" id="tab-nav-pipeline" aria-selected="false" aria-controls="view-pipeline" data-view="pipeline" aria-keyshortcuts="2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="6" height="6" rx="1.5"/><rect x="16" y="3" width="6" height="6" rx="1.5"/><rect x="9" y="15" width="6" height="6" rx="1.5"/><path d="M5 9v3a2 2 0 0 0 2 2h5m5-5v3a2 2 0 0 1-2 2h-5"/></svg>
+          <span>Architecture &amp; Pipeline</span>
         </button>
         <button class="view-tab" role="tab" id="tab-nav-taxonomy" aria-selected="false" aria-controls="view-taxonomy" data-view="taxonomy" aria-keyshortcuts="3">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
           <span>ESC-50 Taxonomy</span>
         </button>
-        <button class="view-tab" role="tab" id="tab-nav-pipeline" aria-selected="false" aria-controls="view-pipeline" data-view="pipeline" aria-keyshortcuts="4">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          <span>Pipeline &amp; Research</span>
-        </button>
-        <button class="view-tab dev-tab" role="tab" id="tab-nav-training" aria-selected="false" aria-controls="view-training" data-view="training" aria-keyshortcuts="5" style="display: none;">
+        <button class="view-tab dev-tab" role="tab" id="tab-nav-training" aria-selected="false" aria-controls="view-training" data-view="training" aria-keyshortcuts="4" style="display: none;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
           <span>Training &amp; Model</span>
           <span class="nav-dev-tag" id="tag-badge-training">DEV</span>
         </button>
-        <button class="view-tab dev-tab" role="tab" id="tab-nav-analytics" aria-selected="false" aria-controls="view-analytics" data-view="analytics" aria-keyshortcuts="6" style="display: none;">
+        <button class="view-tab dev-tab" role="tab" id="tab-nav-analytics" aria-selected="false" aria-controls="view-analytics" data-view="analytics" aria-keyshortcuts="5" style="display: none;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
           <span>System Analytics</span>
           <span class="nav-dev-tag" id="tag-badge-analytics">DEV</span>
@@ -111,6 +114,14 @@
             </div>
             <div class="account-menu-divider"></div>
             <div class="account-menu-links">
+              <button type="button" class="account-menu-item" id="menu-goto-pipeline">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="6" height="6" rx="1.5"/><rect x="16" y="3" width="6" height="6" rx="1.5"/><rect x="9" y="15" width="6" height="6" rx="1.5"/><path d="M5 9v3a2 2 0 0 0 2 2h5m5-5v3a2 2 0 0 1-2 2h-5"/></svg>
+                <span>Architecture &amp; Pipeline</span>
+              </button>
+              <button type="button" class="account-menu-item" id="menu-goto-taxonomy">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                <span>ESC-50 Taxonomy Explorer</span>
+              </button>
               <button type="button" class="account-menu-item" id="menu-goto-training">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
                 <span>Training &amp; Model Portal</span>
@@ -472,13 +483,105 @@
       </div>
     </section>
 
-    <!-- ════════════ VIEW 2: MODEL ARCHITECTURE ════════════ -->
-    <section class="view-panel" id="view-architecture" role="tabpanel" aria-labelledby="tab-nav-architecture" hidden>
+    <!-- ════════════ VIEW 2: NEURAL ARCHITECTURE & RESEARCH PIPELINE (COMBINED) ════════════ -->
+    <section class="view-panel" id="view-pipeline" role="tabpanel" aria-labelledby="tab-nav-pipeline" hidden>
       <div class="panel-inner">
+        <!-- Unified Header -->
         <div class="panel-title-group">
-          <span class="badge-pill">Neural Frameworks</span>
-          <h2 class="panel-heading">Deep Learning Architectures for Sound Recognition</h2>
-          <p class="panel-subtext">Benchmarking ResNet-18, VGG-16, SResNet, and CNN-GRU across environmental acoustic classification on the ESC-50 dataset.</p>
+          <span class="badge-pill">Acoustic Engineering &amp; Neural Systems</span>
+          <h2 class="panel-heading">Neural Architecture &amp; Research Pipeline</h2>
+          <p class="panel-subtext">Comprehensive engineering methodology: from raw audio ingestion and multi-representation feature extraction to dual-modal neural architectures, SwiGLU gating, and empirical benchmarks on ESC-50.</p>
+        </div>
+
+        <!-- Phase 01: End-to-End Signal Ingestion & Dual-Modal Pipeline -->
+        <div class="combined-subhead">
+          <div class="subhead-title-wrap">
+            <span class="subhead-badge">Phase 01</span>
+            <h3 class="subhead-title">End-to-End Audio Ingestion &amp; Feature Pipeline</h3>
+          </div>
+          <p class="subhead-meta">Deterministic 4-stage processing flow converting raw sound waves into multimodal neural tensors</p>
+        </div>
+
+        <div class="pipeline-cards-row">
+          <div class="flow-step-card">
+            <div class="flow-num">01</div>
+            <h4 class="flow-step-title">Resampling &amp; Active Segment</h4>
+            <p class="flow-step-desc">Audio is resampled to a standardized 22,050 Hz (5.0s duration, 110,250 samples), peak-normalized to [-1.0, 1.0], and scanned for the longest energetic acoustic activity window.</p>
+            <div class="flow-pill">22.05 kHz &bull; Peak Norm &bull; VAD</div>
+          </div>
+
+          <div class="flow-connector" aria-hidden="true">&rarr;</div>
+
+          <div class="flow-step-card">
+            <div class="flow-num">02</div>
+            <h4 class="flow-step-title">Dual-Modal Feature Extraction</h4>
+            <p class="flow-step-desc">Extracts 128-band Log-Mel spectrograms &amp; 40-MFCCs (macroscopic linear/harmonic) alongside 128-PAA Threshold-Free Recurrence Plots (microscopic chaotic dynamics).</p>
+            <div class="flow-pill">128-Mel &bull; 40-MFCC &bull; 128x128 RP</div>
+          </div>
+
+          <div class="flow-connector" aria-hidden="true">&rarr;</div>
+
+          <div class="flow-step-card">
+            <div class="flow-num">03</div>
+            <h4 class="flow-step-title">Stratified 5-Fold Validation</h4>
+            <p class="flow-step-desc">Dataset is split into 5 official balanced folds with strictly disjoint recording sources to ensure zero data leakage between training, validation, and test partitions.</p>
+            <div class="flow-pill">5 Folds &bull; Zero Leakage &bull; PyTorch</div>
+          </div>
+
+          <div class="flow-connector" aria-hidden="true">&rarr;</div>
+
+          <div class="flow-step-card">
+            <div class="flow-num">04</div>
+            <h4 class="flow-step-title">Dual-Modal Fusion &amp; SwiGLU</h4>
+            <p class="flow-step-desc">Cross-attention merges continuous phase recurrence with spectral energy maps, processed through SwiGLU-gated SResNet to suppress ambient noise and produce >97.8% accuracy.</p>
+            <div class="flow-pill">DMFF Cross-Attn &bull; SwiGLU SResNet</div>
+          </div>
+        </div>
+
+        <!-- Live Preprocessed Dataset Telemetry Card -->
+        <div class="dataset-telemetry-banner">
+          <div class="dt-head">
+            <div class="dt-badge">
+              <span class="status-indicator live" aria-hidden="true"></span>
+              Preprocessing Suite Telemetry
+            </div>
+            <span class="dt-sub">Standardized ESC-50 dataset telemetry across 50 acoustic classes</span>
+          </div>
+          <div class="dt-grid">
+            <div class="dt-stat">
+              <span class="dt-val">1,998</span>
+              <span class="dt-lbl">Processed Clips (22.05 kHz)</span>
+            </div>
+            <div class="dt-stat">
+              <span class="dt-val">128 &times; 216</span>
+              <span class="dt-lbl">Log-Mel Matrices (.npy)</span>
+            </div>
+            <div class="dt-stat">
+              <span class="dt-val">40 &times; 216</span>
+              <span class="dt-lbl">MFCC Cepstra (.npy)</span>
+            </div>
+            <div class="dt-stat">
+              <span class="dt-val">128 &times; 128</span>
+              <span class="dt-lbl">Threshold-Free RP (.npy)</span>
+            </div>
+            <div class="dt-stat">
+              <span class="dt-val">5 Folds</span>
+              <span class="dt-lbl">Disjoint Stratified Splits</span>
+            </div>
+            <div class="dt-stat">
+              <span class="dt-val">100%</span>
+              <span class="dt-lbl">Tensor Validation Pass</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phase 02: Deep Learning Acoustic Architectures & Benchmarks -->
+        <div class="combined-subhead">
+          <div class="subhead-title-wrap">
+            <span class="subhead-badge">Phase 02</span>
+            <h3 class="subhead-title">Deep Learning Acoustic Architectures &amp; Empirical Benchmarks</h3>
+          </div>
+          <p class="subhead-meta">Comparative evaluation of convolutional, recurrent, and residual representations on ESC-50</p>
         </div>
 
         <div class="arch-cards-grid">
@@ -612,6 +715,35 @@
             </tbody>
           </table>
         </div>
+
+        <!-- Phase 03: Academic & Methodological Foundations -->
+        <div class="combined-subhead">
+          <div class="subhead-title-wrap">
+            <span class="subhead-badge">Phase 03</span>
+            <h3 class="subhead-title">Academic &amp; Methodological Foundations</h3>
+          </div>
+          <p class="subhead-meta">Peer-reviewed signal processing research backing this classification pipeline</p>
+        </div>
+
+        <!-- Academic Citation Card -->
+        <div class="citation-box">
+          <div class="citation-icon" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          </div>
+          <div class="citation-body">
+            <h4 class="citation-title">Academic Reference</h4>
+            <p class="citation-text">
+              Zeng, J., Zhou, C., &amp; Cai, D. (2024). <em>Sound recognition fusion: A deep learning approach for environmental sound classification by fusing linear and nonlinear features.</em> EURASIP Journal on Advances in Signal Processing.
+            </p>
+            <div class="citation-tags">
+              <span class="c-tag">Environmental Sound Classification</span>
+              <span class="c-tag">Threshold-Free Recurrence Plot</span>
+              <span class="c-tag">Dual-Modal Feature Fusion</span>
+              <span class="c-tag">ESC-50 Benchmark</span>
+            </div>
+          </div>
+        </div>
+
       </div>
     </section>
 
@@ -659,108 +791,6 @@
       </div>
     </section>
 
-    <!-- ════════════ VIEW 4: PIPELINE & RESEARCH ════════════ -->
-    <section class="view-panel" id="view-pipeline" role="tabpanel" aria-labelledby="tab-nav-pipeline" hidden>
-      <div class="panel-inner">
-        <div class="panel-title-group">
-          <span class="badge-pill">Methodology</span>
-          <h2 class="panel-heading">Acoustic Signal Processing Workflow</h2>
-          <p class="panel-subtext">Step-by-step pipeline from raw audio ingestion to multi-class posterior probability fusion.</p>
-        </div>
-
-        <div class="pipeline-cards-row">
-          <div class="flow-step-card">
-            <div class="flow-num">01</div>
-            <h4 class="flow-step-title">Resampling &amp; Active Segment</h4>
-            <p class="flow-step-desc">Audio is resampled to a standardized 22,050 Hz (5.0s duration, 110,250 samples), peak-normalized to [-1.0, 1.0], and scanned for the longest energetic acoustic activity window.</p>
-            <div class="flow-pill">22.05 kHz &bull; Peak Norm &bull; VAD</div>
-          </div>
-
-          <div class="flow-connector" aria-hidden="true">&rarr;</div>
-
-          <div class="flow-step-card">
-            <div class="flow-num">02</div>
-            <h4 class="flow-step-title">Dual-Modal Feature Extraction</h4>
-            <p class="flow-step-desc">Extracts 128-band Log-Mel spectrograms &amp; 40-MFCCs (macroscopic linear/harmonic) alongside 128-PAA Threshold-Free Recurrence Plots (microscopic chaotic dynamics).</p>
-            <div class="flow-pill">128-Mel &bull; 40-MFCC &bull; 128x128 RP</div>
-          </div>
-
-          <div class="flow-connector" aria-hidden="true">&rarr;</div>
-
-          <div class="flow-step-card">
-            <div class="flow-num">03</div>
-            <h4 class="flow-step-title">Stratified 5-Fold Validation</h4>
-            <p class="flow-step-desc">Dataset is split into 5 official balanced folds with strictly disjoint recording sources to ensure zero data leakage between training, validation, and test partitions.</p>
-            <div class="flow-pill">5 Folds &bull; Zero Leakage &bull; PyTorch</div>
-          </div>
-
-          <div class="flow-connector" aria-hidden="true">&rarr;</div>
-
-          <div class="flow-step-card">
-            <div class="flow-num">04</div>
-            <h4 class="flow-step-title">Dual-Modal Fusion &amp; SwiGLU</h4>
-            <p class="flow-step-desc">Cross-attention merges continuous phase recurrence with spectral energy maps, processed through SwiGLU-gated SResNet to suppress ambient noise and produce >97.8% accuracy.</p>
-            <div class="flow-pill">DMFF Cross-Attn &bull; SwiGLU SResNet</div>
-          </div>
-        </div>
-
-        <!-- Live Preprocessed Dataset Telemetry Card -->
-        <div class="dataset-telemetry-banner">
-          <div class="dt-head">
-            <div class="dt-badge">
-              <span class="status-indicator live" aria-hidden="true"></span>
-              Preprocessing Suite Telemetry
-            </div>
-            <span class="dt-sub">Standardized ESC-50 dataset telemetry across 50 acoustic classes</span>
-          </div>
-          <div class="dt-grid">
-            <div class="dt-stat">
-              <span class="dt-val">1,998</span>
-              <span class="dt-lbl">Processed Clips (22.05 kHz)</span>
-            </div>
-            <div class="dt-stat">
-              <span class="dt-val">128 &times; 216</span>
-              <span class="dt-lbl">Log-Mel Matrices (.npy)</span>
-            </div>
-            <div class="dt-stat">
-              <span class="dt-val">40 &times; 216</span>
-              <span class="dt-lbl">MFCC Cepstra (.npy)</span>
-            </div>
-            <div class="dt-stat">
-              <span class="dt-val">128 &times; 128</span>
-              <span class="dt-lbl">Threshold-Free RP (.npy)</span>
-            </div>
-            <div class="dt-stat">
-              <span class="dt-val">5 Folds</span>
-              <span class="dt-lbl">Disjoint Stratified Splits</span>
-            </div>
-            <div class="dt-stat">
-              <span class="dt-val">100%</span>
-              <span class="dt-lbl">Tensor Validation Pass</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Academic Citation Card -->
-        <div class="citation-box">
-          <div class="citation-icon" aria-hidden="true">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-          </div>
-          <div class="citation-body">
-            <h4 class="citation-title">Academic Reference</h4>
-            <p class="citation-text">
-              Zeng, J., Zhou, C., &amp; Cai, D. (2024). <em>Sound recognition fusion: A deep learning approach for environmental sound classification by fusing linear and nonlinear features.</em> EURASIP Journal on Advances in Signal Processing.
-            </p>
-            <div class="citation-tags">
-              <span class="c-tag">Environmental Sound Classification</span>
-              <span class="c-tag">Threshold-Free Recurrence Plot</span>
-              <span class="c-tag">Dual-Modal Feature Fusion</span>
-              <span class="c-tag">ESC-50 Benchmark</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
 
     <!-- ════════════ VIEW 5: TRAINING & MODEL (Developer Portal) ════════════ -->
     <section class="view-panel" id="view-training" role="tabpanel" aria-labelledby="tab-nav-training" hidden>
@@ -1125,11 +1155,10 @@
       </div>
       <div class="shortcut-grid">
         <div class="shortcut-item"><kbd>1</kbd><span>Classifier Studio</span></div>
-        <div class="shortcut-item"><kbd>2</kbd><span>Model Architecture</span></div>
+        <div class="shortcut-item"><kbd>2</kbd><span>Architecture &amp; Pipeline</span></div>
         <div class="shortcut-item"><kbd>3</kbd><span>ESC-50 Taxonomy</span></div>
-        <div class="shortcut-item"><kbd>4</kbd><span>Pipeline &amp; Research</span></div>
-        <div class="shortcut-item dev-only-feature"><kbd>5</kbd><span>Training &amp; Model</span></div>
-        <div class="shortcut-item dev-only-feature"><kbd>6</kbd><span>System Analytics</span></div>
+        <div class="shortcut-item dev-only-feature"><kbd>4</kbd><span>Training &amp; Model</span></div>
+        <div class="shortcut-item dev-only-feature"><kbd>5</kbd><span>System Analytics</span></div>
         <div class="shortcut-item"><kbd>Space</kbd><span>Play / pause audio</span></div>
         <div class="shortcut-item"><kbd>C</kbd><span>Run classification</span></div>
         <div class="shortcut-item"><kbd>R</kbd><span>Record with microphone</span></div>

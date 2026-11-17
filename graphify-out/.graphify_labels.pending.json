@@ -1,6 +1,8 @@
 {
   "1": "numpy",
+  "7": "generate_augmented_variants",
   "8": "main.py",
   "9": "librosa",
-  "10": "acoustic_inference.py"
+  "10": "run_acoustic_inference",
+  "12": "Any"
 }
