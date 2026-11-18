@@ -1,7 +1,7 @@
 # Graph Report - Sound_Recognition  (2026-11-17)
 
 ## Corpus Check
-- 49 files · ~48,439 words
+- 49 files · ~48,390 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 6016 file(s) not represented in the graph (top: .npy 5994, .csv 17, (none) 2)
 

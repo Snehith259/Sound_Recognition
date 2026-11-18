@@ -1,8 +1,16 @@
 {
-  "1": "numpy",
+  "1": "batch_preprocessor.py",
   "7": "generate_augmented_variants",
   "8": "main.py",
-  "9": "librosa",
+  "9": "SoundSense — Environmental Sound Classification Studio",
   "10": "run_acoustic_inference",
-  "12": "Any"
+  "11": "librosa",
+  "12": "Any",
+  "16": "soundfile",
+  "22": "fx.js",
+  "26": "Hubert_t-Sne_visu.py",
+  "33": "Any",
+  "34": "copilot-instructions.md",
+  "35": "__init__.py",
+  "37": "ESC50MultiModalDataset"
 }
