@@ -3113,8 +3113,8 @@ document.addEventListener('keydown', (e) => {
     return;
   }
 
-  const views = ['studio', 'pipeline', 'taxonomy', 'training', 'analytics'];
-  if (/^[1-5]$/.test(e.key)) {
+  const views = ['overview', 'studio', 'pipeline', 'taxonomy', 'training', 'analytics'];
+  if (/^[1-6]$/.test(e.key)) {
     const num = Number(e.key);
     e.preventDefault();
     switchView(views[num - 1]);
@@ -4039,7 +4039,7 @@ async function loadAnalyticsData() {
     if (ahUptimeEl) ahUptimeEl.textContent = statsData.system.uptimeFormatted || '0h 0m';
     if (ahPredsEl) ahPredsEl.textContent = statsData.system.totalPredictions || 0;
     if (ahMemoryEl) ahMemoryEl.textContent = `${statsData.system.memoryUsage?.heapUsed || 32} MB`;
-    if (ahNodeEl) ahNodeEl.textContent = statsData.system.nodeVersion || 'v20.x';
+    if (ahNodeEl) ahNodeEl.textContent = statsData.system.nodeVersion || 'FastAPI 0.115 / Python';
     if (ahCkptsEl) ahCkptsEl.textContent = statsData.system.savedCheckpoints || 3;
   } else {
     // Offline values
@@ -4047,16 +4047,16 @@ async function loadAnalyticsData() {
     if (ahUptimeEl) ahUptimeEl.textContent = 'Active';
     if (ahPredsEl) ahPredsEl.textContent = classificationToken || 1;
     if (ahMemoryEl) ahMemoryEl.textContent = 'Browser WebAudio';
-    if (ahNodeEl) ahNodeEl.textContent = 'ES2024';
+    if (ahNodeEl) ahNodeEl.textContent = 'FastAPI 0.115';
     if (ahCkptsEl) ahCkptsEl.textContent = '3';
   }
 
   // Telemetry Grid
   const d = statsData?.dataset;
-  if (tgAudioEl) tgAudioEl.textContent = d?.processedAudioCount ? d.processedAudioCount.toLocaleString() : '1,998';
-  if (tgMelEl) tgMelEl.textContent = d?.logMelCount ? d.logMelCount.toLocaleString() : '1,998';
-  if (tgMfccEl) tgMfccEl.textContent = d?.mfccCount ? d.mfccCount.toLocaleString() : '1,998';
-  if (tgRpEl) tgRpEl.textContent = d?.rpCount ? d.rpCount.toLocaleString() : '1,998';
+  if (tgAudioEl) tgAudioEl.textContent = d?.processedAudioCount ? d.processedAudioCount.toLocaleString() : '2,000';
+  if (tgMelEl) tgMelEl.textContent = d?.logMelCount ? d.logMelCount.toLocaleString() : '2,000';
+  if (tgMfccEl) tgMfccEl.textContent = d?.mfccCount ? d.mfccCount.toLocaleString() : '2,000';
+  if (tgRpEl) tgRpEl.textContent = d?.rpCount ? d.rpCount.toLocaleString() : '2,000';
 
   if (telemetryTsEl) {
     telemetryTsEl.textContent = `Telemetry synced at ${new Date().toLocaleTimeString()}`;
@@ -4078,22 +4078,34 @@ function drawClassDistributionChart() {
 
   ctx.clearRect(0, 0, w, h);
 
-  // Background
-  ctx.fillStyle = 'rgba(6, 12, 28, 0.9)';
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+
+  // Theme-aware canvas background
+  ctx.fillStyle = isLight ? '#ffffff' : 'rgba(7, 10, 20, 0.95)';
   ctx.fillRect(0, 0, w, h);
 
+  // Subtle horizontal reference gridlines
+  ctx.strokeStyle = isLight ? 'rgba(15, 23, 42, 0.06)' : 'rgba(255, 255, 255, 0.04)';
+  ctx.lineWidth = 1;
+  for (let gy = 30; gy <= h - 40; gy += 40) {
+    ctx.beginPath();
+    ctx.moveTo(25, gy);
+    ctx.lineTo(w - 25, gy);
+    ctx.stroke();
+  }
+
   const groups = [
-    { name: 'Animals', icon: '🐾', count: 400, color: '#38bdf8' },
-    { name: 'Natural', icon: '🌿', count: 400, color: '#34d399' },
-    { name: 'Human',   icon: '👤', count: 400, color: '#fbbf24' },
-    { name: 'Interior',icon: '🏠', count: 400, color: '#a855f7' },
-    { name: 'Urban',   icon: '🏙️', count: 400, color: '#fb7185' },
+    { name: 'Animals', icon: '🐾', count: 400, color: isLight ? '#0284c7' : '#38bdf8' },
+    { name: 'Natural', icon: '🌿', count: 400, color: isLight ? '#059669' : '#34d399' },
+    { name: 'Human',   icon: '👤', count: 400, color: isLight ? '#d97706' : '#fbbf24' },
+    { name: 'Interior',icon: '🏠', count: 400, color: isLight ? '#7c3aed' : '#a855f7' },
+    { name: 'Urban',   icon: '🏙️', count: 400, color: isLight ? '#e11d48' : '#fb7185' },
   ];
 
   const barWidth = 64;
   const gap = (w - (groups.length * barWidth) - 40) / (groups.length - 1);
   const maxCount = 500;
-  const chartHeight = h - 60;
+  const chartHeight = h - 65;
 
   groups.forEach((g, i) => {
     const x = 30 + i * (barWidth + gap);
@@ -4101,7 +4113,7 @@ function drawClassDistributionChart() {
     const y = h - 35 - barH;
 
     // Bar background track
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+    ctx.fillStyle = isLight ? 'rgba(15, 23, 42, 0.05)' : 'rgba(255, 255, 255, 0.05)';
     ctx.beginPath();
     ctx.roundRect(x, 25, barWidth, chartHeight, 6);
     ctx.fill();
@@ -4109,25 +4121,25 @@ function drawClassDistributionChart() {
     // Bar fill with gradient
     const grad = ctx.createLinearGradient(0, y, 0, h - 35);
     grad.addColorStop(0, g.color);
-    grad.addColorStop(1, 'rgba(15, 23, 42, 0.8)');
+    grad.addColorStop(1, isLight ? 'rgba(226, 232, 240, 0.85)' : 'rgba(15, 23, 42, 0.8)');
     ctx.fillStyle = grad;
     ctx.beginPath();
     ctx.roundRect(x, y, barWidth, barH, [6, 6, 2, 2]);
     ctx.fill();
 
-    // Top glow
+    // Top accent border
     ctx.fillStyle = g.color;
-    ctx.fillRect(x + 4, y, barWidth - 8, 2);
+    ctx.fillRect(x + 2, y, barWidth - 4, 2);
 
     // Value text
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = isLight ? '#090d16' : '#ffffff';
     ctx.font = 'bold 11px Space Grotesk, monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(`${g.count}`, x + barWidth / 2, y - 6);
+    ctx.fillText(`${g.count} clips`, x + barWidth / 2, y - 6);
 
     // Label below
-    ctx.fillStyle = 'rgba(203, 213, 225, 0.9)';
-    ctx.font = '10px Inter, sans-serif';
+    ctx.fillStyle = isLight ? '#334155' : 'rgba(203, 213, 225, 0.9)';
+    ctx.font = '600 11px Inter, sans-serif';
     ctx.fillText(`${g.icon} ${g.name}`, x + barWidth / 2, h - 14);
   });
 
@@ -4145,50 +4157,75 @@ function drawModelPerformanceChart(perfList) {
 
   ctx.clearRect(0, 0, w, h);
 
-  // Background
-  ctx.fillStyle = 'rgba(6, 12, 28, 0.9)';
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+
+  // Theme-aware canvas background
+  ctx.fillStyle = isLight ? '#ffffff' : 'rgba(7, 10, 20, 0.95)';
   ctx.fillRect(0, 0, w, h);
 
   const models = perfList || [
-    { model: 'SResNet',   accuracy: 95.1, latency: 7.8,  color: '#38bdf8' },
-    { model: 'CNN-GRU',   accuracy: 93.4, latency: 9.2,  color: '#34d399' },
-    { model: 'ResNet-18', accuracy: 89.4, latency: 8.2,  color: '#a855f7' },
-    { model: 'VGG-16',    accuracy: 86.2, latency: 14.5, color: '#f59e0b' },
+    { model: 'SResNet (Ours)', accuracy: 95.1, latency: 7.8,  color: isLight ? '#0284c7' : '#38bdf8' },
+    { model: 'CNN-GRU',        accuracy: 93.4, latency: 9.2,  color: isLight ? '#059669' : '#34d399' },
+    { model: 'ResNet-18',      accuracy: 89.4, latency: 8.2,  color: isLight ? '#7c3aed' : '#a855f7' },
+    { model: 'VGG-16',         accuracy: 86.2, latency: 14.5, color: isLight ? '#d97706' : '#f59e0b' },
   ];
 
-  const rowHeight = 32;
-  const startY = 22;
-  const labelW = 150;
-  const chartW = w - labelW - 70;
+  const rowHeight = 34;
+  const startY = 24;
+  const labelW = 145;
+  const chartW = w - labelW - 120;
+
+  // Benchmark scale gridlines
+  ctx.strokeStyle = isLight ? 'rgba(15, 23, 42, 0.06)' : 'rgba(255, 255, 255, 0.05)';
+  ctx.fillStyle = isLight ? '#64748b' : 'rgba(148, 163, 184, 0.8)';
+  ctx.font = '9px Space Grotesk, monospace';
+  ctx.textAlign = 'center';
+
+  [50, 75, 90, 100].forEach(pct => {
+    const tickX = labelW + 10 + (pct / 100) * chartW;
+    ctx.beginPath();
+    ctx.moveTo(tickX, 16);
+    ctx.lineTo(tickX, h - 16);
+    ctx.stroke();
+    ctx.fillText(`${pct}%`, tickX, h - 5);
+  });
 
   models.forEach((m, i) => {
-    const y = startY + i * (rowHeight + 8);
+    const y = startY + i * (rowHeight + 6);
 
     // Model name
-    ctx.fillStyle = 'rgba(226, 232, 240, 0.9)';
-    ctx.font = '11px Inter, sans-serif';
+    ctx.fillStyle = isLight ? '#0f172a' : 'rgba(226, 232, 240, 0.95)';
+    ctx.font = '600 12px Inter, sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText(m.model, 16, y + 16);
+    ctx.fillText(m.model, 16, y + 15);
 
     // Track
     const barX = labelW + 10;
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+    ctx.fillStyle = isLight ? 'rgba(15, 23, 42, 0.05)' : 'rgba(255, 255, 255, 0.05)';
     ctx.beginPath();
-    ctx.roundRect(barX, y + 4, chartW, 16, 4);
+    ctx.roundRect(barX, y + 3, chartW, 16, 4);
     ctx.fill();
 
     // Fill
     const fillW = (m.accuracy / 100) * chartW;
-    ctx.fillStyle = m.color;
+    const grad = ctx.createLinearGradient(barX, 0, barX + fillW, 0);
+    grad.addColorStop(0, m.color);
+    grad.addColorStop(1, isLight ? '#4338ca' : '#818cf8');
+    ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.roundRect(barX, y + 4, fillW, 16, 4);
+    ctx.roundRect(barX, y + 3, fillW, 16, 4);
     ctx.fill();
 
     // Accuracy percent
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = isLight ? '#090d16' : '#ffffff';
     ctx.font = 'bold 11px Space Grotesk, monospace';
     ctx.textAlign = 'left';
-    ctx.fillText(`${m.accuracy}%`, barX + chartW + 8, y + 16);
+    ctx.fillText(`${m.accuracy}%`, barX + chartW + 8, y + 15);
+
+    // Latency
+    ctx.fillStyle = isLight ? '#64748b' : 'rgba(148, 163, 184, 0.85)';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.fillText(`(${m.latency}ms)`, barX + chartW + 52, y + 15);
   });
 
   ctx.textAlign = 'start';
@@ -4326,6 +4363,9 @@ function setDeveloperMode(authenticated, user = null) {
     if (popoverNameEl) popoverNameEl.textContent = user?.name || 'SoundSense Lead AI Engineer';
     if (popoverEmailEl) popoverEmailEl.textContent = user?.email || 'developer@soundsense.ai';
 
+    const lensBtnDev = document.getElementById('lens-btn-dev');
+    if (lensBtnDev) lensBtnDev.style.display = 'inline-flex';
+
     requestAnimationFrame(positionNavGlider);
     setTimeout(positionNavGlider, 80);
     setTimeout(positionNavGlider, 250);
@@ -4349,6 +4389,12 @@ function setDeveloperMode(authenticated, user = null) {
     }
 
     closeAccountMenu();
+
+    const lensBtnDev = document.getElementById('lens-btn-dev');
+    if (lensBtnDev) lensBtnDev.style.display = 'none';
+    if (typeof window.__setOverviewLens === 'function') {
+      window.__setOverviewLens('user');
+    }
 
     // Reset all nav dev badges to locked
     document.querySelectorAll('.nav-dev-tag').forEach(badge => {
@@ -4510,6 +4556,14 @@ if (menuGotoTaxonomy) {
   menuGotoTaxonomy.addEventListener('click', () => {
     closeAccountMenu();
     switchView('taxonomy');
+  });
+}
+
+const menuGotoOverview = document.getElementById('menu-goto-overview');
+if (menuGotoOverview) {
+  menuGotoOverview.addEventListener('click', () => {
+    closeAccountMenu();
+    switchView('overview');
   });
 }
 
@@ -4720,3 +4774,646 @@ if (btnQuickLogin) {
   setDeveloperMode(false);
 })();
 
+// ═══════════════════════════════════════════════════════════════
+// Theme Controller: Day (Light), Night (Dark), Device (System)
+// ═══════════════════════════════════════════════════════════════
+(function initThemeController() {
+  const root = document.documentElement;
+  const themeBtns = document.querySelectorAll('.theme-btn');
+  const mql = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+
+  function applyTheme(preference) {
+    let effective = preference;
+    if (preference === 'system') {
+      effective = (mql && mql.matches) ? 'dark' : 'light';
+    }
+
+    root.setAttribute('data-theme', effective);
+    if (typeof drawClassDistributionChart === 'function') {
+      try { drawClassDistributionChart(); } catch(_) {}
+    }
+    if (typeof drawModelPerformanceChart === 'function') {
+      try { drawModelPerformanceChart(); } catch(_) {}
+    }
+    root.setAttribute('data-theme-pref', preference);
+
+    try {
+      localStorage.setItem('soundsense_theme', preference);
+    } catch (_) {}
+
+    themeBtns.forEach((btn) => {
+      const val = btn.getAttribute('data-theme-val');
+      const isSelected = (val === preference);
+      btn.classList.toggle('active', isSelected);
+      btn.setAttribute('aria-checked', isSelected ? 'true' : 'false');
+    });
+  }
+
+  // Restore stored preference or default to 'system'
+  let savedPref = 'system';
+  try {
+    savedPref = localStorage.getItem('soundsense_theme') || 'system';
+  } catch (_) {}
+  applyTheme(savedPref);
+
+  // Attach click handlers to Day / Night / Device buttons
+  themeBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const val = btn.getAttribute('data-theme-val');
+      if (val) applyTheme(val);
+    });
+  });
+
+  // Dynamically listen to OS theme changes when in 'system' mode
+  if (mql && mql.addEventListener) {
+    mql.addEventListener('change', () => {
+      const currentPref = root.getAttribute('data-theme-pref') || 'system';
+      if (currentPref === 'system') {
+        applyTheme('system');
+      }
+    });
+  }
+})();
+
+
+
+// ═══════════════════════════════════════════════════════════════
+// System Overview Controller: User & Developer Dual Lenses
+// ═══════════════════════════════════════════════════════════════
+(function initOverviewController() {
+  const lensBtnUser = document.getElementById('lens-btn-user');
+  const lensBtnDev = document.getElementById('lens-btn-dev');
+  const lensContentUser = document.getElementById('lens-content-user');
+  const lensContentDev = document.getElementById('lens-content-dev');
+  const lensTaglineText = document.getElementById('lens-tagline-text');
+
+  function setLens(lens) {
+    if (lens === 'dev' && !isDeveloperAuthenticated) {
+      if (typeof showToast === 'function') {
+        showToast('Developer Access Required', 'Sign in to access Developer Deep Dive & Mathematical Specs.', 'warn', 4000);
+      }
+      if (typeof openAuthModal === 'function') {
+        openAuthModal();
+      }
+      return;
+    }
+
+    const isUser = (lens === 'user');
+
+    if (lensBtnUser) {
+      lensBtnUser.classList.toggle('active', isUser);
+      lensBtnUser.setAttribute('aria-selected', isUser ? 'true' : 'false');
+    }
+    if (lensBtnDev) {
+      lensBtnDev.classList.toggle('active', !isUser);
+      lensBtnDev.setAttribute('aria-selected', !isUser ? 'true' : 'false');
+    }
+
+    if (lensContentUser) lensContentUser.hidden = !isUser;
+    if (lensContentDev) lensContentDev.hidden = isUser;
+
+    if (lensTaglineText) {
+      if (isUser) {
+        lensTaglineText.innerHTML = 'Showing: <strong>User &amp; Product Perspective</strong> &mdash; 3-step workflow, ESC-50 taxonomy &amp; OOD safety';
+      } else {
+        lensTaglineText.innerHTML = 'Showing: <strong>Developer &amp; Architecture Deep Dive</strong> &mdash; DSP mathematical pipeline, model topologies &amp; REST API';
+      }
+    }
+  }
+
+  // Expose global helper for setDeveloperMode logout
+  window.__setOverviewLens = setLens;
+
+  if (lensBtnUser) lensBtnUser.addEventListener('click', () => setLens('user'));
+  if (lensBtnDev) lensBtnDev.addEventListener('click', () => setLens('dev'));
+
+  // Hero Quick Navigation Buttons
+  const heroGotoStudioBtn = document.getElementById('hero-goto-studio-btn');
+  if (heroGotoStudioBtn) {
+    heroGotoStudioBtn.addEventListener('click', () => switchView('studio'));
+  }
+
+  const heroGotoTaxonomyBtn = document.getElementById('hero-goto-taxonomy-btn');
+  if (heroGotoTaxonomyBtn) {
+    heroGotoTaxonomyBtn.addEventListener('click', () => switchView('taxonomy'));
+  }
+
+  const heroOverviewBtn = document.getElementById('hero-overview-btn');
+  if (heroOverviewBtn) {
+    heroOverviewBtn.addEventListener('click', () => switchView('overview'));
+  }
+
+  const overviewGotoStudioBtn = document.getElementById('overview-goto-studio-btn');
+  if (overviewGotoStudioBtn) {
+    overviewGotoStudioBtn.addEventListener('click', () => switchView('studio'));
+  }
+
+  const overviewGotoTaxonomyBtn = document.getElementById('overview-goto-taxonomy-btn');
+  if (overviewGotoTaxonomyBtn) {
+    overviewGotoTaxonomyBtn.addEventListener('click', () => switchView('taxonomy'));
+  }
+
+  const simTryStudioBtn = document.getElementById('sim-try-studio-btn');
+  if (simTryStudioBtn) {
+    simTryStudioBtn.addEventListener('click', () => switchView('studio'));
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // Dynamic Overview Background Canvas (Particle Constellation & Wave)
+  // ─────────────────────────────────────────────────────────────
+  (function initOverviewCanvas() {
+    const canvas = document.getElementById('overview-fx-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let width = 0;
+    let height = 0;
+    let particles = [];
+    const NUM_PARTICLES = 40;
+    let mouse = { x: -1000, y: -1000, active: false };
+    let animId = null;
+    let wavePhase = 0;
+
+    function resize() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      width = canvas.width = rect.width;
+      height = canvas.height = rect.height;
+    }
+
+    function initParticles() {
+      particles = [];
+      for (let i = 0; i < NUM_PARTICLES; i++) {
+        particles.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          vx: (Math.random() - 0.5) * 0.6,
+          vy: (Math.random() - 0.5) * 0.6,
+          radius: Math.random() * 2 + 1.2,
+          color: Math.random() > 0.4 ? '34, 211, 238' : '99, 102, 241'
+        });
+      }
+    }
+
+    window.addEventListener('resize', () => {
+      resize();
+      initParticles();
+    });
+
+    const wrapper = canvas.parentElement;
+    if (wrapper) {
+      wrapper.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        mouse.x = e.clientX - rect.left;
+        mouse.y = e.clientY - rect.top;
+        mouse.active = true;
+      });
+      wrapper.addEventListener('mouseleave', () => {
+        mouse.active = false;
+      });
+    }
+
+    function draw() {
+      const overviewPanel = document.getElementById('view-overview');
+      if (!overviewPanel || !overviewPanel.classList.contains('active')) {
+        animId = requestAnimationFrame(draw);
+        return;
+      }
+
+      ctx.clearRect(0, 0, width, height);
+
+      // Draw undulating acoustic harmonic wave ribbons
+      wavePhase += 0.018;
+      ctx.beginPath();
+      ctx.moveTo(0, height);
+      for (let x = 0; x <= width; x += 15) {
+        const y = height * 0.72 + Math.sin(x * 0.008 + wavePhase) * 22 + Math.cos(x * 0.015 - wavePhase * 0.5) * 12;
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(width, height);
+      ctx.closePath();
+      const waveGrad = ctx.createLinearGradient(0, height * 0.6, 0, height);
+      waveGrad.addColorStop(0, 'rgba(6, 182, 212, 0.08)');
+      waveGrad.addColorStop(1, 'rgba(6, 182, 212, 0.01)');
+      ctx.fillStyle = waveGrad;
+      ctx.fill();
+
+      // Update and draw particles
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+
+        if (p.x < 0) p.x = width;
+        if (p.x > width) p.x = 0;
+        if (p.y < 0) p.y = height;
+        if (p.y > height) p.y = 0;
+
+        // Proximity lines between particles
+        for (let j = i + 1; j < particles.length; j++) {
+          const p2 = particles[j];
+          const dx = p.x - p2.x;
+          const dy = p.y - p2.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < 95) {
+            const alpha = (1 - dist / 95) * 0.22;
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.strokeStyle = `rgba(34, 211, 238, ${alpha})`;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        }
+
+        // Connection to mouse
+        if (mouse.active) {
+          const mdx = p.x - mouse.x;
+          const mdy = p.y - mouse.y;
+          const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
+          if (mdist < 130) {
+            const mAlpha = (1 - mdist / 130) * 0.35;
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(mouse.x, mouse.y);
+            ctx.strokeStyle = `rgba(34, 211, 238, ${mAlpha})`;
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+          }
+        }
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(' + p.color + ', 0.75)';
+        ctx.fill();
+      }
+
+      animId = requestAnimationFrame(draw);
+    }
+
+    resize();
+    initParticles();
+    animId = requestAnimationFrame(draw);
+  })();
+
+  // ─────────────────────────────────────────────────────────────
+  // Interactive Soundscape Simulator (Acoustic Archetypes)
+  // ─────────────────────────────────────────────────────────────
+  (function initSoundSimulator() {
+    const simBtns = document.querySelectorAll('.sim-archetype-btn');
+    const simCanvas = document.getElementById('sim-mini-canvas');
+    const simDomainBadge = document.getElementById('sim-domain-badge');
+    const simConfBadge = document.getElementById('sim-conf-badge');
+    const simPredName = document.getElementById('sim-pred-name');
+    const simPredDesc = document.getElementById('sim-pred-desc');
+    const simCanvasLabel = document.getElementById('sim-canvas-label');
+
+    if (!simCanvas) return;
+    const sctx = simCanvas.getContext('2d');
+    if (!sctx) return;
+
+    let activeArch = 'dog';
+    let simPhase = 0;
+
+    const ARCHETYPES = {
+      dog: {
+        name: 'Dog Barking (Canis lupus)',
+        domain: 'Domain: Animals',
+        conf: '96.8% Confidence',
+        desc: 'Multi-harmonic acoustic formants with rapid periodic vocal tract modulations centered around 450 Hz – 1.8 kHz.',
+        waveColor: '#22d3ee',
+        style: 'burst'
+      },
+      rain: {
+        name: 'Rainstorm & Thunder (Natural Water)',
+        domain: 'Domain: Natural Soundscapes',
+        conf: '98.2% Confidence',
+        desc: 'Continuous stochastic broadband pink-noise envelope with low-frequency rumble impulses below 120 Hz.',
+        waveColor: '#38bdf8',
+        style: 'noise'
+      },
+      baby: {
+        name: 'Crying Infant (Human Non-Speech)',
+        domain: 'Domain: Human Sounds',
+        conf: '94.6% Confidence',
+        desc: 'High-pitch vocal tract resonance with frequency modulation sweeping between 800 Hz and 2.6 kHz.',
+        waveColor: '#fbbf24',
+        style: 'sweep'
+      },
+      knock: {
+        name: 'Door Knock (Domestic Interior)',
+        domain: 'Domain: Domestic Acoustics',
+        conf: '97.1% Confidence',
+        desc: 'Sharp mechanical impact transients with rapid exponential decay and characteristic room reverberation.',
+        waveColor: '#a78bfa',
+        style: 'impulse'
+      }
+    };
+
+    simBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const arch = btn.getAttribute('data-archetype');
+        if (!arch || !ARCHETYPES[arch]) return;
+        activeArch = arch;
+
+        simBtns.forEach(b => b.classList.toggle('active', b === btn));
+        const data = ARCHETYPES[arch];
+
+        if (simPredName) simPredName.textContent = data.name;
+        if (simDomainBadge) simDomainBadge.textContent = data.domain;
+        if (simConfBadge) simConfBadge.textContent = data.conf;
+        if (simPredDesc) simPredDesc.textContent = data.desc;
+        if (simCanvasLabel) simCanvasLabel.textContent = `Acoustic Stream: ${data.name} (22.05 kHz)`;
+      });
+    });
+
+    function drawSimWave() {
+      const overviewPanel = document.getElementById('view-overview');
+      if (!overviewPanel || !overviewPanel.classList.contains('active')) {
+        requestAnimationFrame(drawSimWave);
+        return;
+      }
+
+      const rect = simCanvas.getBoundingClientRect();
+      if (simCanvas.width !== rect.width || simCanvas.height !== rect.height) {
+        simCanvas.width = rect.width;
+        simCanvas.height = rect.height;
+      }
+
+      const w = simCanvas.width;
+      const h = simCanvas.height;
+      sctx.fillStyle = '#070a14';
+      sctx.fillRect(0, 0, w, h);
+
+      simPhase += 0.05;
+      const data = ARCHETYPES[activeArch] || ARCHETYPES.dog;
+
+      // Draw subtle grid lines
+      sctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+      sctx.lineWidth = 1;
+      for (let y = 20; y < h; y += 25) {
+        sctx.beginPath();
+        sctx.moveTo(0, y);
+        sctx.lineTo(w, y);
+        sctx.stroke();
+      }
+
+      // Draw simulated spectrum bars
+      const numBars = 42;
+      const barWidth = (w / numBars) - 2;
+
+      for (let i = 0; i < numBars; i++) {
+        let barHeight = 0;
+        const normX = i / numBars;
+
+        if (data.style === 'burst') {
+          barHeight = (Math.sin(i * 0.4 + simPhase) * 0.4 + 0.5) * (Math.sin(i * 0.15) * 45 + 25);
+        } else if (data.style === 'noise') {
+          barHeight = (Math.random() * 0.35 + 0.35) * (60 - normX * 30);
+        } else if (data.style === 'sweep') {
+          const center = Math.sin(simPhase * 0.6) * 0.3 + 0.5;
+          const dist = Math.abs(normX - center);
+          barHeight = Math.max(8, (1 - dist * 2.2) * 65 + Math.random() * 8);
+        } else if (data.style === 'impulse') {
+          const pulse = (Math.sin(simPhase * 1.5) > 0.6) ? 70 : 12;
+          barHeight = pulse * Math.exp(-normX * 3.5) + Math.random() * 6;
+        }
+
+        const bx = i * (barWidth + 2);
+        const by = h - barHeight - 12;
+
+        const grad = sctx.createLinearGradient(0, by, 0, h);
+        grad.addColorStop(0, data.waveColor);
+        grad.addColorStop(1, 'rgba(6, 182, 212, 0.15)');
+
+        sctx.fillStyle = grad;
+        sctx.fillRect(bx, by, barWidth, barHeight);
+      }
+
+      requestAnimationFrame(drawSimWave);
+    }
+
+    requestAnimationFrame(drawSimWave);
+  })();
+
+  // ─────────────────────────────────────────────────────────────
+  // API Reference Interactive Explorer
+  // ─────────────────────────────────────────────────────────────
+  const endpointBtns = document.querySelectorAll('.api-endpoint-btn');
+  const langBtns = document.querySelectorAll('.api-lang-btn');
+  const apiMetaBadge = document.getElementById('api-meta-badge');
+  const apiMetaDesc = document.getElementById('api-meta-desc');
+  const apiCodeDisplay = document.getElementById('api-code-display');
+  const apiResponseDisplay = document.getElementById('api-response-display');
+  const copyBtn = document.getElementById('copy-api-code-btn');
+  const copyLabel = document.getElementById('copy-code-label');
+
+  let activeEndpoint = 'predict';
+  let activeLang = 'curl';
+
+  const API_DOCS = {
+    predict: {
+      badge: 'POST /predict',
+      desc: 'Accepts a multipart audio file upload (wav/mp3/ogg), executes full DSP feature extraction, and returns Top-5 classified environmental classes with confidence metrics and OOD analysis.',
+      code: {
+        curl: `curl -X POST "http://localhost:8000/predict" \\
+  -H "accept: application/json" \\
+  -F "file=@acoustic_sample.wav" \\
+  -F "model=sresnet" \\
+  -F "threshold=0.5"`,
+        python: `import requests
+
+url = "http://localhost:8000/predict"
+files = {"file": open("acoustic_sample.wav", "rb")}
+data = {"model": "sresnet", "threshold": 0.5}
+
+response = requests.post(url, files=files, data=data)
+print(response.json())`,
+        javascript: `const formData = new FormData();
+formData.append("file", audioBlob, "sample.wav");
+formData.append("model", "sresnet");
+formData.append("threshold", "0.5");
+
+const res = await fetch("http://localhost:8000/predict", {
+  method: "POST",
+  body: formData
+});
+const data = await res.json();
+console.log(data);`
+      },
+      response: `{
+  "status": "success",
+  "prediction": "dog",
+  "category": "animals",
+  "confidence": 0.942,
+  "is_ood": false,
+  "entropy": 0.412,
+  "top5": [
+    {"label": "dog", "score": 0.942, "category": "animals"},
+    {"label": "barking", "score": 0.038, "category": "animals"},
+    {"label": "cat", "score": 0.009, "category": "animals"},
+    {"label": "door_knock", "score": 0.005, "category": "domestic"},
+    {"label": "footsteps", "score": 0.003, "category": "human"}
+  ],
+  "latency_ms": 18.4,
+  "cache_hit": false
+}`
+    },
+    sample: {
+      badge: 'GET /sample-audio',
+      desc: 'Retrieves pre-loaded, curated ESC-50 high-fidelity reference audio waveforms for calibration and empirical testing.',
+      code: {
+        curl: `curl -X GET "http://localhost:8000/sample-audio?category=animals&class_name=dog" \\
+  -H "accept: audio/wav" \\
+  --output sample_dog.wav`,
+        python: `import requests
+
+url = "http://localhost:8000/sample-audio"
+params = {"category": "animals", "class_name": "dog"}
+
+res = requests.get(url, params=params)
+with open("sample_dog.wav", "wb") as f:
+    f.write(res.content)`,
+        javascript: `const res = await fetch("http://localhost:8000/sample-audio?category=animals&class_name=dog");
+const blob = await res.blob();
+const audioUrl = URL.createObjectURL(blob);
+const audio = new Audio(audioUrl);
+audio.play();`
+      },
+      response: `// Binary audio stream response
+// Content-Type: audio/wav
+// Rate: 22,050 Hz, 16-bit PCM Mono
+// File size: 220,544 bytes (~5.00s duration)`
+    },
+    stats: {
+      badge: 'GET /system-stats',
+      desc: 'Telemetry endpoint exposing hot LRU cache hit ratios, memory usage footprint, active PyTorch device, and worker health.',
+      code: {
+        curl: `curl -X GET "http://localhost:8000/system-stats" \\
+  -H "accept: application/json"`,
+        python: `import requests
+
+res = requests.get("http://localhost:8000/system-stats")
+stats = res.json()
+print(f"Active Model: {stats['active_model']}, RAM: {stats['ram_usage_mb']} MB")`,
+        javascript: `const res = await fetch("http://localhost:8000/system-stats");
+const stats = await res.json();
+console.log("System Health:", stats);`
+      },
+      response: `{
+  "status": "healthy",
+  "uptime_seconds": 14280,
+  "loaded_models": ["sresnet", "resnet18", "vgg16", "cnn_gru"],
+  "active_model": "sresnet",
+  "cache_entries": 128,
+  "cache_hit_rate": 0.842,
+  "ram_usage_mb": 420.5,
+  "device": "cpu"
+}`
+    },
+    taxonomy: {
+      badge: 'GET /taxonomy',
+      desc: 'Returns the complete 50-class ESC-50 taxonomy mapped by discrete category IDs, standard domains, and acoustic features.',
+      code: {
+        curl: `curl -X GET "http://localhost:8000/taxonomy" \\
+  -H "accept: application/json"`,
+        python: `import requests
+
+res = requests.get("http://localhost:8000/taxonomy")
+taxonomy = res.json()
+print("Total classes:", len(taxonomy["categories"]))`,
+        javascript: `const res = await fetch("http://localhost:8000/taxonomy");
+const taxonomy = await res.json();
+console.log("Taxonomy Domains:", taxonomy.domains);`
+      },
+      response: `{
+  "dataset": "ESC-50",
+  "total_classes": 50,
+  "domains": ["animals", "natural", "human", "domestic", "urban"],
+  "categories": [
+    {"id": 0, "name": "dog", "domain": "animals"},
+    {"id": 1, "name": "rooster", "domain": "animals"},
+    {"id": 10, "name": "rain", "domain": "natural"},
+    {"id": 20, "name": "crying_baby", "domain": "human"},
+    {"id": 30, "name": "door_knock", "domain": "domestic"},
+    {"id": 40, "name": "helicopter", "domain": "urban"}
+  ]
+}`
+    }
+  };
+
+  function updateApiExplorer() {
+    const doc = API_DOCS[activeEndpoint] || API_DOCS.predict;
+
+    if (apiMetaBadge) apiMetaBadge.textContent = doc.badge;
+    if (apiMetaDesc) apiMetaDesc.textContent = doc.desc;
+    if (apiCodeDisplay) apiCodeDisplay.textContent = doc.code[activeLang] || doc.code.curl;
+    if (apiResponseDisplay) apiResponseDisplay.textContent = doc.response;
+
+    endpointBtns.forEach(btn => {
+      const isTarget = btn.getAttribute('data-endpoint') === activeEndpoint;
+      btn.classList.toggle('active', isTarget);
+    });
+
+    langBtns.forEach(btn => {
+      const isTarget = btn.getAttribute('data-lang') === activeLang;
+      btn.classList.toggle('active', isTarget);
+    });
+  }
+
+  endpointBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const endpoint = btn.getAttribute('data-endpoint');
+      if (endpoint && API_DOCS[endpoint]) {
+        activeEndpoint = endpoint;
+        updateApiExplorer();
+      }
+    });
+  });
+
+  langBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const lang = btn.getAttribute('data-lang');
+      if (lang) {
+        activeLang = lang;
+        updateApiExplorer();
+      }
+    });
+  });
+
+  if (copyBtn && apiCodeDisplay) {
+    copyBtn.addEventListener('click', async () => {
+      const textToCopy = apiCodeDisplay.textContent;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(textToCopy);
+        } else {
+          const textarea = document.createElement('textarea');
+          textarea.value = textToCopy;
+          textarea.style.position = 'fixed';
+          textarea.style.opacity = '0';
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textarea);
+        }
+
+        copyBtn.classList.add('copied');
+        if (copyLabel) copyLabel.textContent = 'Copied!';
+        if (typeof showToast === 'function') {
+          showToast('Code Copied', 'API code snippet copied to clipboard.', 'success', 2500);
+        }
+
+        setTimeout(() => {
+          copyBtn.classList.remove('copied');
+          if (copyLabel) copyLabel.textContent = 'Copy Code';
+        }, 2200);
+      } catch (err) {
+        console.warn('Clipboard copy error:', err);
+      }
+    });
+  }
+
+  updateApiExplorer();
+})();

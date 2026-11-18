@@ -9,6 +9,20 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
+  <script>
+    (function () {
+      try {
+        var pref = localStorage.getItem('soundsense_theme') || 'system';
+        document.documentElement.setAttribute('data-theme-pref', pref);
+        var effective = pref;
+        if (pref === 'system') {
+          var mql = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+          effective = (mql && mql.matches) ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', effective);
+      } catch (_) {}
+    })();
+  </script>
 </head>
 <body>
   <a href="#app-main" class="skip-link">Skip to main content</a>
@@ -58,24 +72,28 @@
       <!-- Workspace View Switcher Tabs (Declutters stacked sections) -->
       <nav class="view-nav" id="view-nav" role="tablist" aria-label="Application views">
         <span class="nav-glider" id="nav-glider" aria-hidden="true"></span>
-        <button class="view-tab active" role="tab" id="tab-nav-studio" aria-selected="true" aria-controls="view-studio" data-view="studio" aria-keyshortcuts="1">
+        <button class="view-tab active" role="tab" id="tab-nav-overview" aria-selected="true" aria-controls="view-overview" data-view="overview" aria-keyshortcuts="1">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <span>System Overview</span>
+        </button>
+        <button class="view-tab" role="tab" id="tab-nav-studio" aria-selected="false" aria-controls="view-studio" data-view="studio" aria-keyshortcuts="2">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
           <span>Classifier Studio</span>
         </button>
-        <button class="view-tab" role="tab" id="tab-nav-pipeline" aria-selected="false" aria-controls="view-pipeline" data-view="pipeline" aria-keyshortcuts="2">
+        <button class="view-tab" role="tab" id="tab-nav-pipeline" aria-selected="false" aria-controls="view-pipeline" data-view="pipeline" aria-keyshortcuts="3">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="6" height="6" rx="1.5"/><rect x="16" y="3" width="6" height="6" rx="1.5"/><rect x="9" y="15" width="6" height="6" rx="1.5"/><path d="M5 9v3a2 2 0 0 0 2 2h5m5-5v3a2 2 0 0 1-2 2h-5"/></svg>
           <span>Architecture &amp; Pipeline</span>
         </button>
-        <button class="view-tab" role="tab" id="tab-nav-taxonomy" aria-selected="false" aria-controls="view-taxonomy" data-view="taxonomy" aria-keyshortcuts="3">
+        <button class="view-tab" role="tab" id="tab-nav-taxonomy" aria-selected="false" aria-controls="view-taxonomy" data-view="taxonomy" aria-keyshortcuts="4">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
           <span>ESC-50 Taxonomy</span>
         </button>
-        <button class="view-tab dev-tab" role="tab" id="tab-nav-training" aria-selected="false" aria-controls="view-training" data-view="training" aria-keyshortcuts="4" style="display: none;">
+        <button class="view-tab dev-tab" role="tab" id="tab-nav-training" aria-selected="false" aria-controls="view-training" data-view="training" aria-keyshortcuts="5" style="display: none;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
           <span>Training &amp; Model</span>
           <span class="nav-dev-tag" id="tag-badge-training">DEV</span>
         </button>
-        <button class="view-tab dev-tab" role="tab" id="tab-nav-analytics" aria-selected="false" aria-controls="view-analytics" data-view="analytics" aria-keyshortcuts="5" style="display: none;">
+        <button class="view-tab dev-tab" role="tab" id="tab-nav-analytics" aria-selected="false" aria-controls="view-analytics" data-view="analytics" aria-keyshortcuts="6" style="display: none;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
           <span>System Analytics</span>
           <span class="nav-dev-tag" id="tag-badge-analytics">DEV</span>
@@ -87,6 +105,36 @@
           <span class="status-indicator" id="status-indicator" aria-hidden="true"></span>
           <span class="status-label" id="status-label">Engine Ready</span>
         </div>
+
+        <!-- Day / Night / Device Theme Switcher -->
+        <div class="theme-switcher" id="theme-switcher" role="radiogroup" aria-label="Display theme">
+          <button type="button" class="theme-btn" id="theme-btn-light" data-theme-val="light" role="radio" aria-checked="false" title="Day View (Light)" aria-label="Day View (Light)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+          </button>
+          <button type="button" class="theme-btn" id="theme-btn-dark" data-theme-val="dark" role="radio" aria-checked="false" title="Night View (Dark)" aria-label="Night View (Dark)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+          <button type="button" class="theme-btn active" id="theme-btn-system" data-theme-val="system" role="radio" aria-checked="true" title="Device Setting (System)" aria-label="Device Setting (System)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+          </button>
+        </div>
+
         <button class="icon-btn" id="shortcuts-btn" type="button" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)" aria-haspopup="dialog">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M7 16h10"/></svg>
         </button>
@@ -115,6 +163,10 @@
             </div>
             <div class="account-menu-divider"></div>
             <div class="account-menu-links">
+              <button type="button" class="account-menu-item" id="menu-goto-overview">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                <span>System Overview &amp; Guide</span>
+              </button>
               <button type="button" class="account-menu-item" id="menu-goto-pipeline">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="6" height="6" rx="1.5"/><rect x="16" y="3" width="6" height="6" rx="1.5"/><rect x="9" y="15" width="6" height="6" rx="1.5"/><path d="M5 9v3a2 2 0 0 0 2 2h5m5-5v3a2 2 0 0 1-2 2h-5"/></svg>
                 <span>Architecture &amp; Pipeline</span>
@@ -150,15 +202,694 @@
   <!-- Main View Container -->
   <main class="app-main" id="app-main">
 
+    <!-- ════════════ VIEW 1: SYSTEM OVERVIEW & ARCHITECTURAL BLUEPRINT ════════════ -->
+    <section class="view-panel active" id="view-overview" role="tabpanel" aria-labelledby="tab-nav-overview">
+      <div class="panel-inner">
+
+        <!-- Master Hero Showcase with Dynamic Particle & Waveform Canvas -->
+        <div class="overview-hero-wrapper">
+          <canvas id="overview-fx-canvas" class="overview-fx-canvas" aria-hidden="true"></canvas>
+          <div class="overview-hero-inner">
+            <div class="overview-hero-badge">
+              <span class="overview-pulse-dot" aria-hidden="true"></span>
+              Acoustic Intelligence Platform &bull; Global Architecture &amp; Sound Taxonomy
+            </div>
+            <h1 class="overview-hero-title">
+              Environmental Sound <span class="fx-word gradient-text">Intelligence Suite</span>
+            </h1>
+            <p class="overview-hero-desc">
+              Real-time deep learning recognition across 50 standardized environmental classes, powered by continuous STFT log-mel spectral pipelines and anti-hallucination out-of-distribution (OOD) protection.
+            </p>
+
+            <!-- Quick Action Jump Buttons -->
+            <div class="overview-hero-actions">
+              <button type="button" class="btn btn-primary overview-cta-btn" id="hero-goto-studio-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+                <span>Launch Classifier Studio</span>
+              </button>
+              <button type="button" class="btn btn-secondary overview-cta-btn" id="hero-goto-taxonomy-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                <span>Explore 50 Sound Classes</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dual-Persona Switcher Bar (Dev Button strictly hidden for general users) -->
+        <div class="overview-lens-bar" id="overview-lens-bar">
+          <div class="overview-lens-switcher" role="tablist" aria-label="Perspective lenses">
+            <button type="button" class="overview-lens-btn active" id="lens-btn-user" role="tab" aria-selected="true" aria-controls="lens-content-user" data-lens="user">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <div class="lens-btn-text">
+                <span class="lens-title">User &amp; Product Guide</span>
+                <span class="lens-sub">Workflow, taxonomy &amp; detection guide</span>
+              </div>
+            </button>
+            <!-- Strictly hidden by default until developer logs in -->
+            <button type="button" class="overview-lens-btn dev-lens-btn" id="lens-btn-dev" role="tab" aria-selected="false" aria-controls="lens-content-dev" data-lens="dev" style="display: none;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+              <div class="lens-btn-text">
+                <span class="lens-title">Developer &amp; Architecture Deep Dive</span>
+                <span class="lens-sub">DSP pipeline, models, math &amp; REST API</span>
+              </div>
+              <span class="nav-dev-tag" id="tag-badge-dev-lens">DEV</span>
+            </button>
+          </div>
+          <div class="overview-lens-meta" id="lens-tagline">
+            <span class="pulse-status-dot"></span>
+            <span id="lens-tagline-text">Showing: <strong>User &amp; Product Perspective</strong> &mdash; 3-step workflow, ESC-50 taxonomy &amp; OOD safety</span>
+          </div>
+        </div>
+
+        <!-- ───────────────────────────────────────────────────────── -->
+        <!-- LENS 1: USER & PRODUCT GUIDE                              -->
+        <!-- ───────────────────────────────────────────────────────── -->
+        <div class="lens-section active" id="lens-content-user" role="tabpanel" aria-labelledby="lens-btn-user">
+
+          <!-- Interactive Acoustic Archetype Simulator Hub -->
+          <div class="overview-simulator-card">
+            <div class="sim-header">
+              <div class="sim-title-group">
+                <span class="subhead-badge">Interactive Acoustic Preview</span>
+                <h3 class="sim-title">Live Soundscape Demonstrator</h3>
+                <p class="sim-subtitle">Click an acoustic category below to preview real-time spectral wave transformations and neural inference:</p>
+              </div>
+              <div class="sim-live-status">
+                <span class="sim-pulse-dot"></span>
+                <span>DSP Engine Ready</span>
+              </div>
+            </div>
+
+            <!-- Archetype Selector Pills -->
+            <div class="sim-archetype-row">
+              <button type="button" class="sim-archetype-btn active" data-archetype="dog">
+                <span class="sim-arch-icon">🐕</span>
+                <div class="sim-arch-info">
+                  <strong>Fauna (Dog)</strong>
+                  <span>Harmonic bursts</span>
+                </div>
+              </button>
+              <button type="button" class="sim-archetype-btn" data-archetype="rain">
+                <span class="sim-arch-icon">🌧️</span>
+                <div class="sim-arch-info">
+                  <strong>Nature (Rain)</strong>
+                  <span>Stochastic noise</span>
+                </div>
+              </button>
+              <button type="button" class="sim-archetype-btn" data-archetype="baby">
+                <span class="sim-arch-icon">👶</span>
+                <div class="sim-arch-info">
+                  <strong>Human (Baby)</strong>
+                  <span>Formant sweeps</span>
+                </div>
+              </button>
+              <button type="button" class="sim-archetype-btn" data-archetype="knock">
+                <span class="sim-arch-icon">🚪</span>
+                <div class="sim-arch-info">
+                  <strong>Interior (Knock)</strong>
+                  <span>Sharp transients</span>
+                </div>
+              </button>
+            </div>
+
+            <!-- Simulated Visualizer & Inference Display Box -->
+            <div class="sim-display-screen">
+              <div class="sim-canvas-container">
+                <canvas id="sim-mini-canvas" class="sim-mini-canvas"></canvas>
+                <div class="sim-canvas-overlay-label" id="sim-canvas-label">Simulating 22,050 Hz STFT Stream</div>
+              </div>
+              <div class="sim-results-side">
+                <div class="sim-pred-badge-row">
+                  <span class="sim-domain-badge" id="sim-domain-badge">Domain: Animals</span>
+                  <span class="sim-conf-badge" id="sim-conf-badge">96.8% Confidence</span>
+                </div>
+                <h4 class="sim-pred-name" id="sim-pred-name">Dog Barking (Canis lupus)</h4>
+                <p class="sim-pred-desc" id="sim-pred-desc">Multi-harmonic acoustic formants with rapid periodic vocal tract modulations centered around 450 Hz &ndash; 1.8 kHz.</p>
+                <div class="sim-actions-row">
+                  <button type="button" class="btn btn-primary btn-sm" id="sim-try-studio-btn">
+                    <span>Test Your Own Audio in Studio &rarr;</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3 Core Platform Pillars Grid -->
+          <div class="overview-pillars-grid">
+            <div class="pillar-card">
+              <div class="pillar-icon-wrap pillar-cyan">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+              </div>
+              <h3 class="pillar-title">50 Environmental Classes</h3>
+              <p class="pillar-desc">Comprehensive acoustic recognition trained on the standardized ESC-50 dataset, categorizing complex natural, urban, animal, and interior soundscapes with high fidelity.</p>
+              <div class="pillar-footer-pill">5 Domains &bull; 2,000 Verified Clips</div>
+            </div>
+
+            <div class="pillar-card">
+              <div class="pillar-icon-wrap pillar-amber">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              </div>
+              <h3 class="pillar-title">Real-Time Interactive Studio</h3>
+              <p class="pillar-desc">Record directly from your microphone or drop audio files. Features browser-accelerated Web Audio visualization, interactive time scrubbing, and millisecond model inference.</p>
+              <div class="pillar-footer-pill">Live Mic &bull; Drag &amp; Drop &bull; &lt;50ms Latency</div>
+            </div>
+
+            <div class="pillar-card">
+              <div class="pillar-icon-wrap pillar-emerald">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+              </div>
+              <h3 class="pillar-title">Out-of-Distribution Safety</h3>
+              <p class="pillar-desc">Advanced Mahalanobis anomaly detection and prediction entropy prevent hallucination on synthetic noise or uncataloged audio, flagging unknown sounds with complete transparency.</p>
+              <div class="pillar-footer-pill">Anti-Hallucination &bull; Entropy Filtering</div>
+            </div>
+          </div>
+
+          <!-- Section: 3-Step Connected Workflow -->
+          <div class="overview-section-block">
+            <div class="section-block-header">
+              <span class="subhead-badge">Guided Workflow</span>
+              <h3 class="section-block-title">How SoundSense Operates in 3 Steps</h3>
+              <p class="section-block-subtitle">From acoustic waveform capture to calibrated neural classification</p>
+            </div>
+
+            <div class="workflow-steps-grid">
+              <div class="step-card">
+                <div class="step-card-num">01</div>
+                <div class="step-card-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+                </div>
+                <h4 class="step-card-title">Provide Audio Input</h4>
+                <p class="step-card-desc">Click <strong>Record Live</strong> to capture sound via your browser microphone, drag and drop any <code>.wav</code>, <code>.mp3</code>, or <code>.ogg</code> file, or click pre-loaded curated environmental sound presets.</p>
+                <ul class="step-feature-list">
+                  <li>Automatic 22.05 kHz resampling &amp; peak normalization</li>
+                  <li>Real-time waveform zoom &amp; interactive playback scrubbing</li>
+                  <li>5-second intelligent center-crop / zero-padding</li>
+                </ul>
+              </div>
+
+              <div class="step-card">
+                <div class="step-card-num">02</div>
+                <div class="step-card-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                </div>
+                <h4 class="step-card-title">Select Inference Engine</h4>
+                <p class="step-card-desc">Choose between high-performance neural architectures tuned for distinct operating constraints, and adjust the confidence threshold slider to filter uncertain detections.</p>
+                <ul class="step-feature-list">
+                  <li><strong>SResNet</strong> &bull; Lightweight Squeeze-and-Excitation edge model (~12ms)</li>
+                  <li><strong>ResNet-18</strong> &bull; Balanced standard benchmark architecture (~28ms)</li>
+                  <li><strong>VGG-16</strong> &amp; <strong>CNN-GRU</strong> &bull; Deep spatial &amp; sequential recurrent</li>
+                </ul>
+              </div>
+
+              <div class="step-card">
+                <div class="step-card-num">03</div>
+                <div class="step-card-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                </div>
+                <h4 class="step-card-title">Inspect Diagnostics &amp; Metrics</h4>
+                <p class="step-card-desc">Receive instant Top-5 ranked classification probabilities with domain category tagging, confidence calibration bars, spectral analysis, and OOD anomaly assessment.</p>
+                <ul class="step-feature-list">
+                  <li>Top-1 prediction banner with domain classification badge</li>
+                  <li>Interactive confidence distribution meter for runner-up classes</li>
+                  <li>Mahalanobis uncertainty score &amp; Out-of-Distribution warning banner</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: ESC-50 Taxonomy Overview Matrix -->
+          <div class="overview-section-block">
+            <div class="section-block-header">
+              <span class="subhead-badge">Taxonomy Map</span>
+              <h3 class="section-block-title">The 5 ESC-50 Environmental Domains</h3>
+              <p class="section-block-subtitle">50 discrete acoustic categories grouped across standard real-world domains</p>
+            </div>
+
+            <div class="overview-domains-grid">
+              <div class="domain-card domain-card-animals">
+                <div class="domain-card-header">
+                  <span class="domain-badge-icon">🐕</span>
+                  <div>
+                    <h4 class="domain-title">Animals</h4>
+                    <span class="domain-counter">10 Classes &bull; 400 Audio Clips</span>
+                  </div>
+                </div>
+                <p class="domain-desc">Natural biological vocalizations characterized by harmonic pitch sweeps, intermittent bursts, and unique resonant formants.</p>
+                <div class="domain-tag-cluster">
+                  <span class="dtag">Dog</span><span class="dtag">Rooster</span><span class="dtag">Pig</span><span class="dtag">Cow</span><span class="dtag">Frog</span><span class="dtag">Cat</span><span class="dtag">Hen</span><span class="dtag">Insects</span><span class="dtag">Sheep</span><span class="dtag">Crow</span>
+                </div>
+              </div>
+
+              <div class="domain-card domain-card-natural">
+                <div class="domain-card-header">
+                  <span class="domain-badge-icon">🌧️</span>
+                  <div>
+                    <h4 class="domain-title">Natural Soundscapes &amp; Water</h4>
+                    <span class="domain-counter">10 Classes &bull; 400 Audio Clips</span>
+                  </div>
+                </div>
+                <p class="domain-desc">Stochastic broad-spectrum noise, fluid dynamics, crackling combustion, and transient atmospheric pressure events.</p>
+                <div class="domain-tag-cluster">
+                  <span class="dtag">Rain</span><span class="dtag">Sea Waves</span><span class="dtag">Crackling Fire</span><span class="dtag">Crickets</span><span class="dtag">Chirping Birds</span><span class="dtag">Water Drops</span><span class="dtag">Wind</span><span class="dtag">Pouring Water</span><span class="dtag">Toilet Flush</span><span class="dtag">Thunderstorm</span>
+                </div>
+              </div>
+
+              <div class="domain-card domain-card-human">
+                <div class="domain-card-header">
+                  <span class="domain-badge-icon">👶</span>
+                  <div>
+                    <h4 class="domain-title">Human Non-Speech Sounds</h4>
+                    <span class="domain-counter">10 Classes &bull; 400 Audio Clips</span>
+                  </div>
+                </div>
+                <p class="domain-desc">Vocal tract impulses, involuntary respiratory actions, and kinetic body interactions devoid of verbal linguistics.</p>
+                <div class="domain-tag-cluster">
+                  <span class="dtag">Crying Baby</span><span class="dtag">Sneezing</span><span class="dtag">Clapping</span><span class="dtag">Breathing</span><span class="dtag">Coughing</span><span class="dtag">Footsteps</span><span class="dtag">Laughing</span><span class="dtag">Brushing Teeth</span><span class="dtag">Snoring</span><span class="dtag">Drinking</span>
+                </div>
+              </div>
+
+              <div class="domain-card domain-card-domestic">
+                <div class="domain-card-header">
+                  <span class="domain-badge-icon">🚪</span>
+                  <div>
+                    <h4 class="domain-title">Interior &amp; Domestic Sounds</h4>
+                    <span class="domain-counter">10 Classes &bull; 400 Audio Clips</span>
+                  </div>
+                </div>
+                <p class="domain-desc">Sharp resonant impacts, acoustic reverberation inside rooms, electromechanical motor hums, and appliance friction.</p>
+                <div class="domain-tag-cluster">
+                  <span class="dtag">Door Knock</span><span class="dtag">Mouse Click</span><span class="dtag">Keyboard Typing</span><span class="dtag">Door Creaks</span><span class="dtag">Can Opening</span><span class="dtag">Washing Machine</span><span class="dtag">Vacuum Cleaner</span><span class="dtag">Clock Alarm</span><span class="dtag">Clock Tick</span><span class="dtag">Glass Breaking</span>
+                </div>
+              </div>
+
+              <div class="domain-card domain-card-urban">
+                <div class="domain-card-header">
+                  <span class="domain-badge-icon">🚁</span>
+                  <div>
+                    <h4 class="domain-title">Exterior &amp; Urban Noise</h4>
+                    <span class="domain-counter">10 Classes &bull; 400 Audio Clips</span>
+                  </div>
+                </div>
+                <p class="domain-desc">High sound pressure levels (SPL), Doppler pitch modulations, harmonic siren sweeps, and mechanical engine cycles.</p>
+                <div class="domain-tag-cluster">
+                  <span class="dtag">Helicopter</span><span class="dtag">Chainsaw</span><span class="dtag">Siren</span><span class="dtag">Car Horn</span><span class="dtag">Engine</span><span class="dtag">Train</span><span class="dtag">Church Bells</span><span class="dtag">Airplane</span><span class="dtag">Fireworks</span><span class="dtag">Hand Saw</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Confidence & OOD Diagnostics Guide -->
+          <div class="overview-section-block">
+            <div class="section-block-header">
+              <span class="subhead-badge">Diagnostics</span>
+              <h3 class="section-block-title">Interpreting Model Confidence &amp; OOD Safety</h3>
+              <p class="section-block-subtitle">Understanding when to trust predictions and how anomalies are handled</p>
+            </div>
+
+            <div class="confidence-guide-grid">
+              <div class="conf-card conf-card-green">
+                <div class="conf-card-badge">🟢 85% &ndash; 100%</div>
+                <h4 class="conf-card-title">High Confidence Match</h4>
+                <p class="conf-card-desc">The acoustic fingerprint closely matches canonical training samples in the ESC-50 dataset. High signal-to-noise ratio and distinctive harmonic or transient components.</p>
+                <div class="conf-card-tip"><strong>Action:</strong> Safe for automated downstream decision logic and event triggering.</div>
+              </div>
+
+              <div class="conf-card conf-card-amber">
+                <div class="conf-card-badge">🟡 50% &ndash; 84%</div>
+                <h4 class="conf-card-title">Moderate Confidence Match</h4>
+                <p class="conf-card-desc">The acoustic event is recognized, but contains ambient noise, reverberation, or overlapping acoustic sources. The runner-up classes should be checked for ambiguity.</p>
+                <div class="conf-card-tip"><strong>Action:</strong> Inspect the Top-5 probability distribution to verify acoustic overlap.</div>
+              </div>
+
+              <div class="conf-card conf-card-rose">
+                <div class="conf-card-badge">🔴 &lt; 50% or OOD Flag</div>
+                <h4 class="conf-card-title">Out-of-Distribution / Anomaly</h4>
+                <p class="conf-card-desc">The input audio diverges from known acoustic profiles. Rather than giving a false high-confidence guess, the Mahalanobis anomaly detector warns you of unfamiliar audio.</p>
+                <div class="conf-card-tip"><strong>Action:</strong> The sound may be speech, music, or synthetic noise outside the ESC-50 taxonomy.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- User CTA Banner -->
+          <div class="overview-cta-banner">
+            <div class="cta-banner-text">
+              <h3 class="cta-banner-title">Ready to Experience SoundSense Studio?</h3>
+              <p class="cta-banner-desc">Upload your own audio recording, test live microphone input, or explore the pre-computed ESC-50 taxonomy.</p>
+            </div>
+            <div class="cta-banner-actions">
+              <button type="button" class="btn btn-primary" id="overview-goto-studio-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <span>Launch Classifier Studio</span>
+              </button>
+              <button type="button" class="btn btn-secondary" id="overview-goto-taxonomy-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                <span>Browse Full Taxonomy</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ───────────────────────────────────────────────────────── -->
+        <!-- LENS 2: DEVELOPER & ARCHITECTURE DEEP DIVE (PROTECTED)   -->
+        <!-- ───────────────────────────────────────────────────────── -->
+        <div class="lens-section" id="lens-content-dev" role="tabpanel" aria-labelledby="lens-btn-dev" hidden>
+
+          <!-- System Architecture & Tech Stack Grid -->
+          <div class="dev-tech-stack-grid">
+            <div class="tech-chip-card">
+              <span class="tech-chip-tag">Machine Learning Core</span>
+              <h4 class="tech-chip-title">PyTorch 2.x &amp; TorchScript</h4>
+              <p class="tech-chip-desc">Inference engine utilizing TorchScript JIT graph optimizations with dual-branch multimodal tensors and SwiGLU gating.</p>
+            </div>
+            <div class="tech-chip-card">
+              <span class="tech-chip-tag">Digital Signal Processing</span>
+              <h4 class="tech-chip-title">Librosa &amp; Torchaudio</h4>
+              <p class="tech-chip-desc">Standardized 22,050 Hz sampling, 128 Log-Mel filterbanks, 40 MFCCs, and threshold-free Recurrence Plots (RP).</p>
+            </div>
+            <div class="tech-chip-card">
+              <span class="tech-chip-tag">High-Throughput Backend</span>
+              <h4 class="tech-chip-title">FastAPI &amp; Async ASGI</h4>
+              <p class="tech-chip-desc">Pydantic v2 schemas, streaming multipart ingestion, SHA-256 LRU audio fingerprint cache, and sub-2ms cache hit returns.</p>
+            </div>
+            <div class="tech-chip-card">
+              <span class="tech-chip-tag">Zero-Dependency Frontend</span>
+              <h4 class="tech-chip-title">Web Audio API &amp; Canvas 2D</h4>
+              <p class="tech-chip-desc">Sub-millisecond audio decoding, live microphone streams via MediaStreamTrack, interactive canvas rendering, and zero UI bloat.</p>
+            </div>
+          </div>
+
+          <!-- Section: DSP Feature Extraction Pipeline & Mathematical Formulations -->
+          <div class="overview-section-block">
+            <div class="section-block-header">
+              <span class="subhead-badge">DSP Math</span>
+              <h3 class="section-block-title">Deterministic Signal Processing Pipeline</h3>
+              <p class="section-block-subtitle">Mathematical transformations from continuous air-pressure waves to multimodal neural tensors</p>
+            </div>
+
+            <div class="dsp-math-grid">
+              <!-- Stage 1 -->
+              <div class="dsp-math-card">
+                <div class="dsp-card-header">
+                  <span class="dsp-stage-num">Stage 01</span>
+                  <h4 class="dsp-stage-title">Signal Ingestion &amp; Windowing</h4>
+                </div>
+                <div class="dsp-math-body">
+                  <p class="dsp-math-text">Audio resampled to standardized sampling rate <code>f_s = 22,050 Hz</code> and peak-normalized to prevent amplitude distortion:</p>
+                  <div class="code-math-box">
+                    x_norm[n] = x[n] / (max_k |x[k]| + ε)
+                  </div>
+                  <p class="dsp-math-text">Signals are fixed to <code>T = 5.0 s</code> (<code>N = 110,250</code> samples) with energetic activity center-cropping. A Hanning window is applied to suppress spectral leakage:</p>
+                  <div class="code-math-box">
+                    w[n] = 0.5 - 0.5 · cos(2πn / N_fft),   n ∈ [0, N_fft - 1]
+                  </div>
+                  <div class="dsp-param-tags">
+                    <span class="ptag">N_fft = 2048</span>
+                    <span class="ptag">Hop size H = 512</span>
+                    <span class="ptag">75% Overlap</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Stage 2 -->
+              <div class="dsp-math-card">
+                <div class="dsp-card-header">
+                  <span class="dsp-stage-num">Stage 02</span>
+                  <h4 class="dsp-stage-title">Log-Mel Filterbank Transformation</h4>
+                </div>
+                <div class="dsp-math-body">
+                  <p class="dsp-math-text">The discrete Short-Time Fourier Transform (STFT) computes complex time-frequency spectrograms. Frequencies are projected onto the non-linear Mel psychoacoustic scale:</p>
+                  <div class="code-math-box">
+                    m = 2595 · log10(1 + f / 700)
+                  </div>
+                  <p class="dsp-math-text">128 triangular overlapping filterbanks are multiplied with the power spectrum |X(t, f)|² and converted to decibels:</p>
+                  <div class="code-math-box">
+                    S_dB(m, t) = 10 · log10( S(m, t) / (max(S) + 10⁻⁶) )
+                  </div>
+                  <div class="dsp-param-tags">
+                    <span class="ptag">128 Mel Bins</span>
+                    <span class="ptag">f_min = 0 Hz</span>
+                    <span class="ptag">f_max = 11,025 Hz</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Stage 3 -->
+              <div class="dsp-math-card">
+                <div class="dsp-card-header">
+                  <span class="dsp-stage-num">Stage 03</span>
+                  <h4 class="dsp-stage-title">Chaotic Dynamics via Recurrence Plots</h4>
+                </div>
+                <div class="dsp-math-body">
+                  <p class="dsp-math-text">Captures microscopic non-linear dynamic trajectories. Piecewise Aggregate Approximation (PAA) reduces the 110,250 samples into <code>d = 128</code> temporal bins:</p>
+                  <div class="code-math-box">
+                    x̄_i = (1 / L) · ∑_{j=(i-1)L + 1}^{iL} x[j],   L = 861
+                  </div>
+                  <p class="dsp-math-text">The threshold-free pairwise distance matrix reveals non-linear attractor structures:</p>
+                  <div class="code-math-box">
+                    R_{i,j} = || x̄_i - x̄_j ||_2,   R ∈ ℝ^{128 × 128}
+                  </div>
+                  <div class="dsp-param-tags">
+                    <span class="ptag">128 × 128 Matrix</span>
+                    <span class="ptag">Threshold-Free</span>
+                    <span class="ptag">Normalized [0, 1]</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Stage 4 -->
+              <div class="dsp-math-card">
+                <div class="dsp-card-header">
+                  <span class="dsp-stage-num">Stage 04</span>
+                  <h4 class="dsp-stage-title">Tensor Fusion &amp; SwiGLU Gating</h4>
+                </div>
+                <div class="dsp-math-body">
+                  <p class="dsp-math-text">Multimodal representations are concatenated into structured tensors. Macro-spectral channels fuse with micro-dynamic recurrence plots through Swish-Gated Linear Units:</p>
+                  <div class="code-math-box">
+                    SwiGLU(x, W, V, b, c) = (xW + b) ⊗ Swish(xV + c)
+                  </div>
+                  <p class="dsp-math-text">This dynamically attenuates uninformative noise bands while amplifying transient sonic signatures before feed-forward dense classification.</p>
+                  <div class="dsp-param-tags">
+                    <span class="ptag">SwiGLU Activation</span>
+                    <span class="ptag">Dual-Branch Fusion</span>
+                    <span class="ptag">Dropout = 0.25</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Model Benchmarks & Comparison Table -->
+          <div class="overview-section-block">
+            <div class="section-block-header">
+              <span class="subhead-badge">Empirical Benchmarks</span>
+              <h3 class="section-block-title">Model Topology Comparison &amp; ESC-50 Metrics</h3>
+              <p class="section-block-subtitle">Evaluated on official 5-fold stratified cross-validation splits</p>
+            </div>
+
+            <div class="table-responsive-container">
+              <table class="arch-benchmark-table">
+                <thead>
+                  <tr>
+                    <th>Architecture</th>
+                    <th>Base Topology</th>
+                    <th>Parameters</th>
+                    <th>Top-1 Accuracy</th>
+                    <th>Top-5 Accuracy</th>
+                    <th>CPU Latency</th>
+                    <th>Primary Advantage</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="table-row-highlight">
+                    <td>
+                      <div class="model-cell-name">
+                        <strong>SResNet (Ours)</strong>
+                        <span class="model-badge-rec">Recommended</span>
+                      </div>
+                    </td>
+                    <td>Shallow ResNet + SE Blocks</td>
+                    <td>4.2M</td>
+                    <td><span class="acc-pill">86.4%</span></td>
+                    <td><span class="acc-pill-sub">96.8%</span></td>
+                    <td>~12 ms</td>
+                    <td>Ultra-low edge latency, minimal RAM footprint</td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div class="model-cell-name">
+                        <strong>ResNet-18</strong>
+                        <span class="model-badge-std">Standard</span>
+                      </div>
+                    </td>
+                    <td>18-Layer Residual CNN</td>
+                    <td>11.2M</td>
+                    <td><span class="acc-pill">89.1%</span></td>
+                    <td><span class="acc-pill-sub">97.4%</span></td>
+                    <td>~28 ms</td>
+                    <td>Optimal balance of general accuracy and throughput</td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div class="model-cell-name">
+                        <strong>VGG-16</strong>
+                        <span class="model-badge-deep">Deep</span>
+                      </div>
+                    </td>
+                    <td>Stacked 3×3 Convolutions</td>
+                    <td>15.3M</td>
+                    <td><span class="acc-pill">87.8%</span></td>
+                    <td><span class="acc-pill-sub">96.2%</span></td>
+                    <td>~64 ms</td>
+                    <td>High-resolution spatial feature extraction</td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div class="model-cell-name">
+                        <strong>CNN-GRU</strong>
+                        <span class="model-badge-hybrid">Hybrid</span>
+                      </div>
+                    </td>
+                    <td>2D CNN + BiDirectional GRU</td>
+                    <td>6.8M</td>
+                    <td><span class="acc-pill">88.5%</span></td>
+                    <td><span class="acc-pill-sub">97.1%</span></td>
+                    <td>~34 ms</td>
+                    <td>Superior modeling of evolving temporal transitions</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Section: Out-of-Distribution (OOD) Mathematical Framework -->
+          <div class="overview-section-block">
+            <div class="section-block-header">
+              <span class="subhead-badge">OOD Mathematics</span>
+              <h3 class="section-block-title">Out-of-Distribution &amp; Anomaly Detection Formulations</h3>
+              <p class="section-block-subtitle">Mathematical mechanisms protecting against synthetic noise and uncataloged signals</p>
+            </div>
+
+            <div class="ood-math-cards-grid">
+              <div class="ood-math-card">
+                <h4 class="ood-card-title">Penultimate Feature Mahalanobis Distance</h4>
+                <p class="ood-card-desc">Features z = f(x) from the penultimate layer are compared to class centroid embeddings μ_c using empirical covariance Σ_c:</p>
+                <div class="code-math-box">
+                  D_M(z) = min_{c ∈ {1...50}} √[ (z - μ_c)^T · Σ_c⁻¹ · (z - μ_c) ]
+                </div>
+                <p class="ood-card-note">If D_M(z) &gt; γ_threshold, the audio is classified as out-of-distribution with high statistical significance (p &lt; 0.01).</p>
+              </div>
+
+              <div class="ood-math-card">
+                <h4 class="ood-card-title">Normalized Prediction Shannon Entropy</h4>
+                <p class="ood-card-desc">Measures the uniform dispersion of the output probability vector p = softmax(logits / T):</p>
+                <div class="code-math-box">
+                  H(p) = - ∑_{i=1}^{50} p_i · log2(p_i)
+                </div>
+                <p class="ood-card-note">High entropy (H &gt; 3.2 bits) indicates ambiguous classifier state, triggering an anomaly banner rather than an untrustworthy Top-1 prediction.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Interactive REST API Reference & Code Snippets -->
+          <div class="overview-section-block">
+            <div class="section-block-header">
+              <span class="subhead-badge">API Reference</span>
+              <h3 class="section-block-title">FastAPI Endpoints &amp; Integration Examples</h3>
+              <p class="section-block-subtitle">Integrate SoundSense acoustic inference into your Python, Node.js, or CLI applications</p>
+            </div>
+
+            <div class="api-reference-card">
+              <!-- Endpoint Selector & Language Selector Bar -->
+              <div class="api-card-toolbar">
+                <div class="api-endpoint-selector" role="tablist" aria-label="API Endpoints">
+                  <button type="button" class="api-endpoint-btn active" data-endpoint="predict">
+                    <span class="http-badge post">POST</span>
+                    <span>/predict</span>
+                  </button>
+                  <button type="button" class="api-endpoint-btn" data-endpoint="sample">
+                    <span class="http-badge get">GET</span>
+                    <span>/sample-audio</span>
+                  </button>
+                  <button type="button" class="api-endpoint-btn" data-endpoint="stats">
+                    <span class="http-badge get">GET</span>
+                    <span>/system-stats</span>
+                  </button>
+                  <button type="button" class="api-endpoint-btn" data-endpoint="taxonomy">
+                    <span class="http-badge get">GET</span>
+                    <span>/taxonomy</span>
+                  </button>
+                </div>
+
+                <div class="api-lang-selector" role="tablist" aria-label="Programming Language">
+                  <button type="button" class="api-lang-btn active" data-lang="curl">cURL</button>
+                  <button type="button" class="api-lang-btn" data-lang="python">Python</button>
+                  <button type="button" class="api-lang-btn" data-lang="javascript">JavaScript</button>
+                </div>
+              </div>
+
+              <!-- Endpoint Description Header -->
+              <div class="api-endpoint-meta" id="api-endpoint-meta">
+                <span class="api-meta-badge" id="api-meta-badge">POST /predict</span>
+                <span class="api-meta-desc" id="api-meta-desc">Accepts a multipart audio file upload (wav/mp3/ogg), executes full DSP feature extraction, and returns Top-5 classified environmental classes with confidence metrics and OOD analysis.</span>
+              </div>
+
+              <!-- Code Box with Copy Button -->
+              <div class="api-code-wrapper">
+                <button type="button" class="copy-code-btn" id="copy-api-code-btn" aria-label="Copy code snippet">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  <span id="copy-code-label">Copy Code</span>
+                </button>
+                <pre class="api-pre"><code class="api-code-display" id="api-code-display">curl -X POST "http://localhost:8000/predict" \\
+  -H "accept: application/json" \\
+  -F "file=@acoustic_sample.wav" \\
+  -F "model=sresnet" \\
+  -F "threshold=0.5"</code></pre>
+              </div>
+
+              <!-- Response JSON Preview -->
+              <div class="api-response-preview">
+                <div class="response-header">
+                  <span class="response-status-badge">200 OK</span>
+                  <span class="response-title">Example Response Schema (JSON)</span>
+                  <span class="response-timing">&sim;18 ms</span>
+                </div>
+                <pre class="response-pre"><code id="api-response-display">{
+  "status": "success",
+  "prediction": "dog",
+  "category": "animals",
+  "confidence": 0.942,
+  "is_ood": false,
+  "entropy": 0.412,
+  "top5": [
+    {"label": "dog", "score": 0.942, "category": "animals"},
+    {"label": "barking", "score": 0.038, "category": "animals"},
+    {"label": "cat", "score": 0.009, "category": "animals"},
+    {"label": "door_knock", "score": 0.005, "category": "domestic"},
+    {"label": "footsteps", "score": 0.003, "category": "human"}
+  ],
+  "latency_ms": 18.4,
+  "cache_hit": false
+}</code></pre>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
     <!-- ════════════ VIEW 1: CLASSIFIER STUDIO (Primary Workspace) ════════════ -->
-    <section class="view-panel active" id="view-studio" role="tabpanel" aria-labelledby="tab-nav-studio">
+    <section class="view-panel" id="view-studio" hidden role="tabpanel" aria-labelledby="tab-nav-studio">
       <div class="panel-header-banner">
         <div class="banner-content">
           <div class="banner-badge">
             <span class="badge-dot" aria-hidden="true"></span>
             ESC-50 Deep Learning Acoustic Suite
           </div>
-          <h1 class="banner-title"><span class="fx-word">Environmental</span> <span class="fx-word">Sound</span> <span class="gradient-text"><span class="fx-word">Classification</span> <span class="fx-word">Studio</span></span></h1>
+          <h1 class="banner-title"><span class="fx-word">Environmental</span> <span class="fx-word">Sound</span> <span class="fx-word gradient-text studio-title-highlight">Classification Studio</span></h1>
           <p class="banner-desc">
             Benchmarking state-of-the-art acoustic architectures including <strong>ResNet-18</strong>, <strong>VGG-16</strong>, <strong>SResNet</strong>, and <strong>CNN-GRU</strong> for real-time sound recognition across 50 environmental classes.
           </p>
@@ -166,11 +897,16 @@
             <span class="bpill">50 Audio Classes</span>
             <span class="bpill">ResNet-18 &amp; VGG-16</span>
             <span class="bpill">Interactive Waveform</span>
+            <button type="button" class="bpill banner-overview-pill" id="hero-overview-btn" aria-label="Explore System Overview">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              <span>System Overview &amp; Blueprint &rarr;</span>
+            </button>
           </div>
         </div>
         <div class="banner-visual-showcase" aria-hidden="true">
           <div class="banner-img-frame">
-            <img src="hero_bg.jpg" alt="Acoustic waveform spectral representation" class="banner-hero-img" />
+            <img src="hero_bg.jpg" alt="Acoustic waveform spectral representation (Night)" class="banner-hero-img banner-hero-img-dark" />
+            <img src="hero_bg_day.jpg" alt="Acoustic waveform spectral representation (Day)" class="banner-hero-img banner-hero-img-light" />
             <div class="banner-img-overlay"></div>
             <canvas id="hero-wave" class="hero-wave-canvas"></canvas>
             <div class="hero-scanline"></div>
@@ -984,8 +1720,8 @@
           </div>
           <div class="health-stat">
             <div>
-              <span class="health-val" id="ah-node">—</span>
-              <span class="health-lbl">Node.js Version</span>
+              <span class="health-val" id="ah-node">FastAPI / Python</span>
+              <span class="health-lbl">Backend Framework</span>
             </div>
           </div>
           <div class="health-stat">
@@ -1058,7 +1794,7 @@
         <div class="card-box card-module api-ref-card">
           <div class="card-header">
             <span class="card-tag">API Endpoint Reference</span>
-            <span class="card-sub-info">Express.js Backend</span>
+            <span class="card-sub-info">FastAPI (Python 3.11 / ASGI)</span>
           </div>
           <table class="spec-table api-table">
             <thead>
@@ -1073,37 +1809,43 @@
               <tr>
                 <td><span class="method-badge post">POST</span></td>
                 <td><code>/api/predict</code></td>
-                <td>Audio classification inference</td>
-                <td>multipart/form-data (audio file)</td>
+                <td>Audio classification &amp; OOD inference</td>
+                <td>multipart/form-data (file, model, threshold)</td>
               </tr>
               <tr>
                 <td><span class="method-badge post">POST</span></td>
                 <td><code>/api/train</code></td>
-                <td>Trigger model training run</td>
-                <td>JSON (model config, hyperparams)</td>
+                <td>Trigger PyTorch training run</td>
+                <td>JSON (model, epochs, lr, batch_size)</td>
               </tr>
               <tr>
                 <td><span class="method-badge get">GET</span></td>
-                <td><code>/api/train/:jobId</code></td>
-                <td>Check training job progress</td>
-                <td>—</td>
+                <td><code>/api/train/{job_id}</code></td>
+                <td>Check real-time training telemetry</td>
+                <td>URL param (job_id)</td>
               </tr>
               <tr>
                 <td><span class="method-badge post">POST</span></td>
                 <td><code>/api/save-model</code></td>
-                <td>Save model checkpoint</td>
-                <td>JSON (name, description, model type)</td>
+                <td>Save model checkpoint to disk</td>
+                <td>JSON (name, model_type, metrics)</td>
               </tr>
               <tr>
                 <td><span class="method-badge get">GET</span></td>
                 <td><code>/api/stats</code></td>
-                <td>System &amp; dataset analytics</td>
+                <td>System health, telemetry &amp; dataset metrics</td>
                 <td>—</td>
               </tr>
               <tr>
                 <td><span class="method-badge get">GET</span></td>
+                <td><code>/api/sample/{category_id}</code></td>
+                <td>Stream ESC-50 reference audio clip</td>
+                <td>URL param (category_id 0&ndash;49)</td>
+              </tr>
+              <tr>
+                <td><span class="method-badge get">GET</span></td>
                 <td><code>/api/health</code></td>
-                <td>Health check</td>
+                <td>FastAPI service health status</td>
                 <td>—</td>
               </tr>
             </tbody>

@@ -1,12 +1,11 @@
 services:
   - type: web
     name: soundsense-recognition
-    env: node
+    env: docker
     plan: free
-    buildCommand: npm install
-    startCommand: node server.js
+    dockerfilePath: ./Dockerfile
     envVars:
-      - key: NODE_ENV
-        value: production
       - key: PORT
         value: 10000
+      - key: RELOAD
+        value: "false"

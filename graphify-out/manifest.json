@@ -138,9 +138,9 @@
     "semantic_hash": ""
   },
   "Front-End/app.js": {
-    "mtime": 1794938791.352819,
-    "seen": 1794939067.1974576,
-    "ast_hash": "46b9ea70b0083b5f8ff2231daca2ffcd",
+    "mtime": 1794997042.6666503,
+    "seen": 1794997279.0834794,
+    "ast_hash": "9df4d10deb8891415c40f851f9e8b567",
     "semantic_hash": ""
   },
   "Preproccesing/__init__.py": {
@@ -240,9 +240,9 @@
     "semantic_hash": ""
   },
   "render.yaml": {
-    "mtime": 1793587264.882858,
-    "seen": 1794939067.1974802,
-    "ast_hash": "3ace3aa575163c3fdd05cd04bc700c60",
+    "mtime": 1794985208.100297,
+    "seen": 1794987047.2746458,
+    "ast_hash": "c1bc4c9b7a93c08ebc20cdd6bf8624fd",
     "semantic_hash": ""
   },
   "server.js": {
@@ -264,9 +264,9 @@
     "semantic_hash": ""
   },
   "Front-End/index.html": {
-    "mtime": 1794946758.7206342,
-    "seen": 1794946939.678419,
-    "ast_hash": "857548f7d853bd4c79ddeff4bc7e9274",
+    "mtime": 1794996739.3543253,
+    "seen": 1794997279.0835094,
+    "ast_hash": "11d27cce58efdca9b6ff6ea54300fd12",
     "semantic_hash": ""
   },
   "Preproccesing/README.md": {
@@ -354,9 +354,9 @@
     "semantic_hash": ""
   },
   "Front-End/fx.js": {
-    "mtime": 1794945838.852963,
-    "seen": 1794946939.6783836,
-    "ast_hash": "357372af7bf38dbec11afba0f2e63a79",
+    "mtime": 1794987151.7919128,
+    "seen": 1794989247.5427554,
+    "ast_hash": "e8600f6e0b5301a2f578b32e2e4249ee",
     "semantic_hash": ""
   },
   "Front-End/hero_bg_original.jpg": {
@@ -375,6 +375,12 @@
     "mtime": 1794975987.5693412,
     "seen": 1794976130.3528857,
     "ast_hash": "4040aba198a179caa92b0f3cd89c61f6",
+    "semantic_hash": ""
+  },
+  "Front-End/hero_bg_day.jpg": {
+    "mtime": 1794996453.5315676,
+    "seen": 1794997279.0835264,
+    "ast_hash": "a04a34448b37ade58f9b3427170ac602",
     "semantic_hash": ""
   },
   "package-lock.json": {

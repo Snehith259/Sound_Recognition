@@ -87,64 +87,7 @@
     return n;
   }
 
-  /* ── 1 · Custom cursor: dot + trailing ring (difference blend) ──────── */
-  var cursor = (function () {
-    var dot  = ensure('fx-cursor-dot', 'span', 'fx-cursor-dot');
-    var ring = ensure('fx-cursor-ring', 'span', 'fx-cursor-ring');
-    var mx = VW / 2, my = VH / 2, dx = mx, dy = my, rx = mx, ry = my;
-    var scale = 1, targetScale = 1, seen = false, inside = false;
-    var HOT = 'a,button,[role="button"],[role="tab"],select,input,textarea,label,' +
-              '.tax-card,.preset-btn,.upload-zone,.player-track,.ckpt-card,.quick-demo-btn';
-
-    function onMove(e) {
-      mx = e.clientX;
-      my = e.clientY;
-      if (!seen) {
-        seen = true;
-        dx = rx = mx;
-        dy = ry = my;
-        root.classList.add('fx-cursor-on');
-      }
-      inside = true;
-      var t = e.target;
-      var hot = t && t.closest && t.closest(HOT);
-      var text = hot && /^(INPUT|TEXTAREA|SELECT)$/.test(hot.tagName);
-      targetScale = hot ? (text ? 0.5 : 1.55) : 1;
-      addTask(frame);
-    }
-
-    function frame(t, dt) {
-      dx = lerp(dx, mx, 0.4, dt);
-      dy = lerp(dy, my, 0.4, dt);
-      rx = lerp(rx, mx, 0.16, dt);
-      ry = lerp(ry, my, 0.16, dt);
-      scale = lerp(scale, targetScale, 0.2, dt);
-      dot.style.transform = 'translate3d(' + dx + 'px,' + dy + 'px,0)';
-      ring.style.transform = 'translate3d(' + rx + 'px,' + ry + 'px,0) scale(' + scale.toFixed(3) + ')';
-      var settled = Math.abs(dx - mx) < 0.1 && Math.abs(dy - my) < 0.1 &&
-                    Math.abs(rx - mx) < 0.1 && Math.abs(ry - my) < 0.1 &&
-                    Math.abs(scale - targetScale) < 0.005;
-      return !settled; // sleep when cursor rests
-    }
-
-    doc.addEventListener('pointermove', onMove, { passive: true });
-    doc.addEventListener('pointerdown', function () { targetScale *= 0.8; addTask(frame); }, { passive: true });
-    doc.addEventListener('pointerup',   function () { addTask(frame); }, { passive: true });
-    doc.addEventListener('mouseleave', function () {
-      inside = false;
-      root.classList.remove('fx-cursor-on');
-    });
-    doc.addEventListener('mouseenter', function () {
-      if (seen) root.classList.add('fx-cursor-on');
-    });
-
-    return {
-      kill: function () {
-        root.classList.remove('fx-cursor-on');
-        dropTask(frame);
-      }
-    };
-  })();
+  /* ── 1 · Standard system cursor preserved (custom dot/ring removed) ── */
 
   /* ── 2 · Magnetic CTAs (spring return) ────────────────────────────────── */
   (function () {
@@ -522,8 +465,7 @@
   function teardown() {
     tasks.clear();
     if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
-    root.classList.remove('fx-on', 'fx-cursor-on');
-    cursor.kill();
+    root.classList.remove('fx-on');
     doc.querySelectorAll('.fx-reveal').forEach(function (n) { n.classList.add('fx-inview'); });
   }
 

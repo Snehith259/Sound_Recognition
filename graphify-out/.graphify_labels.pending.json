@@ -1,16 +1,17 @@
 {
-  "1": "batch_preprocessor.py",
-  "7": "generate_augmented_variants",
+  "1": "verify_and_report.py",
+  "7": "acoustic_inference.py",
   "8": "main.py",
   "9": "SoundSense — Environmental Sound Classification Studio",
-  "10": "run_acoustic_inference",
-  "11": "librosa",
+  "10": "loadAnalyticsData",
+  "11": "numpy",
   "12": "Any",
-  "16": "soundfile",
+  "16": "batch_preprocessor.py",
   "22": "fx.js",
-  "26": "Hubert_t-Sne_visu.py",
+  "26": "__init__.py",
   "33": "Any",
   "34": "copilot-instructions.md",
-  "35": "__init__.py",
-  "37": "ESC50MultiModalDataset"
+  "35": "json",
+  "36": "get_audio_duration",
+  "37": "dataset_loader.py"
 }
