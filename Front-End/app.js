@@ -384,7 +384,7 @@ function switchView(viewName) {
   // Smooth scroll to top on view change
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
-  requestAnimationFrame(positionNavGlider);
+  requestAnimationFrame(() => positionNavGlider(true));
 
   if (viewName === 'pipeline') {
     animateBenchmarkBars(true);
@@ -401,23 +401,41 @@ function switchView(viewName) {
 }
 
 /* Slide the navigation pill under the active tab */
-function positionNavGlider() {
+function positionNavGlider(scrollIntoView = false) {
   if (!navGlider || !viewNav) return;
   const active = viewNav.querySelector('.view-tab.active');
   if (!active) return;
-  const navRect = viewNav.getBoundingClientRect();
-  const tabRect = active.getBoundingClientRect();
-  if (!tabRect.width) return;
-  navGlider.style.left = `${tabRect.left - navRect.left}px`;
-  navGlider.style.width = `${tabRect.width}px`;
+
+  // Use offset properties relative to viewNav (invariant to horizontal scroll)
+  const tabLeft = active.offsetLeft;
+  const tabWidth = active.offsetWidth;
+  const tabTop = active.offsetTop;
+  const tabHeight = active.offsetHeight;
+  if (!tabWidth || !tabHeight) return;
+
+  navGlider.style.left = `${tabLeft}px`;
+  navGlider.style.width = `${tabWidth}px`;
+  navGlider.style.top = `${tabTop}px`;
+  navGlider.style.height = `${tabHeight}px`;
   navGlider.classList.add('ready');
+
+  // Smoothly center the active tab in view if nav bar overflows
+  if (scrollIntoView && viewNav.scrollWidth > viewNav.clientWidth) {
+    const navWidth = viewNav.clientWidth;
+    const targetScrollLeft = tabLeft - (navWidth / 2) + (tabWidth / 2);
+    viewNav.scrollTo({
+      left: Math.max(0, targetScrollLeft),
+      behavior: 'smooth'
+    });
+  }
 }
 
-window.addEventListener('resize', () => requestAnimationFrame(positionNavGlider));
-requestAnimationFrame(() => requestAnimationFrame(positionNavGlider));
-setTimeout(positionNavGlider, 350);
+window.addEventListener('resize', () => requestAnimationFrame(() => positionNavGlider(false)));
+window.addEventListener('orientationchange', () => setTimeout(() => positionNavGlider(true), 150));
+requestAnimationFrame(() => requestAnimationFrame(() => positionNavGlider(false)));
+setTimeout(() => positionNavGlider(false), 350);
 if (document.fonts && document.fonts.ready) {
-  document.fonts.ready.then(positionNavGlider).catch(() => {});
+  document.fonts.ready.then(() => positionNavGlider(false)).catch(() => {});
 }
 
 /* Arrow-key navigation between workspace tabs */

@@ -1,17 +1,17 @@
 # Graph Report - Sound_Recognition  (2026-11-18)
 
 ## Corpus Check
-- 51 files · ~57,873 words
+- 51 files · ~58,069 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 6017 file(s) not represented in the graph (top: .npy 5994, .csv 17, (none) 3)
+- Unclassified: 6018 file(s) not represented in the graph (top: .npy 5994, .csv 17, (none) 3)
 
 ## Summary
 - 665 nodes · 1059 edges · 35 communities (25 shown, 10 thin omitted)
-- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 34 edges (avg confidence: 0.85)
+- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 32 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `53124b57`
+- Built from commit: `f71f7863`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -71,16 +71,16 @@
   Preproccesing/reports/feature_visualization.png → Preproccesing/README.md
 - `predict()` --calls--> `run_acoustic_inference()`  [EXTRACTED]
   main.py → Preproccesing/acoustic_inference.py
-- `test_pytorch_dataloader()` --calls--> `get_dataloaders()`  [EXTRACTED]
-  Preproccesing/verify_and_report.py → Preproccesing/dataset_loader.py
+- `process_single_audio()` --calls--> `detect_active_segment()`  [EXTRACTED]
+  Preproccesing/batch_preprocessor.py → Preproccesing/audio_processor.py
 
 ## Import Cycles
 - 2-file cycle: `Preproccesing/__init__.py -> Preproccesing/dataset_splits.py -> Preproccesing/__init__.py`
 - 2-file cycle: `Preproccesing/__init__.py -> Preproccesing/audio_processor.py -> Preproccesing/__init__.py`
 - 2-file cycle: `Preproccesing/__init__.py -> Preproccesing/dataset_loader.py -> Preproccesing/__init__.py`
 - 2-file cycle: `Preproccesing/__init__.py -> Preproccesing/feature_extractor.py -> Preproccesing/__init__.py`
-- 3-file cycle: `Preproccesing/__init__.py -> Preproccesing/feature_extractor.py -> Preproccesing/audio_processor.py -> Preproccesing/__init__.py`
 - 3-file cycle: `Preproccesing/__init__.py -> Preproccesing/dataset_loader.py -> Preproccesing/audio_processor.py -> Preproccesing/__init__.py`
+- 3-file cycle: `Preproccesing/__init__.py -> Preproccesing/feature_extractor.py -> Preproccesing/audio_processor.py -> Preproccesing/__init__.py`
 - 3-file cycle: `Preproccesing/__init__.py -> Preproccesing/dataset_loader.py -> Preproccesing/feature_extractor.py -> Preproccesing/__init__.py`
 - 4-file cycle: `Preproccesing/__init__.py -> Preproccesing/dataset_loader.py -> Preproccesing/feature_extractor.py -> Preproccesing/audio_processor.py -> Preproccesing/__init__.py`
 
