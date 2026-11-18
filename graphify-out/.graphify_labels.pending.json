@@ -1,17 +1,14 @@
 {
-  "1": "verify_and_report.py",
-  "7": "acoustic_inference.py",
+  "1": "data_augmentation.py",
+  "7": "closeAccountMenu",
   "8": "main.py",
   "9": "SoundSense — Environmental Sound Classification Studio",
   "10": "loadAnalyticsData",
   "11": "numpy",
   "12": "Any",
-  "16": "batch_preprocessor.py",
+  "16": "__init__.py",
   "22": "fx.js",
-  "26": "__init__.py",
+  "26": "updateApiExplorer",
   "33": "Any",
-  "34": "copilot-instructions.md",
-  "35": "json",
-  "36": "get_audio_duration",
-  "37": "dataset_loader.py"
+  "34": "copilot-instructions.md"
 }

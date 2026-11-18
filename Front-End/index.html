@@ -274,9 +274,16 @@
                 <h3 class="sim-title">Live Soundscape Demonstrator</h3>
                 <p class="sim-subtitle">Click an acoustic category below to preview real-time spectral wave transformations and neural inference:</p>
               </div>
-              <div class="sim-live-status">
-                <span class="sim-pulse-dot"></span>
-                <span>DSP Engine Ready</span>
+              <div class="sim-live-status-group">
+                <div class="sim-live-status" id="sim-live-status">
+                  <span class="sim-pulse-dot" id="sim-status-dot"></span>
+                  <span id="sim-status-text">DSP Engine Ready</span>
+                </div>
+                <button type="button" class="sim-playpause-btn" id="sim-playpause-btn" aria-label="Pause simulation" title="Pause / Resume simulation">
+                  <svg class="sim-pause-icon" id="sim-pause-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                  <svg class="sim-play-icon" id="sim-play-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style="display:none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  <span class="sim-btn-text" id="sim-btn-text">Pause</span>
+                </button>
               </div>
             </div>
 
@@ -855,21 +862,21 @@
                   <span class="response-timing">&sim;18 ms</span>
                 </div>
                 <pre class="response-pre"><code id="api-response-display">{
-  "status": "success",
-  "prediction": "dog",
-  "category": "animals",
-  "confidence": 0.942,
-  "is_ood": false,
-  "entropy": 0.412,
-  "top5": [
-    {"label": "dog", "score": 0.942, "category": "animals"},
-    {"label": "barking", "score": 0.038, "category": "animals"},
-    {"label": "cat", "score": 0.009, "category": "animals"},
-    {"label": "door_knock", "score": 0.005, "category": "domestic"},
-    {"label": "footsteps", "score": 0.003, "category": "human"}
+  <span class="json-key">"status"</span>: <span class="json-str">"success"</span>,
+  <span class="json-key">"prediction"</span>: <span class="json-str">"dog"</span>,
+  <span class="json-key">"category"</span>: <span class="json-str">"animals"</span>,
+  <span class="json-key">"confidence"</span>: <span class="json-num">0.942</span>,
+  <span class="json-key">"is_ood"</span>: <span class="json-bool">false</span>,
+  <span class="json-key">"entropy"</span>: <span class="json-num">0.412</span>,
+  <span class="json-key">"top5"</span>: [
+    {<span class="json-key">"label"</span>: <span class="json-str">"dog"</span>, <span class="json-key">"score"</span>: <span class="json-num">0.942</span>, <span class="json-key">"category"</span>: <span class="json-str">"animals"</span>},
+    {<span class="json-key">"label"</span>: <span class="json-str">"barking"</span>, <span class="json-key">"score"</span>: <span class="json-num">0.038</span>, <span class="json-key">"category"</span>: <span class="json-str">"animals"</span>},
+    {<span class="json-key">"label"</span>: <span class="json-str">"cat"</span>, <span class="json-key">"score"</span>: <span class="json-num">0.009</span>, <span class="json-key">"category"</span>: <span class="json-str">"animals"</span>},
+    {<span class="json-key">"label"</span>: <span class="json-str">"door_knock"</span>, <span class="json-key">"score"</span>: <span class="json-num">0.005</span>, <span class="json-key">"category"</span>: <span class="json-str">"domestic"</span>},
+    {<span class="json-key">"label"</span>: <span class="json-str">"footsteps"</span>, <span class="json-key">"score"</span>: <span class="json-num">0.003</span>, <span class="json-key">"category"</span>: <span class="json-str">"human"</span>}
   ],
-  "latency_ms": 18.4,
-  "cache_hit": false
+  <span class="json-key">"latency_ms"</span>: <span class="json-num">18.4</span>,
+  <span class="json-key">"cache_hit"</span>: <span class="json-bool">false</span>
 }</code></pre>
               </div>
 
@@ -941,6 +948,23 @@
                   <option value="cnngru">CNN-GRU</option>
                 </select>
                 <svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- CARD 1.5: Confidence Threshold Control -->
+          <div class="card-box card-module" id="card-threshold-module">
+            <div class="card-header">
+              <span class="card-tag">Confidence Threshold</span>
+              <span class="card-sub-info" id="threshold-value-display">50%</span>
+            </div>
+            <p class="card-desc-compact">Minimum confidence score required to accept a classification result:</p>
+            <div class="threshold-slider-wrap">
+              <input type="range" id="threshold-slider" class="threshold-slider" min="0" max="100" value="50" step="1" aria-label="Confidence threshold percentage" />
+              <div class="threshold-labels">
+                <span>0% (Accept all)</span>
+                <span>50% (Default)</span>
+                <span>100% (Strict)</span>
               </div>
             </div>
           </div>
@@ -1051,16 +1075,25 @@
 
             <!-- Empty State -->
             <div class="result-state-empty" id="result-empty">
-              <div class="empty-art" aria-hidden="true">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
-                  <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
-                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                  <line x1="12" y1="19" x2="12" y2="22"/>
-                  <circle cx="12" cy="12" r="9" stroke-dasharray="2 3" opacity="0.4"/>
-                </svg>
+              <div class="empty-art-wrap">
+                <div class="empty-art-glow" aria-hidden="true"></div>
+                <div class="empty-art" aria-hidden="true">
+                  <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    <line x1="12" y1="19" x2="12" y2="22"/>
+                    <circle cx="12" cy="12" r="9" stroke-dasharray="2 3" opacity="0.4"/>
+                  </svg>
+                </div>
               </div>
               <h2 class="empty-head">Awaiting Audio Input</h2>
-              <p class="empty-sub">Choose a preset sound above or drop a file to view sound category detection, confidence metrics, and spectral feature maps.</p>
+              <p class="empty-sub">Choose a preset sound above, record with microphone, or drop an audio file to view sound category detection, confidence metrics, and spectral feature maps.</p>
+              <div class="empty-shortcuts-hint">
+                <span class="esh-item"><kbd>R</kbd> Record mic</span>
+                <span class="esh-item"><kbd>Space</kbd> Play / Pause</span>
+                <span class="esh-item"><kbd>C</kbd> Classify</span>
+                <span class="esh-item"><kbd>?</kbd> Shortcuts</span>
+              </div>
             </div>
 
             <!-- Loading State -->
@@ -1073,6 +1106,11 @@
               </div>
               <h2 class="loading-head">Extracting Acoustic Features</h2>
               <p class="loading-model-note">Processing via <span id="loading-model-name" class="highlight-cyan">ResNet-18</span></p>
+              <div class="inference-timer" id="inference-timer" aria-live="polite" title="Elapsed inference time">
+                <span class="timer-icon" aria-hidden="true">⏱</span>
+                <span>Elapsed:</span>
+                <span class="timer-elapsed" id="inference-elapsed">0.0s</span>
+              </div>
               <div class="pipeline-progress" id="loading-steps">
                 <div class="pipe-step" id="lstep-1"><span class="step-bullet"></span><span>Audio Buffer Decoded</span></div>
                 <div class="pipe-step" id="lstep-2"><span class="step-bullet"></span><span>Extracting Linear MFCCs &amp; Log-Mel</span></div>
@@ -1854,15 +1892,32 @@
       </div>
     </section>
 
+    <!-- Floating Scroll To Top Button -->
+    <button class="scroll-top-btn" id="scroll-top-btn" type="button" aria-label="Scroll to top" title="Back to top" hidden>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polyline points="18 15 12 9 6 15"/>
+      </svg>
+    </button>
   </main>
 
-  <!-- Clean, Uncluttered Footer -->
+  <!-- Clean, Accessible Footer with View Links & Telemetry Meta -->
   <footer class="app-footer" role="contentinfo">
     <div class="footer-row">
       <div class="footer-brand">
         <span class="footer-logo">Sound<span class="gradient-text">Sense</span></span>
         <span class="footer-tagline">Deep Learning Environmental Sound Classifier</span>
+        <span class="footer-version-tag">v2.0 &bull; Studio HUD</span>
       </div>
+
+      <nav class="footer-nav" aria-label="Footer quick navigation">
+        <button type="button" class="footer-nav-link" data-goto="overview">Overview</button>
+        <button type="button" class="footer-nav-link" data-goto="studio">Studio</button>
+        <button type="button" class="footer-nav-link" data-goto="pipeline">Pipeline</button>
+        <button type="button" class="footer-nav-link" data-goto="taxonomy">Taxonomy</button>
+        <button type="button" class="footer-nav-link dev-only-feature" data-goto="training" style="display: none;">Training</button>
+        <button type="button" class="footer-nav-link dev-only-feature" data-goto="analytics" style="display: none;">Analytics</button>
+      </nav>
+
       <div class="footer-meta">
         <span>Based on EURASIP 2024 Research</span>
         <span>&bull;</span>
@@ -1898,11 +1953,12 @@
         </button>
       </div>
       <div class="shortcut-grid">
-        <div class="shortcut-item"><kbd>1</kbd><span>Classifier Studio</span></div>
-        <div class="shortcut-item"><kbd>2</kbd><span>Architecture &amp; Pipeline</span></div>
-        <div class="shortcut-item"><kbd>3</kbd><span>ESC-50 Taxonomy</span></div>
-        <div class="shortcut-item dev-only-feature"><kbd>4</kbd><span>Training &amp; Model</span></div>
-        <div class="shortcut-item dev-only-feature"><kbd>5</kbd><span>System Analytics</span></div>
+        <div class="shortcut-item"><kbd>1</kbd><span>System Overview</span></div>
+        <div class="shortcut-item"><kbd>2</kbd><span>Classifier Studio</span></div>
+        <div class="shortcut-item"><kbd>3</kbd><span>Architecture &amp; Pipeline</span></div>
+        <div class="shortcut-item"><kbd>4</kbd><span>ESC-50 Taxonomy</span></div>
+        <div class="shortcut-item dev-only-feature"><kbd>5</kbd><span>Training &amp; Model</span></div>
+        <div class="shortcut-item dev-only-feature"><kbd>6</kbd><span>System Analytics</span></div>
         <div class="shortcut-item"><kbd>Space</kbd><span>Play / pause audio</span></div>
         <div class="shortcut-item"><kbd>C</kbd><span>Run classification</span></div>
         <div class="shortcut-item"><kbd>R</kbd><span>Record with microphone</span></div>

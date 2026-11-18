@@ -381,6 +381,9 @@ function switchView(viewName) {
     panel.hidden = !isTarget;
   });
 
+  // Smooth scroll to top on view change
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
   requestAnimationFrame(positionNavGlider);
 
   if (viewName === 'pipeline') {
@@ -1703,11 +1706,24 @@ async function executeClassification() {
   const modelSpec = MODEL_INFO[modelKey] || MODEL_INFO.resnet18;
   currentModelKey = modelKey;
 
-  // Set loading state
+  // Read Confidence Threshold
+  const thresholdSlider = document.getElementById('threshold-slider');
+  const thresholdVal = thresholdSlider ? (parseFloat(thresholdSlider.value) / 100) : 0.5;
+
+  // Set loading state & start elapsed timer
   resultEmpty.hidden = true;
   resultOutput.hidden = true;
   resultLoading.hidden = false;
   resultLoading.setAttribute('aria-busy', 'true');
+
+  const timerElapsedEl = document.getElementById('inference-elapsed');
+  const timerStart = performance.now();
+  if (timerElapsedEl) timerElapsedEl.textContent = '0.0s';
+  const timerInterval = setInterval(() => {
+    if (timerElapsedEl) {
+      timerElapsedEl.textContent = `${((performance.now() - timerStart) / 1000).toFixed(1)}s`;
+    }
+  }, 100);
 
   btnClassifyInner.hidden = true;
   btnClassifyInner.style.display = 'none';
@@ -1773,6 +1789,7 @@ async function executeClassification() {
         const formData = new FormData();
         formData.append('audio', currentAudioFile, currentAudioFile.name || 'sample.wav');
         formData.append('model', modelKey);
+        formData.append('threshold', thresholdVal.toString());
 
         const res = await fetch(url, {
           method: 'POST',
@@ -1816,6 +1833,7 @@ async function executeClassification() {
       showToast('Local Inference Complete', 'Classified via Client-Side Acoustic Feature Engine', 'info', 3000);
     }
   } finally {
+    clearInterval(timerInterval);
     // Restore button state even if something unexpected happens
     btnClassifyInner.hidden = false;
     btnClassifyInner.style.display = 'flex';
@@ -2074,6 +2092,12 @@ function displayClassificationResults(predictions, modelKey) {
   const isOOD = winner.isOutOfScope || winner.category.id === -1;
   const modelSpec = MODEL_INFO[modelKey] || MODEL_INFO.resnet18;
 
+  // Confidence Threshold Evaluation
+  const thresholdSlider = document.getElementById('threshold-slider');
+  const thresholdVal = thresholdSlider ? (parseFloat(thresholdSlider.value) / 100) : 0.5;
+  const isBelowThreshold = winner.confidence < thresholdVal;
+  const showAnomaly = isOOD || isBelowThreshold;
+
   currentResult = {
     predictions,
     modelKey,
@@ -2084,16 +2108,29 @@ function displayClassificationResults(predictions, modelKey) {
 
   resultModelBadge.textContent = modelSpec.name;
 
-  // Toggle Out-of-Scope / Not in ESC-50 Banner
+  // Track tested category for taxonomy card checkmark
+  if (winner && winner.category && typeof winner.category.id === 'number' && winner.category.id >= 0) {
+    testedCategories.add(winner.category.id);
+    const cardEl = document.querySelector(`.tax-card[data-id="${winner.category.id}"]`);
+    if (cardEl) {
+      cardEl.classList.add('tax-card--tested');
+    }
+  }
+
+  // Toggle Out-of-Scope / Below Threshold Banner
   const oosBanner = document.getElementById('out-of-scope-banner');
   const oosDesc = document.getElementById('oos-desc-text');
   if (oosBanner) {
-    if (isOOD) {
+    if (showAnomaly) {
       oosBanner.removeAttribute('hidden');
       oosBanner.hidden = false;
       oosBanner.style.display = 'flex';
       if (oosDesc) {
-        oosDesc.textContent = winner.explanation || 'The acoustic characteristics (frequency envelope, harmonics, and temporal dynamics) do not match any of the 50 standardized environmental categories in ESC-50.';
+        if (isBelowThreshold && !isOOD) {
+          oosDesc.textContent = `Confidence score (${(winner.confidence * 100).toFixed(1)}%) is below your chosen threshold (${(thresholdVal * 100).toFixed(0)}%). Check the runner-up distributions or lower the threshold.`;
+        } else {
+          oosDesc.textContent = winner.explanation || 'The acoustic characteristics (frequency envelope, harmonics, and temporal dynamics) do not match any of the 50 standardized environmental categories in ESC-50.';
+        }
       }
     } else {
       oosBanner.setAttribute('hidden', '');
@@ -2652,9 +2689,9 @@ function getSpectrogramColor(val) {
 function drawSpectrogramAxes(ctx, left, top, w, h, sampleRate, duration) {
   const nyquistKhz = (sampleRate / 2000).toFixed(1);
 
-  ctx.strokeStyle = 'rgba(56, 189, 248, 0.15)';
+  ctx.strokeStyle = 'rgba(56, 189, 248, 0.22)';
   ctx.lineWidth = 1;
-  ctx.fillStyle = '#64748b';
+  ctx.fillStyle = '#94a3b8';
   ctx.font = '10px monospace';
 
   // Left Y-axis Frequency scale markings
@@ -2680,6 +2717,14 @@ function drawSpectrogramAxes(ctx, left, top, w, h, sampleRate, duration) {
     ctx.setLineDash([]);
   });
 
+  // Frequency Axis Unit Indicator
+  ctx.save();
+  ctx.fillStyle = 'rgba(34, 211, 238, 0.75)';
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText('kHz', left - 6, top - 2);
+  ctx.restore();
+
   // Bottom X-axis Time scale markings
   const numTimeTicks = 5;
   for (let i = 0; i <= numTimeTicks; i++) {
@@ -2700,9 +2745,12 @@ function drawSpectrogramAxes(ctx, left, top, w, h, sampleRate, duration) {
   }
 
   // Border outline
-  ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+  ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
   ctx.strokeRect(left, top, w, h);
 }
+
+/* ── Track tested sound classes across session ─────────────────── */
+const testedCategories = new Set();
 
 /* ── ESC-50 Taxonomy Grid, Live Search & Filters ──────────────── */
 function renderTaxonomyGrid(filterGroup = 'all', searchQuery = '') {
@@ -2750,6 +2798,10 @@ function renderTaxonomyGrid(filterGroup = 'all', searchQuery = '') {
   list.forEach((cat, index) => {
     const card = document.createElement('div');
     card.className = 'tax-card';
+    card.setAttribute('data-id', cat.id);
+    if (testedCategories.has(cat.id)) {
+      card.classList.add('tax-card--tested');
+    }
     card.style.setProperty('--i', index);
     card.setAttribute('role', 'button');
     card.setAttribute('tabindex', '0');
@@ -2960,13 +3012,17 @@ function showToast(title, message = '', tone = 'info', ttl = 4200) {
 
   const toast = document.createElement('div');
   toast.className = `toast ${tone}`;
+  toast.style.setProperty('--toast-duration', `${ttl}ms`);
   toast.innerHTML = `
     <span class="toast-accent" aria-hidden="true"></span>
     <div class="toast-body">
       <p class="toast-title"></p>
       <p class="toast-msg"></p>
     </div>
-    <button class="toast-dismiss" type="button" aria-label="Dismiss notification">&times;</button>`;
+    <button class="toast-dismiss" type="button" aria-label="Dismiss notification">&times;</button>
+    <div class="toast-timer-bar" aria-hidden="true">
+      <div class="toast-timer-fill"></div>
+    </div>`;
 
   toast.querySelector('.toast-title').textContent = title;
   const msgEl = toast.querySelector('.toast-msg');
@@ -2983,10 +3039,16 @@ function showToast(title, message = '', tone = 'info', ttl = 4200) {
     setTimeout(() => toast.remove(), 450);
   };
 
+  const timerFill = toast.querySelector('.toast-timer-fill');
+
   toast.querySelector('.toast-dismiss').addEventListener('click', dismiss);
   timer = setTimeout(dismiss, ttl);
-  toast.addEventListener('pointerenter', () => clearTimeout(timer));
+  toast.addEventListener('pointerenter', () => {
+    clearTimeout(timer);
+    if (timerFill) timerFill.style.animationPlayState = 'paused';
+  });
   toast.addEventListener('pointerleave', () => {
+    if (timerFill) timerFill.style.animationPlayState = 'running';
     timer = setTimeout(dismiss, 1600);
   });
 }
@@ -5069,6 +5131,14 @@ if (btnQuickLogin) {
     const simPredDesc = document.getElementById('sim-pred-desc');
     const simCanvasLabel = document.getElementById('sim-canvas-label');
 
+    const simPlayPauseBtn = document.getElementById('sim-playpause-btn');
+    const simPauseIcon = document.getElementById('sim-pause-icon');
+    const simPlayIcon = document.getElementById('sim-play-icon');
+    const simBtnText = document.getElementById('sim-btn-text');
+    const simStatusText = document.getElementById('sim-status-text');
+    const simStatusDot = document.getElementById('sim-status-dot');
+    let isSimPaused = false;
+
     if (!simCanvas) return;
     const sctx = simCanvas.getContext('2d');
     if (!sctx) return;
@@ -5111,6 +5181,27 @@ if (btnQuickLogin) {
       }
     };
 
+    if (simPlayPauseBtn) {
+      simPlayPauseBtn.addEventListener('click', () => {
+        isSimPaused = !isSimPaused;
+        if (isSimPaused) {
+          simPlayPauseBtn.classList.add('paused');
+          if (simPauseIcon) simPauseIcon.style.display = 'none';
+          if (simPlayIcon) simPlayIcon.style.display = 'block';
+          if (simBtnText) simBtnText.textContent = 'Resume';
+          if (simStatusText) simStatusText.textContent = 'Simulation Paused';
+          if (simStatusDot) simStatusDot.style.background = 'var(--amber)';
+        } else {
+          simPlayPauseBtn.classList.remove('paused');
+          if (simPauseIcon) simPauseIcon.style.display = 'block';
+          if (simPlayIcon) simPlayIcon.style.display = 'none';
+          if (simBtnText) simBtnText.textContent = 'Pause';
+          if (simStatusText) simStatusText.textContent = 'DSP Engine Ready';
+          if (simStatusDot) simStatusDot.style.background = '';
+        }
+      });
+    }
+
     simBtns.forEach(btn => {
       btn.addEventListener('click', () => {
         const arch = btn.getAttribute('data-archetype');
@@ -5131,6 +5222,11 @@ if (btnQuickLogin) {
     function drawSimWave() {
       const overviewPanel = document.getElementById('view-overview');
       if (!overviewPanel || !overviewPanel.classList.contains('active')) {
+        requestAnimationFrame(drawSimWave);
+        return;
+      }
+
+      if (isSimPaused) {
         requestAnimationFrame(drawSimWave);
         return;
       }
@@ -5343,13 +5439,58 @@ console.log("Taxonomy Domains:", taxonomy.domains);`
     }
   };
 
+  function formatApiCode(code, lang) {
+    if (!code) return '';
+    let escaped = code
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+    if (lang === 'curl') {
+      escaped = escaped
+        .replace(/\b(curl)\b/g, '<span class="kw">$1</span>')
+        .replace(/\b(GET|POST)\b/g, '<span class="str">$1</span>')
+        .replace(/(-X|-H|-F)\b/g, '<span class="flag">$1</span>')
+        .replace(/"(http:\/\/[^"]+)"/g, '"<span class="url">$1</span>"')
+        .replace(/"([^"]+)"/g, '"<span class="str">$1</span>"');
+    } else if (lang === 'python') {
+      escaped = escaped
+        .replace(/\b(import|from|open|print)\b/g, '<span class="kw">$1</span>')
+        .replace(/"([^"]+)"/g, '"<span class="str">$1</span>"');
+    } else if (lang === 'javascript') {
+      escaped = escaped
+        .replace(/\b(const|let|var|await|fetch|new|console\.log)\b/g, '<span class="kw">$1</span>')
+        .replace(/"([^"]+)"/g, '"<span class="str">$1</span>"');
+    }
+    return escaped;
+  }
+
+  function formatApiJson(jsonStr) {
+    if (!jsonStr) return '';
+    let escaped = jsonStr
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+    return escaped
+      .replace(/"([^"]+)":/g, '<span class="json-key">"$1"</span>:')
+      .replace(/: "([^"]+)"/g, ': <span class="json-str">"$1"</span>')
+      .replace(/: (\d+(\.\d+)?)/g, ': <span class="json-num">$1</span>')
+      .replace(/: (true|false|null)/g, ': <span class="json-bool">$1</span>');
+  }
+
   function updateApiExplorer() {
     const doc = API_DOCS[activeEndpoint] || API_DOCS.predict;
 
     if (apiMetaBadge) apiMetaBadge.textContent = doc.badge;
     if (apiMetaDesc) apiMetaDesc.textContent = doc.desc;
-    if (apiCodeDisplay) apiCodeDisplay.textContent = doc.code[activeLang] || doc.code.curl;
-    if (apiResponseDisplay) apiResponseDisplay.textContent = doc.response;
+    if (apiCodeDisplay) {
+      const raw = doc.code[activeLang] || doc.code.curl;
+      apiCodeDisplay.innerHTML = formatApiCode(raw, activeLang);
+    }
+    if (apiResponseDisplay) {
+      apiResponseDisplay.innerHTML = formatApiJson(doc.response);
+    }
 
     endpointBtns.forEach(btn => {
       const isTarget = btn.getAttribute('data-endpoint') === activeEndpoint;
@@ -5416,4 +5557,45 @@ console.log("Taxonomy Domains:", taxonomy.domains);`
   }
 
   updateApiExplorer();
+})();
+
+/* ══════════════════════════════════════════════════════════════════
+   STUDIO REFINEMENTS: THRESHOLD SLIDER, SCROLL TO TOP & FOOTER NAV
+   ══════════════════════════════════════════════════════════════════ */
+(function initStudioRefinements() {
+  // Confidence Threshold Slider (Card 1.5)
+  const thresholdSlider = document.getElementById('threshold-slider');
+  const thresholdValDisplay = document.getElementById('threshold-value-display');
+  if (thresholdSlider && thresholdValDisplay) {
+    thresholdSlider.addEventListener('input', () => {
+      thresholdValDisplay.textContent = `${thresholdSlider.value}%`;
+    });
+  }
+
+  // Floating Scroll to Top Button
+  const scrollTopBtn = document.getElementById('scroll-top-btn');
+  if (scrollTopBtn) {
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 380) {
+        scrollTopBtn.removeAttribute('hidden');
+        scrollTopBtn.classList.add('visible');
+      } else {
+        scrollTopBtn.classList.remove('visible');
+      }
+    }, { passive: true });
+
+    scrollTopBtn.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // Footer Navigation Quick-Links
+  document.querySelectorAll('.footer-nav-link').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.getAttribute('data-goto');
+      if (target && typeof switchView === 'function') {
+        switchView(target);
+      }
+    });
+  });
 })();
