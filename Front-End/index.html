@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <a href="#app-main" class="skip-link">Skip to main content</a>
   <!-- Ambient Studio Atmospheric Soundscape (Moving Background & Harmonic Wave Parallax) -->
   <div class="ambient-layer" id="ambient-layer" aria-hidden="true">
     <div class="ambient-bg-image" id="ambient-bg-image"></div>
@@ -157,7 +158,7 @@
             <span class="badge-dot" aria-hidden="true"></span>
             ESC-50 Deep Learning Acoustic Suite
           </div>
-          <h1 class="banner-title">Environmental Sound <span class="gradient-text">Classification Studio</span></h1>
+          <h1 class="banner-title"><span class="fx-word">Environmental</span> <span class="fx-word">Sound</span> <span class="gradient-text"><span class="fx-word">Classification</span> <span class="fx-word">Studio</span></span></h1>
           <p class="banner-desc">
             Benchmarking state-of-the-art acoustic architectures including <strong>ResNet-18</strong>, <strong>VGG-16</strong>, <strong>SResNet</strong>, and <strong>CNN-GRU</strong> for real-time sound recognition across 50 environmental classes.
           </p>
@@ -173,6 +174,7 @@
             <div class="banner-img-overlay"></div>
             <canvas id="hero-wave" class="hero-wave-canvas"></canvas>
             <div class="hero-scanline"></div>
+            <div class="hero-glow" id="fx-hero-glow"></div>
             <div class="banner-floating-badge">
               <span class="wave-pulse-dot" id="hero-pulse"></span>
               <span id="hero-signal-label">Acoustic Waveform Analysis</span>
@@ -1243,5 +1245,7 @@
 
   <!-- Core Script -->
   <script src="app.js"></script>
+  <!-- Additive Visual Effects Layer -->
+  <script src="fx.js" defer></script>
 </body>
 </html>

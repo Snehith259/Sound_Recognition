@@ -1,0 +1,34 @@
+# Git and agents
+.git
+.github
+.agents
+graphify-out
+
+# Dependencies and caches
+node_modules
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache
+.ipynb_checkpoints
+
+# Datasets and large working files (Front-End/samples has canonical audio)
+ESC-50
+Audio_Basics_HandsOn
+
+# Model checkpoints cache (preserve active classifier pt)
+checkpoints/.cache
+checkpoints/*.bin
+
+# Temp & user files
+uploads/*
+!uploads/.gitkeep
+*.tmp
+*.log
+.DS_Store
+Thumbs.db
+.vscode
+.idea
+.env
+.env.local

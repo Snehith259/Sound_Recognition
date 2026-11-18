@@ -1,19 +1,41 @@
-# SoundSense — Dockerfile for Full-Stack Node.js Express Application
-FROM node:20-alpine
+# SoundSense — Environmental Sound Classification Studio
+# Optimized for Hugging Face Spaces (Docker SDK), Railway, and Cloud Run
 
-WORKDIR /app
+FROM python:3.11-slim
 
-# Install dependencies
-COPY package*.json ./
-RUN npm ci --only=production
+# Install system audio dependencies and build tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    ffmpeg \
+    libsndfile1 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Hugging Face Spaces runs as user ID 1000
+RUN useradd -m -u 1000 user
+USER user
+ENV HOME=/home/user \
+    PATH=/home/user/.local/bin:$PATH \
+    PYTHONUNBUFFERED=1 \
+    PORT=7860 \
+    RELOAD=false
+
+WORKDIR $HOME/app
+
+# Install Python dependencies with CPU-optimized PyTorch
+COPY --chown=user:user requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy application files
-COPY . .
+COPY --chown=user:user . $HOME/app
 
-# Set environment
-ENV NODE_ENV=production
-ENV PORT=3001
+# Ensure uploads directory is writeable
+RUN mkdir -p $HOME/app/uploads
 
-EXPOSE 3001
+# Expose default Hugging Face Spaces port
+EXPOSE 7860
 
-CMD ["node", "server.js"]
+# Start FastAPI server
+CMD ["python", "main.py"]

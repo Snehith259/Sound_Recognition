@@ -273,10 +273,23 @@ async def simulate_training(job: dict, total_steps: int):
 @app.get("/api/sample/{category_id}")
 async def get_sample_for_category(category_id: int):
     cat_id = max(0, min(49, category_id))
+    matches = []
+    
+    # 1. Primary: Check ESC-50 wav_files if present
     wav_dir = ESC50_DIR / "wav_files"
-    matches = list(wav_dir.glob(f"*-{cat_id}.wav"))
+    if wav_dir.is_dir():
+        matches = list(wav_dir.glob(f"*-{cat_id}.wav"))
+
+    # 2. Fallback: Front-End samples directory (always bundled)
     if not matches:
+        samples_dir = FRONTEND_DIR / "samples"
+        if samples_dir.is_dir():
+            matches = list(samples_dir.glob(f"*-{cat_id}.wav")) or list(samples_dir.glob(f"{cat_id}.wav"))
+
+    # 3. Last resort fallback
+    if not matches and wav_dir.is_dir():
         matches = list(wav_dir.glob("*.wav"))
+
     if matches:
         return FileResponse(str(matches[0]), media_type="audio/wav", filename=matches[0].name)
     raise HTTPException(status_code=404, detail="Sample audio not found")
@@ -772,10 +785,12 @@ if FRONTEND_DIR.exists():
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 3001))
+    reload_mode = os.environ.get("RELOAD", "false").lower() == "true"
     print("=" * 60)
     print("  SoundSense Backend Server")
-    print(f"  Running at:  http://localhost:{port}")
-    print(f"  API Base:    http://localhost:{port}/api")
-    print(f"  Health:      http://localhost:{port}/api/health")
+    print(f"  Running at:  http://0.0.0.0:{port}")
+    print(f"  API Base:    http://0.0.0.0:{port}/api")
+    print(f"  Health:      http://0.0.0.0:{port}/api/health")
+    print(f"  Reload Mode: {reload_mode}")
     print("=" * 60)
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=reload_mode)

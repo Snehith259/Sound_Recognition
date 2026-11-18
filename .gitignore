@@ -30,7 +30,12 @@ uploads/*
 # OS & IDE
 .DS_Store
 Thumbs.db
-.vscode/
-.idea/
+.vscode
+.idea
 .env
 .env.local
+
+# Graphify caches
+graphify-out/cache/
+graphify-out/2026-*/
+
