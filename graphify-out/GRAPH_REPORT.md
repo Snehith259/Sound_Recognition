@@ -1,17 +1,17 @@
-# Graph Report - Sound_Recognition  (2026-11-18)
+# Graph Report - Sound_Recognition  (2026-11-19)
 
 ## Corpus Check
-- 51 files · ~58,069 words
+- 51 files · ~55,909 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 6018 file(s) not represented in the graph (top: .npy 5994, .csv 17, (none) 3)
 
 ## Summary
-- 665 nodes · 1059 edges · 35 communities (25 shown, 10 thin omitted)
+- 664 nodes · 1056 edges · 35 communities (24 shown, 11 thin omitted)
 - Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 32 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `f71f7863`
+- Built from commit: `cf0adda6`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -23,7 +23,6 @@
 - Node.js Server & Package Dependencies
 - PyTorch Neural Architectures & Models
 - UI Animation & Status Management
-- closeAccountMenu
 - main.py
 - SoundSense — Environmental Sound Classification Studio
 - loadAnalyticsData
@@ -49,17 +48,18 @@
 - Waveform Amplitude Plot
 - Stratified 5-Fold Split Generator
 - copilot-instructions.md
+- download_checkpoints.py
 
 ## God Nodes (most connected - your core abstractions)
 1. `loadAudioFile()` - 17 edges
 2. `switchView()` - 12 edges
-3. `showToast()` - 11 edges
+3. `extract_all_features()` - 11 edges
 4. `load_and_resample()` - 11 edges
-5. `extract_all_features()` - 11 edges
+5. `showToast()` - 10 edges
 6. `process_single_audio()` - 10 edges
 7. `drawFeatureSpectrogram()` - 9 edges
-8. `peak_normalize()` - 9 edges
-9. `generate_5fold_splits()` - 9 edges
+8. `generate_5fold_splits()` - 9 edges
+9. `peak_normalize()` - 9 edges
 10. `run_acoustic_inference()` - 9 edges
 
 ## Surprising Connections (you probably didn't know these)
@@ -71,8 +71,8 @@
   Preproccesing/reports/feature_visualization.png → Preproccesing/README.md
 - `predict()` --calls--> `run_acoustic_inference()`  [EXTRACTED]
   main.py → Preproccesing/acoustic_inference.py
-- `process_single_audio()` --calls--> `detect_active_segment()`  [EXTRACTED]
-  Preproccesing/batch_preprocessor.py → Preproccesing/audio_processor.py
+- `extract_threshold_free_recurrence_plot()` --calls--> `piecewise_aggregate_approximation()`  [EXTRACTED]
+  Preproccesing/feature_extractor.py → Preproccesing/audio_processor.py
 
 ## Import Cycles
 - 2-file cycle: `Preproccesing/__init__.py -> Preproccesing/dataset_splits.py -> Preproccesing/__init__.py`
@@ -87,7 +87,7 @@
 ## Hyperedges (group relationships)
 - **Dual-Modal Acoustic Processing Flow** — preproccesing_readme_dmff_architecture, preproccesing_readme_recurrence_plot, preproccesing_readme_paa_dimension, preproccesing_readme_esc50_dataset [EXTRACTED 0.95]
 
-## Communities (35 total, 10 thin omitted)
+## Communities (35 total, 11 thin omitted)
 
 ### Community 0 - "Front-End UI & State Controller"
 Cohesion: 0.01
@@ -98,8 +98,8 @@ Cohesion: 0.24
 Nodes (5): add_gaussian_noise(), cyclic_time_shift(), generate_augmented_variants(), pitch_shift(), time_stretch()
 
 ### Community 2 - "Audio Processing & Spectrogram Synthesis"
-Cohesion: 0.10
-Nodes (32): animateCounter(), step(), buildActiveSegmentCache(), buildRecurrencePlotCache(), buildSpectrogramCache(), computeAcousticSpectrogram(), computeActiveSegment(), computeThresholdFreeRecurrencePlot() (+24 more)
+Cohesion: 0.08
+Nodes (45): animateCounter(), step(), buildActiveSegmentCache(), buildRecurrencePlotCache(), buildSpectrogramCache(), cleanupMic(), computeAcousticSpectrogram(), computeActiveSegment() (+37 more)
 
 ### Community 3 - "Checkpoint Manifest & Metadata"
 Cohesion: 0.06
@@ -114,12 +114,8 @@ Cohesion: 0.09
 Nodes (6): BasicBlock, CNNGRU, get_model(), ResNet18_ESC50, SResNet, VGG16_ESC50
 
 ### Community 6 - "UI Animation & Status Management"
-Cohesion: 0.11
-Nodes (28): animateArchMetrics(), animateBenchmarkBars(), animateMetricValue(), checkBackendStatus(), cleanupMic(), closeAuthModal(), escapeHtml(), executeClassification() (+20 more)
-
-### Community 7 - "closeAccountMenu"
-Cohesion: 0.67
-Nodes (3): closeAccountMenu(), fitAccountMenuPopover(), toggleAccountMenu()
+Cohesion: 0.14
+Nodes (17): animateArchMetrics(), animateBenchmarkBars(), animateMetricValue(), checkBackendStatus(), closeAccountMenu(), closeAuthModal(), escapeHtml(), fitAccountMenuPopover() (+9 more)
 
 ### Community 8 - "main.py"
 Cohesion: 0.05
@@ -151,7 +147,7 @@ Nodes (7): Mel Spectrogram Acoustic Heatmap, MFCC Feature Representation Plot, D
 
 ### Community 16 - "__init__.py"
 Cohesion: 0.06
-Nodes (17): detect_active_segment(), load_and_resample(), peak_normalize(), piecewise_aggregate_approximation(), save_audio(), process_single_audio(), run_batch_preprocessing(), ESC50MultiModalDataset (+9 more)
+Nodes (15): detect_active_segment(), load_and_resample(), peak_normalize(), piecewise_aggregate_approximation(), save_audio(), process_single_audio(), run_batch_preprocessing(), ESC50MultiModalDataset (+7 more)
 
 ### Community 17 - "Model Training & Progress Monitoring"
 Cohesion: 0.40
@@ -192,7 +188,7 @@ Nodes (3): formatApiCode(), formatApiJson(), updateApiExplorer()
 ## Knowledge Gaps
 - **14 isolated node(s):** `Piecewise Aggregate Approximation (PAA)`, `ESC-50 Acoustic Dataset`, `Mel Spectrogram Acoustic Heatmap`, `MFCC Feature Representation Plot`, `Dual-Modal Verification Diagnostic Plot` (+9 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 383 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **10 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **11 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
@@ -204,7 +200,7 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `Front-End UI & State Controller` be split into smaller, more focused modules?**
   _Cohesion score 0.011363636363636364 - nodes in this community are weakly interconnected._
 - **Should `Audio Processing & Spectrogram Synthesis` be split into smaller, more focused modules?**
-  _Cohesion score 0.10080645161290322 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07878787878787878 - nodes in this community are weakly interconnected._
 - **Should `Checkpoint Manifest & Metadata` be split into smaller, more focused modules?**
   _Cohesion score 0.06060606060606061 - nodes in this community are weakly interconnected._
 - **Should `Node.js Server & Package Dependencies` be split into smaller, more focused modules?**

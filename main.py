@@ -14,6 +14,8 @@ import uuid
 import json
 import random
 import asyncio
+import threading
+from contextlib import asynccontextmanager
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 from pathlib import Path
@@ -33,6 +35,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+from starlette.concurrency import run_in_threadpool
 
 # ── Base Directory Paths ─────────────────────────────────────────
 BASE_DIR = Path(__file__).resolve().parent
@@ -43,12 +46,27 @@ ESC50_DIR = BASE_DIR / "ESC-50"
 
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
+# ── Lifespan: Pre-load the pretrained acoustic engine ────────────
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    """Load the ESC-50 model in the background so the first upload is fast."""
+    def _warm():
+        try:
+            from Preproccesing.acoustic_inference import warm_up_engine
+            warm_up_engine()
+        except Exception:
+            pass
+
+    threading.Thread(target=_warm, name="acoustic-warmup", daemon=True).start()
+    yield
+
 # ── Application Initialization ───────────────────────────────────
 app = FastAPI(
     title="SoundSense Backend",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # ── CORS Middleware ──────────────────────────────────────────────
@@ -326,7 +344,7 @@ async def predict(
 
         # Real Acoustic Classification (Zero filename-based guesswork)
         from Preproccesing.acoustic_inference import run_acoustic_inference
-        result = run_acoustic_inference(content, model_name=model)
+        result = await run_in_threadpool(run_acoustic_inference, content, model)
 
         server_state["total_predictions"] += 1
         history_id = f"hist_{stamp}_{uuid.uuid4().hex[:6]}"
@@ -338,6 +356,7 @@ async def predict(
             "fileSize": len(content),
             "modelKey": model,
             "modelName": result.get("category", {}).get("name", "Unknown"),
+            "engine": result.get("engine"),
             "topPrediction": {
                 "category": result["category"]["name"],
                 "emoji": result["category"].get("emoji", "🔊"),
@@ -358,8 +377,10 @@ async def predict(
         return {
             "success": True,
             "model": model,
+            "engine": result.get("engine"),
             "fileName": file_name,
             "isOutOfScope": result.get("isOutOfScope", False),
+            "confidence": result["confidence"],
             "category": result["category"],
             "predictions": result["predictions"],
             "explanation": result.get("explanation"),
@@ -590,10 +611,15 @@ async def get_stats():
     ]
 
     model_performance = [
-        {"model": "SResNet", "accuracy": 95.1, "params": "8.6M", "latency": 7.8, "color": "#38bdf8"},
-        {"model": "CNN-GRU", "accuracy": 93.4, "params": "5.6M", "latency": 9.2, "color": "#34d399"},
-        {"model": "ResNet-18", "accuracy": 89.4, "params": "11.7M", "latency": 8.2, "color": "#a855f7"},
-        {"model": "VGG-16", "accuracy": 86.2, "params": "138.4M", "latency": 14.5, "color": "#f59e0b"},
+        {
+            "model": "AST-ESC50 (deployed)",
+            "accuracy": 94.0,
+            "top5Accuracy": 100.0,
+            "params": "86.9M",
+            "latency": 620,
+            "color": "#38bdf8",
+            "evaluatedOn": "ESC-50 | bundled 50-clip check (1 clip/class)",
+        },
     ]
 
     uptime = get_uptime_seconds()
@@ -756,11 +782,18 @@ async def clear_history(id: Optional[str] = None):
 @app.get("/api/health")
 async def health():
     uptime = get_uptime_seconds()
+    try:
+        from Preproccesing.acoustic_inference import get_engine_status
+        engine_status = get_engine_status()
+    except Exception as err:
+        engine_status = {"state": "unavailable", "error": str(err)}
+
     return {
         "status": "healthy",
         "service": "SoundSense Backend",
         "version": "1.0.0",
         "uptime": uptime,
+        "engine": engine_status,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "endpoints": [
             {"method": "POST", "path": "/api/auth/login", "description": "Developer login"},
@@ -782,15 +815,56 @@ if FRONTEND_DIR.exists():
     app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
 
 # ── Server Start ─────────────────────────────────────────────────
+def _port_is_open(host: str, port: int, timeout: float = 0.5) -> bool:
+    """Return True when something is already listening on host:port."""
+    import socket
+    probe_host = "127.0.0.1" if host in ("0.0.0.0", "::", "") else host
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.settimeout(timeout)
+        return sock.connect_ex((probe_host, port)) == 0
+
+
+def _is_soundsense_instance(host: str, port: int) -> bool:
+    """Return True when the service on host:port is an existing SoundSense backend."""
+    import json as _json
+    import urllib.request
+    probe_host = "127.0.0.1" if host in ("0.0.0.0", "::", "") else host
+    try:
+        with urllib.request.urlopen(f"http://{probe_host}:{port}/api/health", timeout=1.5) as resp:
+            payload = _json.loads(resp.read().decode("utf-8"))
+        return payload.get("service") == "SoundSense Backend"
+    except Exception:
+        return False
+
+
 if __name__ == "__main__":
     import uvicorn
+
+    host = os.environ.get("HOST", "0.0.0.0")
     port = int(os.environ.get("PORT", 3001))
     reload_mode = os.environ.get("RELOAD", "false").lower() == "true"
+    display_host = "0.0.0.0" if host in ("0.0.0.0", "::") else host
+
     print("=" * 60)
     print("  SoundSense Backend Server")
-    print(f"  Running at:  http://0.0.0.0:{port}")
-    print(f"  API Base:    http://0.0.0.0:{port}/api")
-    print(f"  Health:      http://0.0.0.0:{port}/api/health")
+    print(f"  Running at:  http://{display_host}:{port}")
+    print(f"  API Base:    http://{display_host}:{port}/api")
+    print(f"  Health:      http://{display_host}:{port}/api/health")
     print(f"  Reload Mode: {reload_mode}")
     print("=" * 60)
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=reload_mode)
+
+    # Fail with a helpful message instead of an opaque WinError 10048 traceback.
+    if _port_is_open(host, port):
+        if _is_soundsense_instance(host, port):
+            print(f"\n[!] SoundSense is already running on http://localhost:{port}")
+            print("    Stop that instance first, or start on a free port, e.g.:")
+            print(f"    PORT={port + 1} python main.py")
+            raise SystemExit(0)
+        print(f"\n[!] Port {port} is already in use by another application.")
+        print("    Start SoundSense on a free port, e.g.:")
+        print(f"    PORT={port + 1} python main.py")
+        raise SystemExit(1)
+
+    # Pass the app object directly so the module is not imported a second time
+    # (reload mode still needs the import string).
+    uvicorn.run(app if not reload_mode else "main:app", host=host, port=port, reload=reload_mode)

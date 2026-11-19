@@ -37,3 +37,17 @@ license: mit
 - **Backend**: FastAPI (Python 3.11) with Uvicorn, PyTorch, Librosa, and SoundFile.
 - **Frontend**: Vanilla JavaScript (ES6+), HTML5 Canvas Web Audio API, Modern CSS3 Studio HUD.
 - **Container**: Docker containerized, UID 1000 compliant, optimized for Hugging Face Spaces and cloud container runtimes.
+
+## Deployed Inference Engine
+
+`POST /api/predict` runs a real pretrained **AST (Audio Spectrogram Transformer) fine-tuned on ESC-50**
+(`Adam-ousse/ast-esc50-finetuned-fold1`, 93.5% top-1 on the ESC-50 fold-1 test split).
+
+- Weights are downloaded once from the Hugging Face Hub and cached in `checkpoints/.cache/huggingface`.
+- The model is warmed up in a background thread at server startup, so the first upload is fast.
+- The `model` form field (`resnet18`, `vgg16`, `sresnet`, `cnngru`) is kept for UI/API compatibility;
+  every selection is served by the deployed AST engine, and each response reports the real `engine`.
+- If the weights cannot be loaded (e.g. offline), the backend falls back to the bundled
+  `checkpoints/acoustic_classifier.pt` MLP so predictions keep working.
+- Override the checkpoint with `SOUNDSENSE_HF_MODEL=<hf-repo-id>` and the OOD confidence
+  threshold with `SOUNDSENSE_OOD_THRESHOLD=<0..1>`.

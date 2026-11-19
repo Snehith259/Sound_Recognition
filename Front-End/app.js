@@ -209,13 +209,25 @@ let timerInterval = null;
 let audioContext = null;
 let isClassifying = false;
 let currentResult = null;
-let currentModelKey = 'resnet18';
+let currentModelKey = 'sresnet';
 let decodePromise = Promise.resolve();
 let classificationToken = 0;
+let backendOnline = false;
+
+/* Resolves the FastAPI/Express backend base URL regardless of how the
+   frontend is served (Live Server, file://, or the backend itself). */
+function resolveApiBase() {
+  const port = window.location.port;
+  const servedFromBackend = port === '3001' || port === '3000';
+  if (!servedFromBackend) return 'http://localhost:3001';
+  return window.location.origin;
+}
 
 /* ── DOM Elements ─────────────────────────────────────────────── */
 const viewNav          = document.getElementById('view-nav');
 const navGlider        = document.getElementById('nav-glider');
+const viewNavPrev      = document.getElementById('view-nav-prev');
+const viewNavNext      = document.getElementById('view-nav-next');
 const viewTabs         = document.querySelectorAll('.view-tab');
 const viewPanels       = document.querySelectorAll('.view-panel');
 
@@ -347,7 +359,7 @@ viewTabs.forEach(tab => {
   });
 });
 
-const DEV_ONLY_VIEWS = ['training', 'analytics'];
+const DEV_ONLY_VIEWS = ['pipeline', 'training', 'analytics'];
 
 function switchView(viewName) {
   // Map legacy architecture view to the combined pipeline view
@@ -358,6 +370,7 @@ function switchView(viewName) {
     pendingDevView = viewName;
     openAuthModal();
     const viewLabels = {
+      pipeline: 'Neural Architecture & Research Pipeline',
       training: 'Model Training',
       analytics: 'System Analytics'
     };
@@ -449,6 +462,42 @@ viewNav.addEventListener('keydown', (e) => {
   tabs[nextIndex].focus();
   switchView(tabs[nextIndex].dataset.view);
 });
+
+/* Slide the view navigation horizontally with the < / > arrows.
+   These only scroll the tab strip — they never switch the active view. */
+function updateNavArrows() {
+  if (!viewNav || !viewNavPrev || !viewNavNext) return;
+
+  const maxScroll = Math.max(0, viewNav.scrollWidth - viewNav.clientWidth);
+  const hasOverflow = maxScroll > 2;
+
+  viewNavPrev.hidden = !hasOverflow;
+  viewNavNext.hidden = !hasOverflow;
+  viewNavPrev.disabled = !hasOverflow || viewNav.scrollLeft <= 2;
+  viewNavNext.disabled = !hasOverflow || viewNav.scrollLeft >= maxScroll - 2;
+}
+
+function scrollViewNav(direction) {
+  if (!viewNav) return;
+  const step = Math.max(140, Math.round(viewNav.clientWidth * 0.65));
+  viewNav.scrollBy({ left: direction * step, behavior: 'smooth' });
+}
+
+if (viewNavPrev) {
+  viewNavPrev.addEventListener('click', () => scrollViewNav(-1));
+}
+if (viewNavNext) {
+  viewNavNext.addEventListener('click', () => scrollViewNav(1));
+}
+if (viewNav) {
+  viewNav.addEventListener('scroll', () => requestAnimationFrame(updateNavArrows), { passive: true });
+}
+window.addEventListener('resize', () => requestAnimationFrame(updateNavArrows));
+requestAnimationFrame(updateNavArrows);
+setTimeout(updateNavArrows, 350);
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(updateNavArrows).catch(() => {});
+}
 
 /* Benchmark chart + metric count-up animations */
 function animateBenchmarkBars(active) {
@@ -1704,7 +1753,7 @@ if (window.ResizeObserver && playerTrack) {
 const modelBadgeInfo = document.getElementById('model-badge-info');
 function updateModelBadge() {
   if (modelBadgeInfo && modelSelect) {
-    const spec = MODEL_INFO[modelSelect.value] || MODEL_INFO.resnet18;
+    const spec = MODEL_INFO[modelSelect.value] || MODEL_INFO.sresnet;
     modelBadgeInfo.textContent = spec.name;
   }
 }
@@ -1721,7 +1770,7 @@ async function executeClassification() {
   isClassifying = true;
   const token = ++classificationToken;
   const modelKey = modelSelect.value;
-  const modelSpec = MODEL_INFO[modelKey] || MODEL_INFO.resnet18;
+  const modelSpec = MODEL_INFO[modelKey] || MODEL_INFO.sresnet;
   currentModelKey = modelKey;
 
   // Read Confidence Threshold
@@ -1790,13 +1839,14 @@ async function executeClassification() {
       return;
     }
 
-    // Attempt inference via Backend API (supports relative URL, or localhost:3001 if opened from Live Server)
+    // Attempt inference via Backend API (works from Live Server, file://, or backend-served)
     let predictions = null;
     let inferenceSource = 'local';
     let serverLatency = null;
 
+    const apiBase = resolveApiBase();
     const candidateUrls = [
-      '/api/predict',
+      `${apiBase}/api/predict`,
       'http://localhost:3001/api/predict',
       'http://127.0.0.1:3001/api/predict',
       'http://localhost:3000/api/predict',
@@ -1840,15 +1890,18 @@ async function executeClassification() {
     if (!predictions || predictions.length === 0) {
       predictions = generateModelPredictions(modelKey, currentAudioFile);
       inferenceSource = 'local';
+      backendOnline = false;
+    } else {
+      backendOnline = true;
     }
 
     displayClassificationResults(predictions, modelKey);
-    setStatus('Engine Ready', 'ready');
+    setStatus(inferenceSource === 'api' ? 'Engine Ready · Backend Online' : 'Backend Offline · Local Estimate', inferenceSource === 'api' ? 'ready' : 'warn');
 
     if (inferenceSource === 'api') {
-      showToast('API Inference Complete', `Classified by Express Backend (/api/predict) · ${serverLatency || modelSpec.latency}ms`, 'success', 3000);
+      showToast('API Inference Complete', `Classified by backend (/api/predict) · ${serverLatency || modelSpec.latency}ms`, 'success', 3000);
     } else {
-      showToast('Local Inference Complete', 'Classified via Client-Side Acoustic Feature Engine', 'info', 3000);
+      showToast('Backend offline — approximate result', 'Start the backend with `python main.py` (port 3001) for accurate predictions.', 'error', 6000);
     }
   } finally {
     clearInterval(timerInterval);
@@ -1975,7 +2028,7 @@ function generateModelPredictions(modelKey, audioFile = currentAudioFile) {
   // Client-side fallback engine for local offline evaluation.
   // When backend server (FastAPI/Express) is available, executeClassification automatically calls /api/predict.
   const spec = currentSpectrogramData;
-  const modelSpec = MODEL_INFO[modelKey] || MODEL_INFO.resnet18;
+  const modelSpec = MODEL_INFO[modelKey] || MODEL_INFO.sresnet;
 
   // 1. Check for silence or near-silent audio (< -48 dB / RMS < 0.005)
   if (!spec || spec.rms < 0.005) {
@@ -2108,7 +2161,7 @@ function displayClassificationResults(predictions, modelKey) {
 
   const winner = predictions[0];
   const isOOD = winner.isOutOfScope || winner.category.id === -1;
-  const modelSpec = MODEL_INFO[modelKey] || MODEL_INFO.resnet18;
+  const modelSpec = MODEL_INFO[modelKey] || MODEL_INFO.sresnet;
 
   // Confidence Threshold Evaluation
   const thresholdSlider = document.getElementById('threshold-slider');
@@ -3193,7 +3246,7 @@ document.addEventListener('keydown', (e) => {
     return;
   }
 
-  const views = ['overview', 'studio', 'pipeline', 'taxonomy', 'training', 'analytics'];
+  const views = ['overview', 'studio', 'taxonomy', 'pipeline', 'training', 'analytics'];
   if (/^[1-6]$/.test(e.key)) {
     const num = Number(e.key);
     e.preventDefault();
@@ -3599,25 +3652,44 @@ async function loadTrainingData() {
 }
 
 /**
- * Checks if Express backend is running on /api/health
+ * Checks if the FastAPI/Express backend is reachable.
+ * Probes both the current origin and localhost:3001 so it works from
+ * Live Server and file:// as well as when served by the backend itself.
  */
 async function checkBackendStatus() {
-  try {
-    const res = await fetch('/api/health');
-    if (res.ok) {
-      const data = await res.json();
-      if (trainingApiStatus) {
-        trainingApiStatus.textContent = 'API Connected (Port 3001)';
-        trainingApiStatus.style.color = 'var(--emerald)';
+  const bases = [window.location.origin, 'http://localhost:3001', 'http://127.0.0.1:3001'];
+  backendOnline = false;
+
+  for (const base of bases) {
+    try {
+      const controller = new AbortController();
+      const t = setTimeout(() => controller.abort(), 2500);
+      const res = await fetch(`${base}/api/health`, { signal: controller.signal });
+      clearTimeout(t);
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data && data.status === 'healthy') {
+          backendOnline = true;
+          break;
+        }
       }
-      return true;
+    } catch (_) { /* try next base */ }
+  }
+
+  if (backendOnline) {
+    if (trainingApiStatus) {
+      trainingApiStatus.textContent = 'API Connected (Port 3001)';
+      trainingApiStatus.style.color = 'var(--emerald)';
     }
-  } catch (_) {}
+    setStatus('Engine Ready · Backend Online', 'ready');
+    return true;
+  }
 
   if (trainingApiStatus) {
-    trainingApiStatus.textContent = 'Standalone Simulation Active';
-    trainingApiStatus.style.color = 'var(--cyan)';
+    trainingApiStatus.textContent = 'Backend Offline · Local Simulation';
+    trainingApiStatus.style.color = 'var(--amber, #f59e0b)';
   }
+  setStatus('Backend Offline · Local Estimates', 'warn');
   return false;
 }
 
@@ -4244,10 +4316,7 @@ function drawModelPerformanceChart(perfList) {
   ctx.fillRect(0, 0, w, h);
 
   const models = perfList || [
-    { model: 'SResNet (Ours)', accuracy: 95.1, latency: 7.8,  color: isLight ? '#0284c7' : '#38bdf8' },
-    { model: 'CNN-GRU',        accuracy: 93.4, latency: 9.2,  color: isLight ? '#059669' : '#34d399' },
-    { model: 'ResNet-18',      accuracy: 89.4, latency: 8.2,  color: isLight ? '#7c3aed' : '#a855f7' },
-    { model: 'VGG-16',         accuracy: 86.2, latency: 14.5, color: isLight ? '#d97706' : '#f59e0b' },
+    { model: 'SoundSense Acoustic MLP (deployed)', accuracy: 97.95, latency: 11.4, color: isLight ? '#0284c7' : '#38bdf8' },
   ];
 
   const rowHeight = 34;
@@ -4409,9 +4478,31 @@ if (authModal) {
   });
 }
 
+/* ── Role-aware model selector ─────────────────────────────────
+   Regular users only see the best-performing architecture (SResNet,
+   95.1% accuracy). Developer Mode restores the full model list. */
+function syncModelOptionsForRole() {
+  if (!modelSelect) return;
+
+  modelSelect.querySelectorAll('option[data-dev-only]').forEach(opt => {
+    opt.hidden = !isDeveloperAuthenticated;
+    opt.style.display = isDeveloperAuthenticated ? '' : 'none';
+  });
+
+  const selectedOpt = modelSelect.options[modelSelect.selectedIndex];
+  if (!isDeveloperAuthenticated && selectedOpt && selectedOpt.hasAttribute('data-dev-only')) {
+    modelSelect.value = 'sresnet';
+    modelSelect.dispatchEvent(new Event('change'));
+  }
+
+  updateModelBadge();
+}
+
 function setDeveloperMode(authenticated, user = null) {
   isDeveloperAuthenticated = !!authenticated;
   currentAuthUser = user;
+
+  syncModelOptionsForRole();
 
   if (isDeveloperAuthenticated) {
     // Reveal developer mode across styles and DOM
@@ -4443,13 +4534,16 @@ function setDeveloperMode(authenticated, user = null) {
     if (popoverNameEl) popoverNameEl.textContent = user?.name || 'SoundSense Lead AI Engineer';
     if (popoverEmailEl) popoverEmailEl.textContent = user?.email || 'developer@soundsense.ai';
 
-    const lensBtnDev = document.getElementById('lens-btn-dev');
-    if (lensBtnDev) lensBtnDev.style.display = 'inline-flex';
-
     requestAnimationFrame(positionNavGlider);
     setTimeout(positionNavGlider, 80);
     setTimeout(positionNavGlider, 250);
   } else {
+    // Capture the open view BEFORE deactivating the developer tabs.
+    // (Removing `.active` from the tab made the old check miss dev views.)
+    const activePanel = document.querySelector('.view-panel.active');
+    const wasOnDevView = !!activePanel &&
+      DEV_ONLY_VIEWS.includes(activePanel.id.replace('view-', ''));
+
     // Hide all developer mode tabs and features
     document.body.classList.remove('dev-authenticated');
     devOnlyTabs.forEach(tab => {
@@ -4470,12 +4564,6 @@ function setDeveloperMode(authenticated, user = null) {
 
     closeAccountMenu();
 
-    const lensBtnDev = document.getElementById('lens-btn-dev');
-    if (lensBtnDev) lensBtnDev.style.display = 'none';
-    if (typeof window.__setOverviewLens === 'function') {
-      window.__setOverviewLens('user');
-    }
-
     // Reset all nav dev badges to locked
     document.querySelectorAll('.nav-dev-tag').forEach(badge => {
       badge.textContent = 'DEV';
@@ -4483,16 +4571,47 @@ function setDeveloperMode(authenticated, user = null) {
       badge.title = 'Developer Access Required';
     });
 
-    // If currently on a developer view, reset to Classifier Studio
-    const activeTab = document.querySelector('.view-tab.active');
-    if (activeTab && DEV_ONLY_VIEWS.includes(activeTab.dataset.view)) {
-      switchView('studio');
-    }
+    // If a developer view was open, fade it out before returning to Studio.
+    // The short pause keeps the logout from feeling like an instant flicker.
+    if (wasOnDevView && activePanel) {
+      if (navGlider) navGlider.classList.remove('ready');
+      activePanel.classList.add('is-leaving');
 
-    requestAnimationFrame(positionNavGlider);
-    setTimeout(positionNavGlider, 80);
-    setTimeout(positionNavGlider, 250);
+      setTimeout(() => {
+        // Abort if the user signed back in or navigated manually meanwhile
+        if (isDeveloperAuthenticated) {
+          activePanel.classList.remove('is-leaving');
+          return;
+        }
+        if (!activePanel.classList.contains('active')) {
+          activePanel.classList.remove('is-leaving');
+          return;
+        }
+
+        // Jump to the top while the old panel is invisible, then reveal Studio
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        switchView('studio');
+
+        // Snap the nav pill straight to Studio instead of letting it fly in
+        // from the removed developer tab.
+        if (navGlider) {
+          navGlider.style.transition = 'none';
+          positionNavGlider(false);
+          requestAnimationFrame(() => { navGlider.style.transition = ''; });
+        }
+
+        activePanel.classList.remove('is-leaving');
+      }, 240);
+    } else {
+      requestAnimationFrame(positionNavGlider);
+      setTimeout(positionNavGlider, 80);
+      setTimeout(positionNavGlider, 250);
+    }
   }
+
+  // Developer tabs may change the nav's overflow width
+  requestAnimationFrame(updateNavArrows);
+  setTimeout(updateNavArrows, 120);
 }
 
 // State tracker for developer menu popover
@@ -4697,19 +4816,6 @@ if (btnLogout) {
       localStorage.removeItem('soundsense_dev_auth');
     } catch (_) {}
     setDeveloperMode(false);
-
-    // Reset all nav dev badges to locked
-    document.querySelectorAll('.nav-dev-tag').forEach(badge => {
-      badge.textContent = 'DEV';
-      badge.classList.remove('unlocked');
-      badge.title = 'Developer Access Required';
-    });
-
-    // If currently on a developer view, reset to Classifier Studio
-    const activeTab = document.querySelector('.view-tab.active');
-    if (activeTab && DEV_ONLY_VIEWS.includes(activeTab.dataset.view)) {
-      switchView('studio');
-    }
 
     showToast('Signed Out', 'Exited Developer Mode. Developer portals are now locked.', 'info', 3500);
   });
@@ -4918,55 +5024,9 @@ if (btnQuickLogin) {
 
 
 // ═══════════════════════════════════════════════════════════════
-// System Overview Controller: User & Developer Dual Lenses
+// System Overview Controller
 // ═══════════════════════════════════════════════════════════════
 (function initOverviewController() {
-  const lensBtnUser = document.getElementById('lens-btn-user');
-  const lensBtnDev = document.getElementById('lens-btn-dev');
-  const lensContentUser = document.getElementById('lens-content-user');
-  const lensContentDev = document.getElementById('lens-content-dev');
-  const lensTaglineText = document.getElementById('lens-tagline-text');
-
-  function setLens(lens) {
-    if (lens === 'dev' && !isDeveloperAuthenticated) {
-      if (typeof showToast === 'function') {
-        showToast('Developer Access Required', 'Sign in to access Developer Deep Dive & Mathematical Specs.', 'warn', 4000);
-      }
-      if (typeof openAuthModal === 'function') {
-        openAuthModal();
-      }
-      return;
-    }
-
-    const isUser = (lens === 'user');
-
-    if (lensBtnUser) {
-      lensBtnUser.classList.toggle('active', isUser);
-      lensBtnUser.setAttribute('aria-selected', isUser ? 'true' : 'false');
-    }
-    if (lensBtnDev) {
-      lensBtnDev.classList.toggle('active', !isUser);
-      lensBtnDev.setAttribute('aria-selected', !isUser ? 'true' : 'false');
-    }
-
-    if (lensContentUser) lensContentUser.hidden = !isUser;
-    if (lensContentDev) lensContentDev.hidden = isUser;
-
-    if (lensTaglineText) {
-      if (isUser) {
-        lensTaglineText.innerHTML = 'Showing: <strong>User &amp; Product Perspective</strong> &mdash; 3-step workflow, ESC-50 taxonomy &amp; OOD safety';
-      } else {
-        lensTaglineText.innerHTML = 'Showing: <strong>Developer &amp; Architecture Deep Dive</strong> &mdash; DSP mathematical pipeline, model topologies &amp; REST API';
-      }
-    }
-  }
-
-  // Expose global helper for setDeveloperMode logout
-  window.__setOverviewLens = setLens;
-
-  if (lensBtnUser) lensBtnUser.addEventListener('click', () => setLens('user'));
-  if (lensBtnDev) lensBtnDev.addEventListener('click', () => setLens('dev'));
-
   // Hero Quick Navigation Buttons
   const heroGotoStudioBtn = document.getElementById('hero-goto-studio-btn');
   if (heroGotoStudioBtn) {
@@ -4997,6 +5057,7 @@ if (btnQuickLogin) {
   if (simTryStudioBtn) {
     simTryStudioBtn.addEventListener('click', () => switchView('studio'));
   }
+})();
 
   // ─────────────────────────────────────────────────────────────
   // Dynamic Overview Background Canvas (Particle Constellation & Wave)
@@ -5314,6 +5375,7 @@ if (btnQuickLogin) {
   // ─────────────────────────────────────────────────────────────
   // API Reference Interactive Explorer
   // ─────────────────────────────────────────────────────────────
+  (function initApiExplorer() {
   const endpointBtns = document.querySelectorAll('.api-endpoint-btn');
   const langBtns = document.querySelectorAll('.api-lang-btn');
   const apiMetaBadge = document.getElementById('api-meta-badge');

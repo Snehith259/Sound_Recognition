@@ -1,6 +1,5 @@
 {
   "1": "data_augmentation.py",
-  "7": "closeAccountMenu",
   "8": "main.py",
   "9": "SoundSense — Environmental Sound Classification Studio",
   "10": "loadAnalyticsData",
@@ -10,5 +9,6 @@
   "22": "fx.js",
   "26": "updateApiExplorer",
   "33": "Any",
-  "34": "copilot-instructions.md"
+  "34": "copilot-instructions.md",
+  "35": "download_checkpoints.py"
 }
