@@ -16,33 +16,33 @@ DEFAULT_MODELS = {
     "resnet18_v1": {
         "repo_id": "soundsense/esc50-resnet18",
         "filename": "esc50_resnet18_v1.pt",
-        "size_mb": 44.8,
-        "sha256": "f8a12e4d98fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b112",
-        "accuracy": 89.4,
+        "size_mb": 45.34,
+        "accuracy": 62.81,
+        "top5": 88.19,
         "description": "Deep Residual Network with 18 layers (Log-Mel Spectrogram input)",
     },
     "vgg16_v1": {
         "repo_id": "soundsense/esc50-vgg16",
         "filename": "esc50_vgg16_v1.pt",
-        "size_mb": 65.2,
-        "sha256": "8b3df912ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee90cc",
-        "accuracy": 86.2,
+        "size_mb": 63.26,
+        "accuracy": 61.06,
+        "top5": 91.96,
         "description": "Visual Geometry Group 16-layer Deep Convolutional Network",
     },
     "sresnet_v09": {
         "repo_id": "soundsense/esc50-sresnet",
         "filename": "esc50_sresnet_linear_v09.pt",
-        "size_mb": 32.8,
-        "sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-        "accuracy": 95.1,
+        "size_mb": 1.72,
+        "accuracy": 35.68,
+        "top5": 76.13,
         "description": "Linear spectral MFCC squeezed residual network",
     },
     "cnngru_v08": {
         "repo_id": "soundsense/esc50-cnngru",
         "filename": "esc50_cnngru_recurrent_v08.pt",
-        "size_mb": 21.4,
-        "sha256": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
-        "accuracy": 93.4,
+        "size_mb": 2.11,
+        "accuracy": 64.07,
+        "top5": 91.21,
         "description": "Nonlinear Log-Mel temporal recurrent model",
     },
 }
@@ -89,15 +89,11 @@ def retrieve_cloud_weights(model_key="resnet18_v1"):
         print(f"[Success] Downloaded to {downloaded}")
         return True
     except ImportError:
-        # Generate verified placeholder weight file for local evaluation without external dependency
-        target_path.write_text(f"SoundSense Checkpoint: {model_key}\nAccuracy: {spec['accuracy']}%\nArchitecture: {spec['description']}\n")
-        print(f"[Cached Placeholder] Initialized verified weight stub for local pipeline: {target_path}")
-        return True
+        print(f"[Warning] huggingface_hub not installed; please train models locally using Preproccesing/train_models.py")
+        return False
     except Exception as e:
-        print(f"[Warning] Remote retrieval fallback: {e}")
-        target_path.write_text(f"SoundSense Checkpoint: {model_key}\nAccuracy: {spec['accuracy']}%\nArchitecture: {spec['description']}\n")
-        print(f"[Cached Placeholder] Initialized verified weight stub for local pipeline: {target_path}")
-        return True
+        print(f"[Warning] Remote retrieval failed: {e}")
+        return False
 
 
 if __name__ == "__main__":

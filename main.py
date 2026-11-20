@@ -127,12 +127,13 @@ server_state = {
             "name": "ResNet-18",
             "description": "Deep Residual Network with 18 layers (Log-Mel Spectrogram input)",
             "modelType": "resnet18",
-            "accuracy": 89.4,
-            "params": "11.7M",
-            "savedAt": "2024-10-01T12:00:00Z",
+            "accuracy": 62.81,
+            "top5": 88.19,
+            "params": "11.3M",
+            "savedAt": "2026-11-20T11:16:00Z",
             "status": "active",
-            "fileSizeMB": 44.8,
-            "cloudSource": "huggingface.co/soundsense/esc50-resnet18",
+            "fileSizeMB": 45.34,
+            "cloudSource": "checkpoints/esc50_resnet18_v1.pt",
             "downloaded": True,
         },
         {
@@ -141,26 +142,28 @@ server_state = {
             "name": "VGG-16",
             "description": "Visual Geometry Group 16-layer Deep Convolutional Network",
             "modelType": "vgg16",
-            "accuracy": 86.2,
-            "params": "138.4M",
-            "savedAt": "2024-09-25T15:00:00Z",
+            "accuracy": 61.06,
+            "top5": 91.96,
+            "params": "15.8M",
+            "savedAt": "2026-11-20T11:38:00Z",
             "status": "saved",
-            "fileSizeMB": 65.2,
-            "cloudSource": "huggingface.co/soundsense/esc50-vgg16",
+            "fileSizeMB": 63.26,
+            "cloudSource": "checkpoints/esc50_vgg16_v1.pt",
             "downloaded": True,
         },
         {
             "checkpointId": "ckpt_v09_sresnet",
             "version": "v0.9.0",
             "name": "SResNet",
-            "description": "Linear spectral MFCC-only squeezed residual network",
+            "description": "Linear spectral MFCC squeezed residual network",
             "modelType": "sresnet",
-            "accuracy": 95.1,
-            "params": "8.6M",
-            "savedAt": "2024-08-20T14:30:00Z",
+            "accuracy": 35.68,
+            "top5": 76.13,
+            "params": "0.43M",
+            "savedAt": "2026-11-20T11:58:00Z",
             "status": "saved",
-            "fileSizeMB": 32.8,
-            "cloudSource": "huggingface.co/soundsense/esc50-sresnet",
+            "fileSizeMB": 1.72,
+            "cloudSource": "checkpoints/esc50_sresnet_linear_v09.pt",
             "downloaded": True,
         },
         {
@@ -169,12 +172,13 @@ server_state = {
             "name": "CNN-GRU",
             "description": "Nonlinear Log-Mel temporal recurrent model",
             "modelType": "cnngru",
-            "accuracy": 93.4,
-            "params": "5.6M",
-            "savedAt": "2024-07-10T09:15:00Z",
+            "accuracy": 64.07,
+            "top5": 91.21,
+            "params": "0.52M",
+            "savedAt": "2026-11-20T12:15:00Z",
             "status": "saved",
-            "fileSizeMB": 21.4,
-            "cloudSource": "huggingface.co/soundsense/esc50-cnngru",
+            "fileSizeMB": 2.11,
+            "cloudSource": "checkpoints/esc50_cnngru_recurrent_v08.pt",
             "downloaded": True,
         },
     ],
@@ -183,37 +187,37 @@ server_state = {
         {
             "id": "v1.0.0",
             "name": "ResNet-18",
-            "accuracy": 89.4,
-            "params": "11.7M",
-            "createdAt": "2024-10-01T12:00:00Z",
+            "accuracy": 62.81,
+            "params": "11.3M",
+            "createdAt": "2026-11-20T11:16:00Z",
             "status": "active",
             "description": "Deep Residual Network with 18 layers (Log-Mel Spectrogram input)",
         },
         {
             "id": "v1.1.0",
             "name": "VGG-16",
-            "accuracy": 86.2,
-            "params": "138.4M",
-            "createdAt": "2024-09-25T15:00:00Z",
+            "accuracy": 61.06,
+            "params": "15.8M",
+            "createdAt": "2026-11-20T11:38:00Z",
             "status": "saved",
             "description": "Visual Geometry Group 16-layer Deep Convolutional Network",
         },
         {
             "id": "v0.9.0",
             "name": "SResNet",
-            "accuracy": 95.1,
-            "params": "8.6M",
-            "createdAt": "2024-08-20T14:30:00Z",
-            "status": "archived",
-            "description": "Linear spectral MFCC-only squeezed residual network",
+            "accuracy": 35.68,
+            "params": "0.43M",
+            "createdAt": "2026-11-20T11:58:00Z",
+            "status": "saved",
+            "description": "Linear spectral MFCC squeezed residual network",
         },
         {
             "id": "v0.8.0",
             "name": "CNN-GRU",
-            "accuracy": 93.4,
-            "params": "5.6M",
-            "createdAt": "2024-07-10T09:15:00Z",
-            "status": "archived",
+            "accuracy": 64.07,
+            "params": "0.52M",
+            "createdAt": "2026-11-20T12:15:00Z",
+            "status": "saved",
             "description": "Nonlinear Log-Mel temporal recurrent model",
         },
     ],
@@ -319,7 +323,8 @@ async def get_sample_for_category(category_id: int):
 @app.post("/api/predict")
 async def predict(
     audio: UploadFile = File(...),
-    model: str = Form("resnet18")
+    model: str = Form("resnet18"),
+    threshold: Optional[float] = Form(None),
 ):
     allowed_exts = {".wav", ".mp3", ".ogg", ".flac", ".aac", ".m4a", ".webm", ".mpg", ".mpeg"}
     file_ext = Path(audio.filename or "").suffix.lower()
@@ -329,20 +334,14 @@ async def predict(
         raise HTTPException(status_code=400, detail="Only audio files are accepted")
 
     stamp = int(time.time() * 1000)
-    save_filename = f"upload_{stamp}{file_ext or '.wav'}"
-    saved_file_path = UPLOADS_DIR / save_filename
+    file_name = audio.filename or f"upload_{stamp}{file_ext or '.wav'}"
 
     try:
         content = await audio.read()
         if len(content) > 50 * 1024 * 1024:
             raise HTTPException(status_code=400, detail="File exceeds 50 MB limit")
 
-        with open(saved_file_path, "wb") as f:
-            f.write(content)
-
-        file_name = audio.filename or save_filename
-
-        # Real Acoustic Classification (Zero filename-based guesswork)
+        # Real Acoustic Classification in-memory (Zero disk writes, prevents Live Server reload)
         from Preproccesing.acoustic_inference import run_acoustic_inference
         result = await run_in_threadpool(run_acoustic_inference, content, model)
 
@@ -397,13 +396,6 @@ async def predict(
             status_code=500,
             content={"error": "Inference failed", "details": str(err)}
         )
-    finally:
-        # File cleanup
-        if saved_file_path.exists():
-            try:
-                saved_file_path.unlink()
-            except Exception:
-                pass
 
 # ══════════════════════════════════════════════════════════════════
 # ROUTE 2: POST /api/train — Trigger Model Training Run
@@ -612,13 +604,40 @@ async def get_stats():
 
     model_performance = [
         {
-            "model": "AST-ESC50 (deployed)",
-            "accuracy": 94.0,
-            "top5Accuracy": 100.0,
-            "params": "86.9M",
-            "latency": 620,
+            "model": "CNN-GRU (v0.8)",
+            "accuracy": 64.07,
+            "top5Accuracy": 91.21,
+            "params": "0.52M",
+            "latency": 6.6,
+            "color": "#34d399",
+            "evaluatedOn": "ESC-50 Official Split (Fold 5)",
+        },
+        {
+            "model": "ResNet-18 (v1.0)",
+            "accuracy": 62.81,
+            "top5Accuracy": 88.19,
+            "params": "11.3M",
+            "latency": 67.3,
             "color": "#38bdf8",
-            "evaluatedOn": "ESC-50 | bundled 50-clip check (1 clip/class)",
+            "evaluatedOn": "ESC-50 Official Split (Fold 5)",
+        },
+        {
+            "model": "VGG-16 (v1.1)",
+            "accuracy": 61.06,
+            "top5Accuracy": 91.96,
+            "params": "15.8M",
+            "latency": 26185.4,
+            "color": "#fbbf24",
+            "evaluatedOn": "ESC-50 Official Split (Fold 5)",
+        },
+        {
+            "model": "SResNet (v0.9)",
+            "accuracy": 35.68,
+            "top5Accuracy": 76.13,
+            "params": "0.43M",
+            "latency": 18.2,
+            "color": "#a855f7",
+            "evaluatedOn": "ESC-50 Official Split (Fold 5)",
         },
     ]
 

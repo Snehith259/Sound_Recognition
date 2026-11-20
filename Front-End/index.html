@@ -569,12 +569,11 @@
               <label class="control-label" for="model-select">Architecture</label>
               <div class="select-wrap">
                 <select id="model-select" class="custom-select" aria-label="Select classification model">
-                  <!-- Regular users only see the best-performing model (SResNet, 95.1% accuracy).
-                       The remaining architectures stay hidden until Developer Mode is unlocked. -->
-                  <option value="sresnet" selected>SResNet</option>
-                  <option value="resnet18" data-dev-only hidden style="display: none;">ResNet-18</option>
-                  <option value="vgg16" data-dev-only hidden style="display: none;">VGG-16</option>
-                  <option value="cnngru" data-dev-only hidden style="display: none;">CNN-GRU</option>
+                  <option value="resnet18" selected>ResNet-18 (Deep Residual)</option>
+                  <option value="cnngru">CNN-GRU (Temporal Recurrent)</option>
+                  <option value="vgg16">VGG-16 (Deep CNN)</option>
+                  <option value="sresnet">SResNet (Fast MFCC)</option>
+                  <option value="ensemble">Ensemble Fusion (Multi-Architecture)</option>
                 </select>
                 <svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
               </div>

@@ -11,17 +11,31 @@ Hugging Face weights cannot be reached.
 
 import io
 import os
+import sys
 import re
 import time
 import threading
 from pathlib import Path
 from typing import Dict, Any, List, Tuple, Optional
 
+# Ensure repository root is on sys.path
+ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
 import numpy as np
 import soundfile as sf
 import librosa
 import torch
 import torch.nn as nn
+
+# Tiny single-clip inference workloads become dramatically slower when PyTorch
+# fans out across every host core. Keep the API responsive while allowing an
+# explicit deployment override.
+try:
+    torch.set_num_threads(max(1, int(os.environ.get("SOUNDSENSE_TORCH_THREADS", "1"))))
+except (RuntimeError, ValueError):
+    pass
 
 # ── 50 Standard ESC-50 Classes ──────────────────────────────────────
 ESC50_CATEGORIES = [
@@ -105,7 +119,7 @@ _ENGINE_LOCK = threading.Lock()
 _ENGINE: Optional[Dict[str, Any]] = None
 _ENGINE_STATUS: Dict[str, Any] = {
     "state": "not_loaded",
-    "modelId": HF_MODEL_ID,
+    "modelId": "architecture-checkpoints",
     "error": None,
 }
 
@@ -113,6 +127,18 @@ _ENGINE_STATUS: Dict[str, Any] = {
 def _normalise_label(label: Any) -> str:
     """Normalises model label names ('Sea Waves', 'sea-waves') to ESC-50 names."""
     return re.sub(r"[^a-z0-9]+", "_", str(label).strip().lower()).strip("_")
+
+
+def _find_local_ast_snapshot() -> Optional[Path]:
+    """Finds locally cached AST model snapshot if present."""
+    model_name_dir = f"models--{HF_MODEL_ID.replace('/', '--')}"
+    for base in [HF_CACHE_DIR, HF_CACHE_DIR / "hub", CHECKPOINTS_DIR / ".cache" / "huggingface" / "hub"]:
+        snap_dir = base / model_name_dir / "snapshots"
+        if snap_dir.exists():
+            for snap in snap_dir.iterdir():
+                if snap.is_dir() and (snap / "model.safetensors").exists():
+                    return snap
+    return None
 
 
 def _load_ast_engine() -> Dict[str, Any]:
@@ -130,12 +156,32 @@ def _load_ast_engine() -> Dict[str, Any]:
             from transformers import AutoFeatureExtractor, AutoModelForAudioClassification
 
             HF_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-            feature_extractor = AutoFeatureExtractor.from_pretrained(
-                HF_MODEL_ID, cache_dir=str(HF_CACHE_DIR)
-            )
-            model = AutoModelForAudioClassification.from_pretrained(
-                HF_MODEL_ID, cache_dir=str(HF_CACHE_DIR)
-            )
+            local_snap = _find_local_ast_snapshot()
+            if local_snap is not None:
+                feature_extractor = AutoFeatureExtractor.from_pretrained(str(local_snap), local_files_only=True)
+                model = AutoModelForAudioClassification.from_pretrained(str(local_snap), local_files_only=True)
+            else:
+                try:
+                    feature_extractor = AutoFeatureExtractor.from_pretrained(
+                        HF_MODEL_ID, cache_dir=str(HF_CACHE_DIR), local_files_only=True
+                    )
+                    model = AutoModelForAudioClassification.from_pretrained(
+                        HF_MODEL_ID, cache_dir=str(HF_CACHE_DIR), local_files_only=True
+                    )
+                except Exception:
+                    # Fast online attempt with strict socket timeout
+                    import socket
+                    orig_timeout = socket.getdefaulttimeout()
+                    try:
+                        socket.setdefaulttimeout(3.0)
+                        feature_extractor = AutoFeatureExtractor.from_pretrained(
+                            HF_MODEL_ID, cache_dir=str(HF_CACHE_DIR)
+                        )
+                        model = AutoModelForAudioClassification.from_pretrained(
+                            HF_MODEL_ID, cache_dir=str(HF_CACHE_DIR)
+                        )
+                    finally:
+                        socket.setdefaulttimeout(orig_timeout)
             model.eval()
 
             id2label = {int(k): str(v) for k, v in model.config.id2label.items()}
@@ -170,17 +216,52 @@ def _load_ast_engine() -> Dict[str, Any]:
 
 
 def warm_up_engine() -> bool:
-    """Pre-loads the deployed model. Safe to call from a background thread."""
+    """Pre-loads the default selected checkpoint. Safe to call in a background thread."""
     try:
-        _load_ast_engine()
+        entry = load_model_checkpoint("resnet18")
+        if entry is None:
+            raise FileNotFoundError("ResNet-18 checkpoint is not available.")
+        _ENGINE_STATUS.update(state="ready", modelId=entry["filename"], error=None)
         return True
-    except Exception:
+    except Exception as err:
+        _ENGINE_STATUS.update(state="unavailable", error=str(err))
         return False
 
 
 def get_engine_status() -> Dict[str, Any]:
     """Returns the current state of the deployed inference engine."""
     return dict(_ENGINE_STATUS)
+
+
+def model_status() -> Dict[str, Any]:
+    """Returns comprehensive metadata, manifest info, and real metrics for all available models."""
+    import json
+    report_file = CHECKPOINTS_DIR / "model_report.json"
+    manifest_file = CHECKPOINTS_DIR / "manifest.json"
+
+    report_data = {}
+    if report_file.exists():
+        try:
+            with open(report_file, "r", encoding="utf-8") as f:
+                report_data = json.load(f)
+        except Exception:
+            pass
+
+    manifest_data = {}
+    if manifest_file.exists():
+        try:
+            with open(manifest_file, "r", encoding="utf-8") as f:
+                manifest_data = json.load(f)
+        except Exception:
+            pass
+
+    return {
+        "engineStatus": get_engine_status(),
+        "report": report_data,
+        "manifest": manifest_data,
+        "checkpointsDir": str(CHECKPOINTS_DIR),
+        "availableModels": ["resnet18", "vgg16", "sresnet", "cnngru", "ensemble"],
+    }
 
 
 # ── Local MLP Fallback ──────────────────────────────────────────────
@@ -228,6 +309,59 @@ def get_acoustic_classifier() -> Dict[str, Any]:
         "radii": ckpt.get("class_radii", np.full(50, 22.0, dtype=np.float32)),
     }
     return _CLASSIFIER_CACHE
+
+
+# ── Per-Architecture Checkpoint Registry ────────────────────────────
+_MODEL_CACHE: Dict[str, Any] = {}
+
+def load_model_checkpoint(model_name: str) -> Optional[Dict[str, Any]]:
+    """Loads and caches a specific trained neural architecture checkpoint."""
+    global _MODEL_CACHE
+    norm = model_name.lower().replace("-", "").replace("_", "").replace("v1", "").replace("v09", "").replace("v08", "")
+
+    if norm in _MODEL_CACHE:
+        return _MODEL_CACHE[norm]
+
+    try:
+        from Preproccesing.train_models import ResNet18Transfer, VGG16Transfer, SResNetFast, CNNGRUFast
+        cfg = {
+            "resnet18": (ResNet18Transfer, "esc50_resnet18_v1.pt", "log_mel"),
+            "vgg16": (VGG16Transfer, "esc50_vgg16_v1.pt", "log_mel"),
+            "sresnet": (SResNetFast, "esc50_sresnet_linear_v09.pt", "mfcc"),
+            "cnngru": (CNNGRUFast, "esc50_cnngru_recurrent_v08.pt", "log_mel"),
+        }
+
+        matched_key = None
+        for k in cfg:
+            if k in norm:
+                matched_key = k
+                break
+        if not matched_key:
+            matched_key = "resnet18"
+
+        cls, filename, feat_type = cfg[matched_key]
+        ckpt_path = CHECKPOINTS_DIR / filename
+        if not ckpt_path.exists():
+            return None
+
+        model = cls(num_classes=50)
+        data = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+        model.load_state_dict(data["state_dict"])
+        model.eval()
+
+        entry = {
+            "model": model,
+            "feat_type": feat_type,
+            "filename": filename,
+            "arch_key": matched_key,
+            "temperature": float(data.get("temperature", 1.0)),
+            "metrics": data.get("metrics", {}),
+        }
+        _MODEL_CACHE[norm] = entry
+        _MODEL_CACHE[matched_key] = entry
+        return entry
+    except Exception as e:
+        return None
 
 
 def load_audio_waveform(
@@ -280,10 +414,15 @@ def load_audio_waveform(
     # Resample if needed
     if sr != target_sr and y.size:
         try:
-            y = librosa.resample(y, orig_sr=sr, target_sr=target_sr)
+            import soxr
+            y = soxr.resample(y, sr, target_sr)
             sr = target_sr
         except Exception:
-            pass
+            try:
+                y = librosa.resample(y, orig_sr=sr, target_sr=target_sr)
+                sr = target_sr
+            except Exception:
+                pass
 
     # Ensure valid numbers
     y = np.nan_to_num(y, nan=0.0, posinf=0.0, neginf=0.0)
@@ -304,14 +443,21 @@ def load_audio_waveform(
 
 
 def compute_signal_metrics(y: np.ndarray, sr: int) -> Dict[str, float]:
-    """Computes RMS / ZCR / spectral flatness used for silence and OOD checks."""
+    """Computes RMS / ZCR / spectral flatness in pure vectorized NumPy for high-speed, deadlock-free execution."""
     rms = float(np.sqrt(np.mean(y ** 2))) if y.size else 0.0
     zcr = 0.0
     flatness = 0.0
     if y.size > 1024:
         try:
-            zcr = float(np.mean(librosa.feature.zero_crossing_rate(y, frame_length=1024, hop_length=512)))
-            flatness = float(np.mean(librosa.feature.spectral_flatness(y=y, n_fft=1024, hop_length=512)))
+            # Pure NumPy Zero-Crossing Rate (fast & thread-safe)
+            zcr = float(np.mean(np.abs(np.diff(np.sign(y))) > 0)) / 2.0
+
+            # Pure NumPy Spectral Flatness on window (avoids OpenMP locks)
+            w_len = min(2048, y.size)
+            spec = np.abs(np.fft.rfft(y[:w_len])) ** 2 + 1e-12
+            geom_mean = float(np.exp(np.mean(np.log(spec))))
+            arith_mean = float(np.mean(spec))
+            flatness = float(geom_mean / (arith_mean + 1e-12))
         except Exception:
             pass
     return {
@@ -381,7 +527,14 @@ def _ast_probabilities(y: np.ndarray, sr: int) -> np.ndarray:
     target_sr = engine["sampling_rate"]
 
     if sr != target_sr and y.size:
-        y = librosa.resample(y, orig_sr=sr, target_sr=target_sr)
+        try:
+            import soxr
+            y = soxr.resample(y, sr, target_sr)
+        except Exception:
+            try:
+                y = librosa.resample(y, orig_sr=sr, target_sr=target_sr)
+            except Exception:
+                pass
 
     window = max(1, int(target_sr * ANALYSIS_WINDOW_SECONDS))
     chunks = [y[i:i + window] for i in range(0, max(1, y.size), window)][:MAX_ANALYSIS_WINDOWS]
@@ -439,31 +592,68 @@ def run_acoustic_inference(audio_input: bytes | str | Path, model_name: str = "r
     Executes true audio-based classification. Never reads or inspects the filename.
     Identifies sound solely through its acoustic fingerprint.
 
-    `model_name` is accepted for API compatibility with the UI model selector; the
-    deployed pretrained ESC-50 engine is used for every selection.
+    The selected checkpoint is the predictor. Ensemble requests average the
+    available architecture checkpoints; unavailable checkpoints fail explicitly
+    instead of silently substituting another model.
     """
     t_start = time.time()
 
-    # Decode full waveform at 22050 Hz (MLP fallback feature rate).
-    y, sr = load_audio_waveform(audio_input, target_sr=22050, target_duration=None)
+    # Match training: mono, 22.05 kHz, exactly five seconds, peak-normalized.
+    y, sr = load_audio_waveform(audio_input, target_sr=22050, target_duration=5.0)
     metrics = compute_signal_metrics(y, sr)
 
     # Silence / near-silent recording (< -46 dB)
     if metrics["rms"] < SILENCE_RMS_THRESHOLD:
         return _build_silence_result(metrics, model_name, t_start)
 
-    engine_name = "ast-esc50"
-    engine_error: Optional[str] = None
-    is_out_of_manifold = False
     t_infer = time.time()
+    is_multi_ensemble = any(w in model_name.lower() for w in ["ensemble", "auto", "fusion", "all"])
+    model_entry = None if is_multi_ensemble else load_model_checkpoint(model_name)
+    arch_probs = None
 
-    try:
-        probs = _ast_probabilities(y, sr)
-    except Exception as err:
-        # Offline fallback: local MLP checkpoint.
-        engine_name = "acoustic-mlp-fallback"
-        engine_error = str(err)
-        probs, is_out_of_manifold = _mlp_probabilities(y, sr)
+    if is_multi_ensemble:
+        collected = []
+        for mk in ["resnet18", "vgg16", "sresnet", "cnngru"]:
+            entry = load_model_checkpoint(mk)
+            if entry is not None:
+                try:
+                    if entry["feat_type"] == "mfcc":
+                        from Preproccesing.feature_extractor import extract_mfcc
+                        feat = extract_mfcc(y, sr=sr)
+                    else:
+                        from Preproccesing.feature_extractor import extract_log_mel_spectrogram
+                        feat = extract_log_mel_spectrogram(y, sr=sr)
+                    tx = torch.from_numpy(feat).unsqueeze(0).unsqueeze(0).float()
+                    with torch.no_grad():
+                        l = entry["model"](tx)
+                        temp = max(0.5, float(entry.get("temperature", 1.0)))
+                        p = torch.softmax(l / temp, dim=1)[0].numpy()
+                        collected.append(p)
+                except Exception:
+                    pass
+        if not collected:
+            raise RuntimeError("No trained architecture checkpoints are available for ensemble inference.")
+        arch_probs = np.mean(collected, axis=0)
+        model_entry = {"arch_key": "ensemble"}
+
+    elif model_entry is None:
+        raise RuntimeError(f"No trained checkpoint is available for model '{model_name}'.")
+    else:
+        if model_entry["feat_type"] == "mfcc":
+            from Preproccesing.feature_extractor import extract_mfcc
+            feat = extract_mfcc(y, sr=sr)
+        else:
+            from Preproccesing.feature_extractor import extract_log_mel_spectrogram
+            feat = extract_log_mel_spectrogram(y, sr=sr)
+
+        tx = torch.from_numpy(feat).unsqueeze(0).unsqueeze(0).float()
+        with torch.no_grad():
+            logits = model_entry["model"](tx)
+            temp = max(0.5, float(model_entry.get("temperature", 1.0)))
+            arch_probs = torch.softmax(logits / temp, dim=1)[0].numpy()
+
+    probs = arch_probs
+    engine_name = f"{model_entry['arch_key']}-checkpoint"
 
     order = np.argsort(probs)[::-1]
     top_id = int(order[0])
@@ -476,7 +666,7 @@ def run_acoustic_inference(audio_input: bytes | str | Path, model_name: str = "r
 
     is_pure_tone = metrics["flatness_raw"] < PURE_TONE_FLATNESS_THRESHOLD
     is_low_confidence = top_prob < OOD_CONFIDENCE_THRESHOLD
-    is_out_of_scope = is_pure_tone or is_low_confidence or is_out_of_manifold
+    is_out_of_scope = is_pure_tone or is_low_confidence
 
     elapsed_ms = round((time.time() - t_infer) * 1000, 1)
 
@@ -496,12 +686,6 @@ def run_acoustic_inference(audio_input: bytes | str | Path, model_name: str = "r
             ood_reason = (
                 "Synthetic pure-tone or narrow-band signal detected. Environmental sounds "
                 "exhibit natural multi-harmonic dispersion and broadband energy."
-            )
-        elif is_out_of_manifold:
-            ood_conf = min(0.99, 1.0 - top_prob)
-            ood_reason = (
-                "Acoustic fingerprint lies outside the manifold of all 50 ESC-50 categories "
-                "(nearest centroid distance exceeds that class's natural radius)."
             )
         else:
             ood_conf = 1.0 - top_prob
@@ -540,11 +724,14 @@ if __name__ == "__main__":
         target_file = sys.argv[1]
         target_model = sys.argv[2] if len(sys.argv) > 2 else "resnet18"
         try:
-            with open(target_file, "rb") as f:
-                content = f.read()
+            if target_file == "-":
+                content = sys.stdin.buffer.read()
+            else:
+                with open(target_file, "rb") as f:
+                    content = f.read()
             out = run_acoustic_inference(content, target_model)
             print(json.dumps(out))
         except Exception as e:
             print(json.dumps({"success": False, "error": str(e)}))
     else:
-        print("Usage: python acoustic_inference.py <file_path> [model_name]")
+        print("Usage: python acoustic_inference.py <file_path or -> [model_name]")

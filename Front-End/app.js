@@ -125,10 +125,11 @@ const CANONICAL_ESC50_FILES = {
 
 
 const MODEL_INFO = {
-  resnet18: { name: 'ResNet-18', short: 'ResNet-18', latency: 8.2,  params: '11.7 M' },
-  vgg16:    { name: 'VGG-16',    short: 'VGG-16',    latency: 14.5, params: '138.4 M' },
-  sresnet:  { name: 'SResNet',   short: 'SResNet',   latency: 7.8,  params: '8.6 M' },
-  cnngru:   { name: 'CNN-GRU',   short: 'CNN-GRU',   latency: 9.2,  params: '5.6 M' },
+  resnet18: { name: 'ResNet-18', short: 'ResNet-18', latency: 67.3, params: '11.3 M', accuracy: '62.8%' },
+  vgg16:    { name: 'VGG-16',    short: 'VGG-16',    latency: 120.0, params: '15.8 M', accuracy: '61.1%' },
+  sresnet:  { name: 'SResNet',   short: 'SResNet',   latency: 18.2, params: '0.43 M', accuracy: '35.7%' },
+  cnngru:   { name: 'CNN-GRU',   short: 'CNN-GRU',   latency: 6.6,  params: '0.52 M', accuracy: '64.1%' },
+  ensemble: { name: 'Ensemble Fusion', short: 'Ensemble', latency: null, params: '28.1 M', accuracy: 'Unbenchmarked' },
 };
 
 
@@ -361,7 +362,7 @@ viewTabs.forEach(tab => {
 
 const DEV_ONLY_VIEWS = ['pipeline', 'training', 'analytics'];
 
-function switchView(viewName) {
+function switchView(viewName, updateHistory = true) {
   // Map legacy architecture view to the combined pipeline view
   if (viewName === 'architecture') viewName = 'pipeline';
 
@@ -380,6 +381,13 @@ function switchView(viewName) {
 
   const targetPanel = document.getElementById(`view-${viewName}`);
   if (!targetPanel) return;
+
+  try {
+    sessionStorage.setItem('soundsense_active_view', viewName);
+    if (updateHistory && window.location.hash !== `#${viewName}`) {
+      history.replaceState(null, '', `#${viewName}`);
+    }
+  } catch (_) {}
 
   viewTabs.forEach(t => {
     const isTarget = t.dataset.view === viewName;
@@ -412,6 +420,35 @@ function switchView(viewName) {
     animateBenchmarkBars(false);
   }
 }
+
+/* Restore active view from URL hash or sessionStorage */
+function initActiveView() {
+  let target = '';
+  if (window.location.hash) {
+    const hash = window.location.hash.replace('#', '').trim();
+    if (document.getElementById(`view-${hash}`)) {
+      target = hash;
+    }
+  }
+  if (!target) {
+    try {
+      const stored = sessionStorage.getItem('soundsense_active_view');
+      if (stored && document.getElementById(`view-${stored}`)) {
+        target = stored;
+      }
+    } catch (_) {}
+  }
+  if (target) {
+    switchView(target, false);
+  }
+}
+
+window.addEventListener('hashchange', () => {
+  const hash = window.location.hash.replace('#', '').trim();
+  if (hash && document.getElementById(`view-${hash}`)) {
+    switchView(hash, false);
+  }
+});
 
 /* Slide the navigation pill under the active tab */
 function positionNavGlider(scrollIntoView = false) {
@@ -498,6 +535,9 @@ setTimeout(updateNavArrows, 350);
 if (document.fonts && document.fonts.ready) {
   document.fonts.ready.then(updateNavArrows).catch(() => {});
 }
+
+// Restore active workspace view from hash or session storage
+initActiveView();
 
 /* Benchmark chart + metric count-up animations */
 function animateBenchmarkBars(active) {
@@ -1057,11 +1097,15 @@ presetsRow.addEventListener('click', e => {
   btn.classList.add('active');
 
   const presetMapping = {
-    dog:    { targetId: 0,  name: CANONICAL_ESC50_FILES[0] },
-    rain:   { targetId: 10, name: CANONICAL_ESC50_FILES[10] },
-    alarm:  { targetId: 37, name: CANONICAL_ESC50_FILES[37] },
-    typing: { targetId: 32, name: CANONICAL_ESC50_FILES[32] },
-    siren:  { targetId: 42, name: CANONICAL_ESC50_FILES[42] },
+    dog:             { targetId: 0,  name: CANONICAL_ESC50_FILES[0] },
+    rain:            { targetId: 10, name: CANONICAL_ESC50_FILES[10] },
+    alarm:           { targetId: 37, name: CANONICAL_ESC50_FILES[37] },
+    typing:          { targetId: 32, name: CANONICAL_ESC50_FILES[32] },
+    keyboard_typing: { targetId: 32, name: CANONICAL_ESC50_FILES[32] },
+    siren:           { targetId: 42, name: CANONICAL_ESC50_FILES[42] },
+    baby:            { targetId: 20, name: CANONICAL_ESC50_FILES[20] },
+    knock:           { targetId: 30, name: CANONICAL_ESC50_FILES[30] },
+    chainsaw:        { targetId: 41, name: CANONICAL_ESC50_FILES[41] },
   };
 
   const preset = presetMapping[soundKey];
@@ -1845,12 +1889,13 @@ async function executeClassification() {
     let serverLatency = null;
 
     const apiBase = resolveApiBase();
-    const candidateUrls = [
+    const candidateUrls = Array.from(new Set([
       `${apiBase}/api/predict`,
       'http://localhost:3001/api/predict',
       'http://127.0.0.1:3001/api/predict',
       'http://localhost:3000/api/predict',
-    ];
+      'http://127.0.0.1:3000/api/predict',
+    ]));
 
     for (const url of candidateUrls) {
       try {
@@ -1859,10 +1904,15 @@ async function executeClassification() {
         formData.append('model', modelKey);
         formData.append('threshold', thresholdVal.toString());
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 25000);
+
         const res = await fetch(url, {
           method: 'POST',
           body: formData,
+          signal: controller.signal,
         });
+        clearTimeout(timeoutId);
 
         if (res.ok) {
           const data = await res.json();
@@ -1886,23 +1936,20 @@ async function executeClassification() {
       }
     }
 
-    // Fallback: local client simulation
     if (!predictions || predictions.length === 0) {
-      predictions = generateModelPredictions(modelKey, currentAudioFile);
-      inferenceSource = 'local';
-      backendOnline = false;
-    } else {
-      backendOnline = true;
+      throw new Error('The backend did not return model predictions. Check that the Python service and model checkpoints are available.');
     }
+    backendOnline = true;
 
     displayClassificationResults(predictions, modelKey);
-    setStatus(inferenceSource === 'api' ? 'Engine Ready · Backend Online' : 'Backend Offline · Local Estimate', inferenceSource === 'api' ? 'ready' : 'warn');
-
-    if (inferenceSource === 'api') {
-      showToast('API Inference Complete', `Classified by backend (/api/predict) · ${serverLatency || modelSpec.latency}ms`, 'success', 3000);
-    } else {
-      showToast('Backend offline — approximate result', 'Start the backend with `python main.py` (port 3001) for accurate predictions.', 'error', 6000);
-    }
+    setStatus('Engine Ready · Backend Online', 'ready');
+    showToast('API Inference Complete', `Classified by backend (/api/predict) · ${serverLatency || modelSpec.latency}ms`, 'success', 3000);
+  } catch (err) {
+    resultLoading.hidden = true;
+    resultEmpty.hidden = false;
+    backendOnline = false;
+    setStatus('Backend unavailable · No prediction returned', 'warn');
+    showToast('Prediction unavailable', err.message || 'Start the Python backend and verify model checkpoints.', 'error', 6000);
   } finally {
     clearInterval(timerInterval);
     // Restore button state even if something unexpected happens
@@ -3717,11 +3764,12 @@ async function refreshCheckpoints() {
         name: 'ResNet-18',
         description: 'Deep Residual Network with 18 layers (Log-Mel Spectrogram input)',
         modelType: 'resnet18',
-        accuracy: 89.4,
-        params: '11.7M',
-        savedAt: '2024-10-01T12:00:00Z',
+        accuracy: 62.81,
+        top5: 88.19,
+        params: '11.3M',
+        savedAt: '2026-11-20T11:16:00Z',
         status: 'active',
-        fileSizeMB: 44.8,
+        fileSizeMB: 45.34,
       },
       {
         checkpointId: 'ckpt_v1_vgg16',
@@ -3729,23 +3777,25 @@ async function refreshCheckpoints() {
         name: 'VGG-16',
         description: 'Visual Geometry Group 16-layer Deep Convolutional Network',
         modelType: 'vgg16',
-        accuracy: 86.2,
-        params: '138.4M',
-        savedAt: '2024-09-25T15:00:00Z',
+        accuracy: 61.06,
+        top5: 91.96,
+        params: '15.8M',
+        savedAt: '2026-11-20T11:38:00Z',
         status: 'saved',
-        fileSizeMB: 65.2,
+        fileSizeMB: 63.26,
       },
       {
         checkpointId: 'ckpt_v09_sresnet',
         version: 'v0.9.0',
         name: 'SResNet',
-        description: 'Linear spectral MFCC-only squeezed residual network',
+        description: 'Linear spectral MFCC squeezed residual network',
         modelType: 'sresnet',
-        accuracy: 95.1,
-        params: '8.6M',
-        savedAt: '2024-08-20T14:30:00Z',
+        accuracy: 35.68,
+        top5: 76.13,
+        params: '0.43M',
+        savedAt: '2026-11-20T11:58:00Z',
         status: 'saved',
-        fileSizeMB: 32.8,
+        fileSizeMB: 1.72,
       },
       {
         checkpointId: 'ckpt_v08_cnngru',
@@ -3753,11 +3803,12 @@ async function refreshCheckpoints() {
         name: 'CNN-GRU',
         description: 'Nonlinear Log-Mel temporal recurrent model',
         modelType: 'cnngru',
-        accuracy: 93.4,
-        params: '5.6M',
-        savedAt: '2024-07-10T09:15:00Z',
+        accuracy: 64.07,
+        top5: 91.21,
+        params: '0.52M',
+        savedAt: '2026-11-20T12:15:00Z',
         status: 'saved',
-        fileSizeMB: 21.4,
+        fileSizeMB: 2.11,
       },
     ];
   }
@@ -4478,23 +4529,14 @@ if (authModal) {
   });
 }
 
-/* ── Role-aware model selector ─────────────────────────────────
-   Regular users only see the best-performing architecture (SResNet,
-   95.1% accuracy). Developer Mode restores the full model list. */
+/* ── Architecture selector ─────────────────────────────────
+   Allows selection across all trained models (ResNet-18, CNN-GRU, VGG-16, SResNet, and Ensemble). */
 function syncModelOptionsForRole() {
   if (!modelSelect) return;
-
-  modelSelect.querySelectorAll('option[data-dev-only]').forEach(opt => {
-    opt.hidden = !isDeveloperAuthenticated;
-    opt.style.display = isDeveloperAuthenticated ? '' : 'none';
+  modelSelect.querySelectorAll('option').forEach(opt => {
+    opt.hidden = false;
+    opt.style.display = '';
   });
-
-  const selectedOpt = modelSelect.options[modelSelect.selectedIndex];
-  if (!isDeveloperAuthenticated && selectedOpt && selectedOpt.hasAttribute('data-dev-only')) {
-    modelSelect.value = 'sresnet';
-    modelSelect.dispatchEvent(new Event('change'));
-  }
-
   updateModelBadge();
 }
 
@@ -5055,7 +5097,21 @@ if (btnQuickLogin) {
 
   const simTryStudioBtn = document.getElementById('sim-try-studio-btn');
   if (simTryStudioBtn) {
-    simTryStudioBtn.addEventListener('click', () => switchView('studio'));
+    simTryStudioBtn.addEventListener('click', () => {
+      const activeBtn = document.querySelector('.sim-archetype-btn.active');
+      const arch = activeBtn ? activeBtn.getAttribute('data-archetype') : 'dog';
+      const simMapping = {
+        dog: 0,
+        rain: 10,
+        baby: 20,
+        knock: 30,
+      };
+      const catId = simMapping[arch] !== undefined ? simMapping[arch] : 0;
+      switchView('studio');
+      if (typeof loadTaxonomyCategory === 'function' && ESC50_CATEGORIES[catId]) {
+        loadTaxonomyCategory(ESC50_CATEGORIES[catId]);
+      }
+    });
   }
 })();
 
@@ -5384,6 +5440,8 @@ if (btnQuickLogin) {
   const apiResponseDisplay = document.getElementById('api-response-display');
   const copyBtn = document.getElementById('copy-api-code-btn');
   const copyLabel = document.getElementById('copy-code-label');
+
+  if (!apiCodeDisplay && !endpointBtns.length) return;
 
   let activeEndpoint = 'predict';
   let activeLang = 'curl';

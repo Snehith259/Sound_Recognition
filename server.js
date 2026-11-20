@@ -48,20 +48,8 @@ app.get('/api/sample/:id', (req, res) => {
   return res.status(404).json({ error: 'Sample not found' });
 });
 
-/* ── Multer config for audio file uploads ───────────────────── */
-const uploadDir = path.join(__dirname, 'uploads');
-try {
-  if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-} catch (_) {}
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadDir),
-  filename: (_req, file, cb) => {
-    const stamp = Date.now();
-    const ext = path.extname(file.originalname) || '.wav';
-    cb(null, `upload_${stamp}${ext}`);
-  },
-});
+/* ── Multer config for audio file uploads (Memory storage: zero disk writes) ───────────────────── */
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage,
@@ -88,12 +76,13 @@ const serverState = {
       name: 'ResNet-18',
       description: 'Deep Residual Network with 18 layers (Log-Mel Spectrogram input)',
       modelType: 'resnet18',
-      accuracy: 89.4,
-      params: '11.7M',
-      savedAt: '2024-10-01T12:00:00Z',
+      accuracy: 62.81,
+      top5: 88.19,
+      params: '11.3M',
+      savedAt: '2026-11-20T11:16:00Z',
       status: 'active',
-      fileSizeMB: 44.8,
-      cloudSource: 'huggingface.co/soundsense/esc50-resnet18',
+      fileSizeMB: 45.34,
+      cloudSource: 'checkpoints/esc50_resnet18_v1.pt',
       downloaded: true,
     },
     {
@@ -102,26 +91,28 @@ const serverState = {
       name: 'VGG-16',
       description: 'Visual Geometry Group 16-layer Deep Convolutional Network',
       modelType: 'vgg16',
-      accuracy: 86.2,
-      params: '138.4M',
-      savedAt: '2024-09-25T15:00:00Z',
+      accuracy: 61.06,
+      top5: 91.96,
+      params: '15.8M',
+      savedAt: '2026-11-20T11:38:00Z',
       status: 'saved',
-      fileSizeMB: 65.2,
-      cloudSource: 'huggingface.co/soundsense/esc50-vgg16',
+      fileSizeMB: 63.26,
+      cloudSource: 'checkpoints/esc50_vgg16_v1.pt',
       downloaded: true,
     },
     {
       checkpointId: 'ckpt_v09_sresnet',
       version: 'v0.9.0',
       name: 'SResNet',
-      description: 'Linear spectral MFCC-only squeezed residual network',
+      description: 'Linear spectral MFCC squeezed residual network',
       modelType: 'sresnet',
-      accuracy: 95.1,
-      params: '8.6M',
-      savedAt: '2024-08-20T14:30:00Z',
+      accuracy: 35.68,
+      top5: 76.13,
+      params: '0.43M',
+      savedAt: '2026-11-20T11:58:00Z',
       status: 'saved',
-      fileSizeMB: 32.8,
-      cloudSource: 'huggingface.co/soundsense/esc50-sresnet',
+      fileSizeMB: 1.72,
+      cloudSource: 'checkpoints/esc50_sresnet_linear_v09.pt',
       downloaded: true,
     },
     {
@@ -130,12 +121,13 @@ const serverState = {
       name: 'CNN-GRU',
       description: 'Nonlinear Log-Mel temporal recurrent model',
       modelType: 'cnngru',
-      accuracy: 93.4,
-      params: '5.6M',
-      savedAt: '2024-07-10T09:15:00Z',
+      accuracy: 64.07,
+      top5: 91.21,
+      params: '0.52M',
+      savedAt: '2026-11-20T12:15:00Z',
       status: 'saved',
-      fileSizeMB: 21.4,
-      cloudSource: 'huggingface.co/soundsense/esc50-cnngru',
+      fileSizeMB: 2.11,
+      cloudSource: 'checkpoints/esc50_cnngru_recurrent_v08.pt',
       downloaded: true,
     },
   ],
@@ -144,37 +136,37 @@ const serverState = {
     {
       id: 'v1.0.0',
       name: 'ResNet-18',
-      accuracy: 89.4,
-      params: '11.7M',
-      createdAt: '2024-10-01T12:00:00Z',
+      accuracy: 62.81,
+      params: '11.3M',
+      createdAt: '2026-11-20T11:16:00Z',
       status: 'active',
       description: 'Deep Residual Network with 18 layers (Log-Mel Spectrogram input)',
     },
     {
       id: 'v1.1.0',
       name: 'VGG-16',
-      accuracy: 86.2,
-      params: '138.4M',
-      createdAt: '2024-09-25T15:00:00Z',
+      accuracy: 61.06,
+      params: '15.8M',
+      createdAt: '2026-11-20T11:38:00Z',
       status: 'saved',
       description: 'Visual Geometry Group 16-layer Deep Convolutional Network',
     },
     {
       id: 'v0.9.0',
       name: 'SResNet',
-      accuracy: 95.1,
-      params: '8.6M',
-      createdAt: '2024-08-20T14:30:00Z',
-      status: 'archived',
-      description: 'Linear spectral MFCC-only squeezed residual network',
+      accuracy: 35.68,
+      params: '0.43M',
+      createdAt: '2026-11-20T11:58:00Z',
+      status: 'saved',
+      description: 'Linear spectral MFCC squeezed residual network',
     },
     {
       id: 'v0.8.0',
       name: 'CNN-GRU',
-      accuracy: 93.4,
-      params: '5.6M',
-      createdAt: '2024-07-10T09:15:00Z',
-      status: 'archived',
+      accuracy: 64.07,
+      params: '0.52M',
+      createdAt: '2026-11-20T12:15:00Z',
+      status: 'saved',
       description: 'Nonlinear Log-Mel temporal recurrent model',
     },
   ],
@@ -226,31 +218,34 @@ const userHistory = [];
 
 app.post('/api/predict', upload.single('audio'), (req, res) => {
   try {
-    if (!req.file) {
+    if (!req.file || !req.file.buffer) {
       return res.status(400).json({ error: 'No audio file provided. Send multipart/form-data with field "audio".' });
     }
 
     const modelKey = req.body.model || 'resnet18';
-    const fileName = req.file.originalname || req.file.filename;
-    const filePath = req.file.path;
+    const fileName = req.file.originalname || `upload_${Date.now()}.wav`;
+    const audioBuffer = req.file.buffer;
 
-    // 1. Primary: True Acoustic Neural Inference via Python module
+    // 1. Primary: True Acoustic Neural Inference via Python module using stdin (zero disk writes)
     try {
       const pyScript = path.join(__dirname, 'Preproccesing', 'acoustic_inference.py');
       if (fs.existsSync(pyScript)) {
-        const pyProc = spawnSync('python', [pyScript, filePath, modelKey], { encoding: 'utf8', timeout: 8000 });
+        const pyProc = spawnSync('python', [pyScript, '-', modelKey], {
+          input: audioBuffer,
+          encoding: 'utf8',
+          timeout: 30000,
+          maxBuffer: 10 * 1024 * 1024,
+        });
         if (pyProc.status === 0 && pyProc.stdout) {
           const result = JSON.parse(pyProc.stdout.trim());
           if (result && result.success) {
-            try { fs.unlinkSync(filePath); } catch (_) {}
-
             serverState.totalPredictions++;
             const stamp = Date.now();
             const historyId = `hist_${stamp}_${Math.random().toString(36).substring(2, 8)}`;
             const historyEntry = {
               id: historyId,
               fileName,
-              fileSize: req.file.size || 0,
+              fileSize: req.file.size || audioBuffer.length,
               modelKey,
               modelName: result.isOutOfScope ? 'Not in ESC-50 Classes' : (result.category?.name || 'Unknown'),
               topPrediction: {
@@ -272,11 +267,13 @@ app.post('/api/predict', upload.single('audio'), (req, res) => {
             return res.json({
               success: true,
               model: modelKey,
+              engine: result.engine,
               fileName,
               isOutOfScope: result.isOutOfScope,
               category: result.category,
               predictions: result.predictions,
               explanation: result.explanation,
+              metrics: result.metrics,
               metrics: result.metrics,
               inferenceTime: result.inferenceTime || 8.2,
               historyId,
@@ -285,204 +282,17 @@ app.post('/api/predict', upload.single('audio'), (req, res) => {
           }
         }
       }
-    } catch (_pyErr) {}
-
-    // Read audio buffer
-    let buffer = null;
-    try {
-      buffer = fs.readFileSync(filePath);
-    } catch (_) {}
-
-    // Clean up uploaded file
-    try { fs.unlinkSync(filePath); } catch (_) {}
-
-    if (!buffer || buffer.length === 0) {
-      return res.status(400).json({ error: 'Audio file is empty or unreadable.' });
-    }
-
-    // Inspect PCM waveform samples (16-bit PCM WAV or float buffer)
-    let samples = [];
-    const headerOffset = buffer.indexOf(Buffer.from('data'));
-    const startByte = headerOffset > 0 ? headerOffset + 8 : 44;
-    const byteStep = 2; // 16-bit
-    const maxInspect = Math.min(buffer.length - 2, startByte + 88200);
-
-    let sumSq = 0;
-    let sampleCount = 0;
-    let zcrCount = 0;
-    let lastVal = 0;
-
-    for (let i = Math.max(0, startByte); i < maxInspect; i += byteStep) {
-      const s = buffer.readInt16LE(i) / 32768.0;
-      samples.push(s);
-      sumSq += s * s;
-      if ((s >= 0 && lastVal < 0) || (s < 0 && lastVal >= 0)) zcrCount++;
-      lastVal = s;
-      sampleCount++;
-    }
-
-    const rms = sampleCount > 0 ? Math.sqrt(sumSq / sampleCount) : 0;
-    const zcr = sampleCount > 0 ? zcrCount / sampleCount : 0;
-
-    // 1. Silence check (< -46 dB)
-    if (rms < 0.005) {
-      const oodCategory = {
-        id: -1,
-        name: 'Not in ESC-50 Classes (Silence / Low Energy)',
-        emoji: '🔇',
-        group: 'Out of Domain',
-        description: 'Audio amplitude is below acoustic detection threshold.'
-      };
-      return res.json({
-        success: true,
-        model: modelKey,
-        fileName,
-        isOutOfScope: true,
-        category: oodCategory,
-        explanation: 'Audio amplitude is below minimum acoustic detection threshold (ambient silence or muted audio).',
-        predictions: [
-          { category: oodCategory, confidence: 0.95 },
-          { category: ESC50_CATEGORIES[16], confidence: 0.02 },
-          { category: ESC50_CATEGORIES[23], confidence: 0.01 },
-          { category: ESC50_CATEGORIES[38], confidence: 0.01 },
-          { category: ESC50_CATEGORIES[31], confidence: 0.01 },
-        ],
-        inferenceTime: 7.5,
-        timestamp: new Date().toISOString(),
+    } catch (pyErr) {
+      return res.status(503).json({
+        success: false,
+        error: 'Model inference is unavailable. Start the Python backend and ensure its dependencies and checkpoints are installed.',
+        details: pyErr.message,
       });
     }
 
-    // 2. Audio Spectrum Simulation from FFT / Filterbank
-    // Compute 64-band frequency power
-    const freq64 = new Float32Array(64);
-    const windowSize = 512;
-    const numWindows = Math.min(100, Math.floor(samples.length / windowSize));
-
-    for (let w = 0; w < numWindows; w++) {
-      const offset = w * windowSize;
-      for (let b = 0; b < 64; b++) {
-        // Discrete Fourier transform bin approximation
-        let re = 0, im = 0;
-        const k = Math.floor((b / 64) * (windowSize / 2));
-        for (let n = 0; n < Math.min(128, windowSize); n += 2) {
-          const val = samples[offset + n] || 0;
-          const angle = (2 * Math.PI * k * n) / windowSize;
-          re += val * Math.cos(angle);
-          im -= val * Math.sin(angle);
-        }
-        freq64[b] += Math.sqrt(re * re + im * im);
-      }
-    }
-
-    // Normalize freq vector
-    let fNorm = 0;
-    for (let b = 0; b < 64; b++) {
-      freq64[b] /= (numWindows || 1);
-      fNorm += freq64[b] * freq64[b];
-    }
-    fNorm = Math.sqrt(fNorm) + 1e-8;
-    for (let b = 0; b < 64; b++) freq64[b] /= fNorm;
-
-    // 3. Match against ESC-50 acoustic centroids
-    const scores = new Float32Array(50);
-    const profiles = esc50AcousticProfiles;
-
-    for (let i = 0; i < 50; i++) {
-      let sim = 0.5;
-      if (profiles && profiles[String(i)] && profiles[String(i)].freq64_norm) {
-        const ref = profiles[String(i)].freq64_norm;
-        for (let b = 0; b < 64; b++) {
-          sim += freq64[b] * (ref[b] || 0);
-        }
-      } else {
-        sim = 0.4 + 0.3 * Math.cos(i * 3.7 + zcr * 10);
-      }
-      scores[i] = Math.max(0.01, sim);
-    }
-
-    // Softmax
-    const temp = 0.12;
-    let expSum = 0;
-    const expScores = new Float32Array(50);
-    for (let i = 0; i < 50; i++) {
-      expScores[i] = Math.exp(scores[i] / temp);
-      expSum += expScores[i];
-    }
-    const probs = new Float32Array(50);
-    for (let i = 0; i < 50; i++) {
-      probs[i] = expScores[i] / (expSum || 1);
-    }
-
-    const sortedIds = Array.from({ length: 50 }, (_, i) => i)
-      .sort((a, b) => probs[b] - probs[a]);
-
-    const topId = sortedIds[0];
-    const topProb = probs[topId];
-    const maxScore = scores[topId];
-
-    // Fallback OOD Check: only if energy is negligible or spectrum is unresolvable
-    const isOutOfScope = (maxScore < 0.20 && topProb < 0.04);
-
-    const outOfScopeCat = {
-      id: -1,
-      name: 'Not in ESC-50 Classes',
-      emoji: '❓',
-      group: 'Out of Domain',
-      description: 'Sound signature does not match any of the 50 standardized ESC-50 environmental categories.'
-    };
-
-    let predictions = [];
-    if (isOutOfScope) {
-      predictions = [
-        { category: outOfScopeCat, confidence: parseFloat(Math.min(0.96, Math.max(0.72, 1.0 - topProb)).toFixed(4)) },
-        { category: ESC50_CATEGORIES[sortedIds[0]], confidence: parseFloat(probs[sortedIds[0]].toFixed(4)) },
-        { category: ESC50_CATEGORIES[sortedIds[1]], confidence: parseFloat(probs[sortedIds[1]].toFixed(4)) },
-        { category: ESC50_CATEGORIES[sortedIds[2]], confidence: parseFloat(probs[sortedIds[2]].toFixed(4)) },
-        { category: ESC50_CATEGORIES[sortedIds[3]], confidence: parseFloat(probs[sortedIds[3]].toFixed(4)) },
-      ];
-    } else {
-      predictions = sortedIds.slice(0, 5).map(id => ({
-        category: ESC50_CATEGORIES[id],
-        confidence: parseFloat(probs[id].toFixed(4))
-      }));
-    }
-
-    serverState.totalPredictions++;
-    const historyId = `hist_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-
-    const historyEntry = {
-      id: historyId,
-      fileName,
-      fileSize: buffer.length,
-      modelKey,
-      modelName: isOutOfScope ? 'Not in ESC-50 Classes' : ESC50_CATEGORIES[topId].name,
-      topPrediction: {
-        category: isOutOfScope ? 'Not in ESC-50 Classes' : ESC50_CATEGORIES[topId].name,
-        emoji: isOutOfScope ? '❓' : ESC50_CATEGORIES[topId].emoji,
-        group: isOutOfScope ? 'Out of Domain' : ESC50_CATEGORIES[topId].group,
-        confidence: predictions[0].confidence,
-        confidencePercent: `${(predictions[0].confidence * 100).toFixed(1)}%`,
-        isOutOfScope
-      },
-      predictions,
-      inferenceSource: 'api',
-      latencyMs: 9.2,
-      timestamp: new Date().toISOString()
-    };
-    userHistory.unshift(historyEntry);
-    if (userHistory.length > 200) userHistory.pop();
-
-    res.json({
-      success: true,
-      model: modelKey,
-      fileName,
-      isOutOfScope,
-      category: isOutOfScope ? outOfScopeCat : ESC50_CATEGORIES[topId],
-      predictions,
-      explanation: isOutOfScope ? 'The acoustic frequency distribution and dynamics do not match any of the 50 ESC-50 environmental categories.' : undefined,
-      inferenceTime: parseFloat((7 + Math.random() * 5).toFixed(1)),
-      historyId,
-      timestamp: new Date().toISOString(),
+    return res.status(503).json({
+      success: false,
+      error: 'Model inference is unavailable. Start the Python backend and ensure its dependencies and checkpoints are installed.',
     });
   } catch (err) {
     res.status(500).json({ error: 'Inference failed', details: err.message });
@@ -735,10 +545,10 @@ app.get('/api/stats', (_req, res) => {
 
   // Model performance data
   const modelPerformance = [
-    { model: 'SResNet', accuracy: 95.1, params: '8.6M', latency: 7.8, color: '#38bdf8' },
-    { model: 'CNN-GRU', accuracy: 93.4, params: '5.6M', latency: 9.2, color: '#34d399' },
-    { model: 'ResNet-18', accuracy: 89.4, params: '11.7M', latency: 8.2, color: '#a855f7' },
-    { model: 'VGG-16', accuracy: 86.2, params: '138.4M', latency: 14.5, color: '#f59e0b' },
+    { model: 'CNN-GRU (v0.8)', accuracy: 64.07, top5Accuracy: 91.21, params: '0.52M', latency: 6.6, color: '#34d399', evaluatedOn: 'ESC-50 Official Split (Fold 5)' },
+    { model: 'ResNet-18 (v1.0)', accuracy: 62.81, top5Accuracy: 88.19, params: '11.3M', latency: 67.3, color: '#38bdf8', evaluatedOn: 'ESC-50 Official Split (Fold 5)' },
+    { model: 'VGG-16 (v1.1)', accuracy: 61.06, top5Accuracy: 91.96, params: '15.8M', latency: 26185.4, color: '#fbbf24', evaluatedOn: 'ESC-50 Official Split (Fold 5)' },
+    { model: 'SResNet (v0.9)', accuracy: 35.68, top5Accuracy: 76.13, params: '0.43M', latency: 18.2, color: '#a855f7', evaluatedOn: 'ESC-50 Official Split (Fold 5)' },
   ];
 
   const uptime = Math.round((Date.now() - new Date(serverState.startedAt).getTime()) / 1000);

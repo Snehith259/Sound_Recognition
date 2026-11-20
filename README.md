@@ -40,14 +40,13 @@ license: mit
 
 ## Deployed Inference Engine
 
-`POST /api/predict` runs a real pretrained **AST (Audio Spectrogram Transformer) fine-tuned on ESC-50**
-(`Adam-ousse/ast-esc50-finetuned-fold1`, 93.5% top-1 on the ESC-50 fold-1 test split).
+`POST /api/predict` loads the architecture selected in the `model` form field and runs its matching
+checkpoint from `checkpoints/`. The ensemble option averages the available architecture probabilities.
+Inputs are decoded as mono audio, resampled to 22.05 kHz, aligned to five seconds, and peak-normalized
+to match the training pipeline. The response includes the actual checkpoint engine used.
 
-- Weights are downloaded once from the Hugging Face Hub and cached in `checkpoints/.cache/huggingface`.
-- The model is warmed up in a background thread at server startup, so the first upload is fast.
-- The `model` form field (`resnet18`, `vgg16`, `sresnet`, `cnngru`) is kept for UI/API compatibility;
-  every selection is served by the deployed AST engine, and each response reports the real `engine`.
-- If the weights cannot be loaded (e.g. offline), the backend falls back to the bundled
-  `checkpoints/acoustic_classifier.pt` MLP so predictions keep working.
-- Override the checkpoint with `SOUNDSENSE_HF_MODEL=<hf-repo-id>` and the OOD confidence
-  threshold with `SOUNDSENSE_OOD_THRESHOLD=<0..1>`.
+The bundled validation report records top-1 accuracy between 35.68% (SResNet) and 64.07% (CNN-GRU)
+on its ESC-50 split. Softmax confidence is a model score, not a guarantee that a prediction is correct.
+If a selected checkpoint cannot be loaded, the API returns an inference error instead of silently
+substituting another model or generating a heuristic prediction. Set `SOUNDSENSE_TORCH_THREADS` to
+override the default single-thread CPU inference setting.
