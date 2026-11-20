@@ -1152,17 +1152,22 @@ uploadZone.addEventListener('drop', e => {
     loadAudioFile(file);
     showToast('Audio loaded', `${file.name} · ${formatBytes(file.size)}`, 'success');
   } else if (file) {
-    showToast('Unsupported file', 'Please choose a WAV, MP3, MPEG/MPG, OGG, FLAC or M4A audio file.', 'error');
+    showToast('Unsupported file', 'Please choose a WAV, MP3, or MPEG/MPG audio file.', 'error');
   }
 });
 
 audioInput.addEventListener('change', () => {
   if (audioInput.files[0]) {
     const file = audioInput.files[0];
-    currentPresetTarget = null;
-    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
-    loadAudioFile(file);
-    showToast('Audio loaded', `${file.name} · ${formatBytes(file.size)}`, 'success');
+    if (isAudioFile(file)) {
+      currentPresetTarget = null;
+      document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+      loadAudioFile(file);
+      showToast('Audio loaded', `${file.name} · ${formatBytes(file.size)}`, 'success');
+    } else {
+      showToast('Unsupported file', 'Please choose a WAV, MP3, or MPEG/MPG audio file.', 'error');
+      audioInput.value = '';
+    }
   }
 });
 
@@ -1173,8 +1178,21 @@ fileRemoveBtn.addEventListener('click', e => {
 
 function isAudioFile(file) {
   if (!file) return false;
-  if (file.type && (file.type.startsWith('audio/') || file.type === 'video/mpeg' || file.type === 'video/mp4')) return true;
-  return /\.(wav|mp3|ogg|flac|aac|m4a|webm|mpg|mpeg|mpga|mpe)$/i.test(file.name || '');
+  const name = (file.name || '').toLowerCase();
+  // Disallow removed formats (OGG, FLAC, M4A)
+  if (/\.(ogg|flac|m4a|aac)$/i.test(name)) return false;
+  // Retain allowed audio formats: WAV, MP3, MPEG / MPG
+  if (/\.(wav|mp3|mpg|mpeg|mpga|mpe)$/i.test(name)) return true;
+  if (file.type) {
+    const type = file.type.toLowerCase();
+    if (type.includes('ogg') || type.includes('flac') || type.includes('m4a') || type.includes('mp4') || type.includes('aac')) {
+      return false;
+    }
+    if (type === 'audio/wav' || type === 'audio/x-wav' || type === 'audio/mp3' || type === 'audio/mpeg' || type === 'video/mpeg') {
+      return true;
+    }
+  }
+  return false;
 }
 
 /* ── Live Microphone Capture ──────────────────────────────────── */
@@ -1282,25 +1300,34 @@ function stopMicRecording() {
 }
 
 async function finalizeMicRecording() {
-  const type = micMime || 'audio/webm';
-  const ext = type.includes('mp4') ? 'm4a' : type.includes('ogg') ? 'ogg' : 'webm';
-  const blob = new Blob(micChunks, { type });
-  const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  const file = new File([blob], `mic_capture_${stamp}.${ext}`, { type });
-
+  const recordedBlob = new Blob(micChunks, { type: micMime || 'audio/webm' });
   cleanupMic();
   updateMicUI();
 
-  if (!blob.size) {
+  if (!recordedBlob.size) {
     showToast('No audio captured', 'Nothing was recorded. Please try again.', 'error');
     setStatus('Engine Ready', 'ready');
     return;
   }
 
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  let wavFile;
+  try {
+    await ensureAudioContext();
+    const arrayBuffer = await recordedBlob.arrayBuffer();
+    const decoded = await audioContext.decodeAudioData(arrayBuffer);
+    const pcm = decoded.getChannelData(0);
+    const wavBlob = encodeWAV(pcm, decoded.sampleRate);
+    wavFile = new File([wavBlob], `mic_recording_${stamp}.wav`, { type: 'audio/wav' });
+  } catch (err) {
+    console.warn('WAV conversion fallback:', err);
+    wavFile = new File([recordedBlob], `mic_recording_${stamp}.wav`, { type: 'audio/wav' });
+  }
+
   currentPresetTarget = null;
   document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
-  await loadAudioFile(file);
-  showToast('Recording captured', 'Running the classifier on your clip…', 'success');
+  await loadAudioFile(wavFile);
+  showToast('Recording captured', 'Running acoustic classification on your microphone clip…', 'success');
   setTimeout(executeClassification, 80);
 }
 
@@ -3364,7 +3391,7 @@ window.addEventListener('drop', (e) => {
   if (!file) return;
 
   if (!isAudioFile(file)) {
-    showToast('Unsupported file', 'Drop a WAV, MP3, MPEG/MPG, OGG, FLAC or M4A audio file.', 'error');
+    showToast('Unsupported file', 'Drop a WAV, MP3, or MPEG/MPG audio file.', 'error');
     return;
   }
 
@@ -5449,7 +5476,7 @@ if (btnQuickLogin) {
   const API_DOCS = {
     predict: {
       badge: 'POST /predict',
-      desc: 'Accepts a multipart audio file upload (wav/mp3/ogg), executes full DSP feature extraction, and returns Top-5 classified environmental classes with confidence metrics and OOD analysis.',
+      desc: 'Accepts a multipart audio file upload (wav/mp3/mpeg), executes full DSP feature extraction, and returns Top-5 classified environmental classes with confidence metrics and OOD analysis.',
       code: {
         curl: `curl -X POST "http://localhost:8000/predict" \\
   -H "accept: application/json" \\
@@ -5704,31 +5731,61 @@ console.log("Taxonomy Domains:", taxonomy.domains);`
   // Confidence Threshold Slider (Card 1.5)
   const thresholdSlider = document.getElementById('threshold-slider');
   const thresholdValDisplay = document.getElementById('threshold-value-display');
-  if (thresholdSlider && thresholdValDisplay) {
-    thresholdSlider.addEventListener('input', () => {
-      thresholdValDisplay.textContent = `${thresholdSlider.value}%`;
-    });
+  function updateThresholdSliderFill() {
+    if (!thresholdSlider) return;
+    const val = Number(thresholdSlider.value) || 0;
+    const min = Number(thresholdSlider.min) || 0;
+    const max = Number(thresholdSlider.max) || 100;
+    const pct = Math.max(0, Math.min(100, ((val - min) / (max - min)) * 100));
+    thresholdSlider.style.setProperty('--fill', `${pct}%`);
+    if (thresholdValDisplay) {
+      thresholdValDisplay.textContent = `${val}%`;
+    }
+  }
+
+  if (thresholdSlider) {
+    updateThresholdSliderFill();
+    thresholdSlider.addEventListener('input', updateThresholdSliderFill);
   }
 
   // Floating Scroll to Top Button
   const scrollTopBtn = document.getElementById('scroll-top-btn');
+  const appFooter = document.querySelector('.app-footer');
   if (scrollTopBtn) {
-    window.addEventListener('scroll', () => {
-      if (window.scrollY > 380) {
+    const updateScrollTopState = () => {
+      const scrollY = window.scrollY || window.pageYOffset;
+      if (scrollY > 380) {
         scrollTopBtn.removeAttribute('hidden');
         scrollTopBtn.classList.add('visible');
       } else {
         scrollTopBtn.classList.remove('visible');
+        scrollTopBtn.setAttribute('hidden', '');
       }
-    }, { passive: true });
+
+      // Keep button floating cleanly above the footer when scrolled near the bottom
+      if (appFooter) {
+        const footerRect = appFooter.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        if (footerRect.top < viewportHeight) {
+          const overlap = Math.max(0, viewportHeight - footerRect.top);
+          scrollTopBtn.style.setProperty('--footer-lift', `${overlap}px`);
+        } else {
+          scrollTopBtn.style.setProperty('--footer-lift', '0px');
+        }
+      }
+    };
+
+    window.addEventListener('scroll', updateScrollTopState, { passive: true });
+    window.addEventListener('resize', updateScrollTopState, { passive: true });
+    updateScrollTopState();
 
     scrollTopBtn.addEventListener('click', () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   }
 
-  // Footer Navigation Quick-Links
-  document.querySelectorAll('.footer-nav-link').forEach(btn => {
+  // Global Navigation Quick-Links ([data-goto])
+  document.querySelectorAll('[data-goto]').forEach(btn => {
     btn.addEventListener('click', () => {
       const target = btn.getAttribute('data-goto');
       if (target && typeof switchView === 'function') {
@@ -5736,4 +5793,421 @@ console.log("Taxonomy Domains:", taxonomy.domains);`
       }
     });
   });
+})();
+
+/* ═══════════════════════════════════════════════════════════════
+   BATCH AUDIO CLASSIFICATION & CSV EXPORT STUDIO
+   Standalone high-throughput multi-file inference module.
+   Talks directly to /api/predict with parallel concurrency.
+   Zero dependencies outside the Sound_Recognition project.
+   ═══════════════════════════════════════════════════════════════ */
+(function initBatchClassification() {
+  'use strict';
+
+  var CONFIG = {
+    endpoint: '/api/predict',
+    fileField: 'audio',
+    modelField: 'model',
+    maxFiles: 100,
+    concurrency: 2,
+    topK: 5
+  };
+
+  var $ = function (id) { return document.getElementById(id); };
+  var drop = $('batch-drop');
+  if (!drop) return;
+
+  var input = $('batch-input');
+  var listEl = $('batch-file-list');
+  var runBtn = $('batch-run-btn');
+  var csvBtn = $('batch-csv-btn');
+  var clearBtn = $('batch-clear-btn');
+  var progressWrap = $('batch-progress');
+  var progressFill = $('batch-progress-fill');
+  var progressText = $('batch-progress-text');
+  var tableWrap = $('batch-table-wrap');
+  var matrixEmpty = $('batch-matrix-empty');
+  var tbody = $('batch-table-body');
+  var modelInfo = $('batch-model-info');
+  var modelSelect = $('model-select');
+  var runIdle = $('batch-run-idle');
+  var runBusy = $('batch-run-busy');
+  var maxLabel = $('batch-max-label');
+  var queueCountEl = $('batch-queue-count');
+  var counterChipEl = $('batch-counter-chip');
+  var chipCountEl = $('batch-chip-count');
+  var summaryStatsEl = $('batch-summary-stats');
+  var statOkEl = $('stat-batch-ok');
+  var statErrEl = $('stat-batch-err');
+  var heroBatchBtn = $('hero-goto-batch-btn');
+  var hintBatchBtn = $('hint-goto-batch-btn');
+
+  if (maxLabel) maxLabel.textContent = CONFIG.maxFiles;
+
+  var items = [];      // {id, file, state, preds, error, model}
+  var nextId = 1;
+  var running = false;
+
+  function modelKey() { return modelSelect ? modelSelect.value : 'resnet18'; }
+  function modelName() {
+    if (!modelSelect) return 'ResNet-18';
+    var opt = modelSelect.options[modelSelect.selectedIndex];
+    return opt ? opt.textContent.trim().split(' ')[0] : modelSelect.value;
+  }
+  function syncModelLabel() {
+    if (modelInfo) modelInfo.textContent = modelName();
+  }
+  function fmtSize(b) {
+    return b > 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB';
+  }
+  function isAllowedAudio(f) {
+    if (!f) return false;
+    var name = (f.name || '').toLowerCase();
+    if (/\.(ogg|flac|m4a|aac)$/i.test(name)) return false;
+    if (/\.(wav|mp3|mpg|mpeg|mpga|mpe|webm)$/i.test(name)) return true;
+    if (f.type) {
+      var t = f.type.toLowerCase();
+      if (t.includes('ogg') || t.includes('flac') || t.includes('m4a') || t.includes('aac')) return false;
+      if (t.startsWith('audio/') || t.includes('mpeg')) return true;
+    }
+    return false;
+  }
+  function esc(s) {
+    return String(s || '').replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function notify(msg, tone) {
+    if (typeof showToast === 'function') {
+      showToast('Batch Classification', msg, tone || (msg.toLowerCase().includes('failed') ? 'error' : 'info'));
+      return;
+    }
+    var stack = $('toast-stack');
+    if (!stack) { console.info('[batch]', msg); return; }
+    var t = document.createElement('div');
+    t.className = 'toast ' + (tone || '');
+    t.textContent = msg;
+    stack.appendChild(t);
+    setTimeout(function () { t.remove(); }, 3500);
+  }
+
+  function normalise(data) {
+    var arr = null;
+    ['top5', 'top_5', 'topK', 'top_k', 'predictions', 'results', 'ranked', 'probabilities'].some(function (k) {
+      if (data && Array.isArray(data[k])) { arr = data[k]; return true; }
+      return false;
+    });
+    if (!arr && data && data.result) return normalise(data.result);
+    if (!arr && data && (data.label || data.category || data.prediction || data.class)) {
+      var catName = (data.category && typeof data.category === 'object') ? data.category.name : (data.label || data.category || data.class || data.prediction);
+      var catEmoji = (data.category && typeof data.category === 'object') ? (data.category.emoji || '') : (data.emoji || '');
+      arr = [{ label: catName, confidence: data.confidence != null ? data.confidence : data.probability, emoji: catEmoji }];
+    }
+    if (!arr) return null;
+    var out = arr.map(function (p) {
+      if (Array.isArray(p)) return { label: p[0], conf: Number(p[1]), emoji: '' };
+      var label = p.label || (p.category && typeof p.category === 'object' ? p.category.name : p.category) || p.class || p.name || p.className;
+      var c = p.confidence != null ? p.confidence : (p.probability != null ? p.probability : (p.score != null ? p.score : p.prob));
+      var emoji = p.emoji || (p.category && typeof p.category === 'object' ? p.category.emoji : '') || '';
+      return { label: label, conf: Number(c), emoji: emoji };
+    }).filter(function (p) { return p.label != null && !isNaN(p.conf); });
+    var asFraction = out.every(function (p) { return p.conf <= 1; });
+    out.forEach(function (p) { if (asFraction) p.conf *= 100; });
+    out.sort(function (a, b) { return b.conf - a.conf; });
+    return out.slice(0, CONFIG.topK);
+  }
+
+  function addFiles(fileList) {
+    var added = 0, skipped = 0;
+    Array.prototype.forEach.call(fileList, function (f) {
+      if (!isAllowedAudio(f)) { skipped++; return; }
+      if (items.length >= CONFIG.maxFiles) { skipped++; return; }
+      items.push({ id: nextId++, file: f, state: 'queued', preds: null, error: '', model: '' });
+      added++;
+    });
+    if (skipped) {
+      notify(skipped + ' file(s) skipped (unsupported format or exceeded ' + CONFIG.maxFiles + ' file limit).', 'warn');
+    }
+    if (added) {
+      notify(added + ' clip(s) queued for batch classification.', 'success');
+    }
+    render();
+  }
+
+  function stateLabel(it) {
+    return { queued: 'Queued', running: 'Running...', done: 'Done', error: 'Failed' }[it.state];
+  }
+  function stateClass(it) {
+    return it.state === 'done' ? 'is-done' : it.state === 'error' ? 'is-error' : it.state === 'running' ? 'is-run' : '';
+  }
+
+  function render() {
+    if (queueCountEl) queueCountEl.textContent = items.length + ' item' + (items.length === 1 ? '' : 's');
+    if (counterChipEl) {
+      counterChipEl.hidden = items.length === 0;
+      if (chipCountEl) chipCountEl.textContent = items.length + ' files';
+    }
+
+    if (items.length === 0) {
+      listEl.innerHTML = '<li class="batch-empty-li" id="batch-empty-placeholder">' +
+        '<span class="bf-empty-icon" aria-hidden="true">🎧</span>' +
+        '<span class="bf-empty-text">No audio files added yet. Drop clips above to populate queue.</span>' +
+        '</li>';
+    } else {
+      listEl.innerHTML = items.map(function (it) {
+        return '<li data-id="' + it.id + '">' +
+          '<span class="bf-icon" aria-hidden="true">🎵</span>' +
+          '<span class="bf-name" title="' + esc(it.file.name) + '">' + esc(it.file.name) + '</span>' +
+          '<span class="bf-size">' + fmtSize(it.file.size) + '</span>' +
+          '<span class="bf-state ' + stateClass(it) + '">' + stateLabel(it) + '</span>' +
+          (running ? '' : '<button type="button" class="bf-remove" aria-label="Remove ' + esc(it.file.name) + '" title="Remove file">&times;</button>') +
+          '</li>';
+      }).join('');
+    }
+
+    var hasItems = items.length > 0;
+    var anyDone = items.some(function (i) { return i.state === 'done' || i.state === 'error'; });
+    var pending = items.some(function (i) { return i.state === 'queued' || i.state === 'error'; });
+
+    runBtn.disabled = running || !pending;
+    clearBtn.disabled = running || !hasItems;
+    csvBtn.disabled = running || !anyDone;
+
+    renderTable();
+  }
+
+  function renderTable() {
+    var rows = items.filter(function (i) { return i.state === 'done' || i.state === 'error'; });
+    var doneCount = items.filter(function (i) { return i.state === 'done'; }).length;
+    var errCount = items.filter(function (i) { return i.state === 'error'; }).length;
+
+    if (summaryStatsEl) {
+      summaryStatsEl.hidden = rows.length === 0;
+      if (statOkEl) statOkEl.textContent = doneCount + ' Successful';
+      if (statErrEl) {
+        statErrEl.hidden = errCount === 0;
+        statErrEl.textContent = errCount + ' Failed';
+      }
+    }
+
+    if (matrixEmpty) matrixEmpty.hidden = rows.length > 0;
+    if (tableWrap) tableWrap.hidden = rows.length === 0;
+
+    if (!tbody) return;
+
+    tbody.innerHTML = rows.map(function (it) {
+      if (it.state === 'error') {
+        return '<tr>' +
+          '<td class="td-file"><span class="bt-file-name" title="' + esc(it.file.name) + '">' + esc(it.file.name) + '</span></td>' +
+          '<td colspan="5" class="row-error"><span class="bt-err-chip">Failed</span> <span class="bt-err-text">' + esc(it.error) + '</span></td>' +
+          '</tr>';
+      }
+      var cells = '';
+      for (var k = 0; k < CONFIG.topK; k++) {
+        var p = it.preds && it.preds[k];
+        if (p) {
+          var isTop1 = k === 0;
+          var emojiSpan = p.emoji ? '<span class="bt-emoji">' + esc(p.emoji) + '</span>' : '';
+          var labelSpan = '<strong class="bt-name">' + esc(p.label) + '</strong>';
+          var confSpan = '<span class="conf">' + p.conf.toFixed(1) + '%</span>';
+          cells += '<td><span class="bt-pred-pill ' + (isTop1 ? 'is-top1' : '') + '">' + emojiSpan + labelSpan + confSpan + '</span></td>';
+        } else {
+          cells += '<td><span class="bt-empty-cell">—</span></td>';
+        }
+      }
+      return '<tr><td class="td-file"><span class="bt-file-name" title="' + esc(it.file.name) + '">' + esc(it.file.name) + '</span></td>' + cells + '</tr>';
+    }).join('');
+  }
+
+  function updateProgress() {
+    var total = items.length;
+    var finished = items.filter(function (i) { return i.state === 'done' || i.state === 'error'; }).length;
+    progressWrap.hidden = !running && finished === 0;
+    var pct = total ? Math.round((finished / total) * 100) : 0;
+    progressFill.style.width = pct + '%';
+    progressText.textContent = finished + ' / ' + total + (total ? ' (' + pct + '%)' : '');
+  }
+
+  function classifyOne(it) {
+    it.state = 'running';
+    it.model = modelName();
+    render();
+    var fd = new FormData();
+    fd.append(CONFIG.fileField, it.file, it.file.name);
+    fd.append(CONFIG.modelField, modelKey());
+    return fetch(CONFIG.endpoint, { method: 'POST', body: fd })
+      .then(function (res) {
+        if (!res.ok) throw new Error('Server returned HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        var preds = normalise(data);
+        if (!preds || !preds.length) {
+          console.warn('[batch] Unrecognised /api/predict response shape:', data);
+          throw new Error('Unrecognised response format');
+        }
+        it.preds = preds;
+        it.state = 'done';
+        it.error = '';
+      })
+      .catch(function (err) {
+        it.state = 'error';
+        it.error = err.message || 'Request failed';
+      })
+      .then(function () {
+        updateProgress();
+        render();
+      });
+  }
+
+  function runAll() {
+    var queue = items.filter(function (i) { return i.state === 'queued' || i.state === 'error'; });
+    if (!queue.length) return;
+    running = true;
+    runIdle.hidden = true;
+    runBusy.hidden = false;
+    updateProgress();
+    render();
+
+    var idx = 0;
+    function worker() {
+      if (idx >= queue.length) return Promise.resolve();
+      var it = queue[idx++];
+      return classifyOne(it).then(worker);
+    }
+    var workers = [];
+    for (var w = 0; w < Math.min(CONFIG.concurrency, queue.length); w++) {
+      workers.push(worker());
+    }
+    Promise.all(workers).then(function () {
+      running = false;
+      runIdle.hidden = false;
+      runBusy.hidden = true;
+      updateProgress();
+      render();
+      var failed = items.filter(function (i) { return i.state === 'error'; }).length;
+      notify(
+        failed ? 'Batch finished with ' + failed + ' failed file(s). Click Classify All to retry them.' : 'Batch complete! CSV is ready for download.',
+        failed ? 'warn' : 'success'
+      );
+    });
+  }
+
+  function csvCell(v) {
+    var s = v == null ? '' : String(v);
+    return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+
+  function downloadCsv() {
+    var head = ['file_name', 'model', 'status'];
+    for (var k = 1; k <= CONFIG.topK; k++) {
+      head.push('top' + k + '_label', 'top' + k + '_confidence_pct');
+    }
+    head.push('error');
+    var lines = [head.map(csvCell).join(',')];
+    items.forEach(function (it) {
+      if (it.state !== 'done' && it.state !== 'error') return;
+      var row = [it.file.name, it.model, it.state === 'done' ? 'ok' : 'failed'];
+      for (var k = 0; k < CONFIG.topK; k++) {
+        var p = it.preds && it.preds[k];
+        row.push(p ? p.label : '', p ? p.conf.toFixed(2) : '');
+      }
+      row.push(it.error);
+      lines.push(row.map(csvCell).join(','));
+    });
+
+    var blob = new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    var a = document.createElement('a');
+    var stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'sound-recognition-batch-predictions-' + stamp + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+    notify('CSV report downloaded successfully.', 'success');
+  }
+
+  // Event handlers
+  drop.addEventListener('click', function () { if (!running) input.click(); });
+  drop.addEventListener('keydown', function (e) {
+    if ((e.key === 'Enter' || e.key === ' ') && !running) {
+      e.preventDefault();
+      input.click();
+    }
+  });
+  input.addEventListener('change', function () {
+    addFiles(input.files);
+    input.value = '';
+  });
+
+  ['dragenter', 'dragover'].forEach(function (ev) {
+    drop.addEventListener(ev, function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      drop.classList.add('is-over');
+    });
+  });
+  ['dragleave', 'drop'].forEach(function (ev) {
+    drop.addEventListener(ev, function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      drop.classList.remove('is-over');
+    });
+  });
+  drop.addEventListener('drop', function (e) {
+    if (!running && e.dataTransfer && e.dataTransfer.files.length) {
+      addFiles(e.dataTransfer.files);
+    }
+  });
+
+  listEl.addEventListener('click', function (e) {
+    var btn = e.target.closest('.bf-remove');
+    if (!btn || running) return;
+    var li = btn.closest('li');
+    var id = li ? Number(li.getAttribute('data-id')) : null;
+    if (id) {
+      items = items.filter(function (i) { return i.id !== id; });
+      updateProgress();
+      render();
+    }
+  });
+
+  runBtn.addEventListener('click', runAll);
+  csvBtn.addEventListener('click', downloadCsv);
+  clearBtn.addEventListener('click', function () {
+    if (running) return;
+    items = [];
+    progressWrap.hidden = true;
+    render();
+  });
+
+  if (modelSelect) modelSelect.addEventListener('change', syncModelLabel);
+
+  function scrollToBatch() {
+    var card = $('batch-card');
+    if (card) {
+      card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      card.classList.add('batch-card-highlight');
+      setTimeout(function () { card.classList.remove('batch-card-highlight'); }, 1800);
+    }
+  }
+
+  if (heroBatchBtn) heroBatchBtn.addEventListener('click', scrollToBatch);
+  if (hintBatchBtn) hintBatchBtn.addEventListener('click', scrollToBatch);
+
+  // Keyboard shortcut 'b' while in Classifier Studio (not typing in an input)
+  window.addEventListener('keydown', function (e) {
+    if ((e.key === 'b' || e.key === 'B') && !['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) {
+      var studioView = $('view-studio');
+      if (studioView && !studioView.hidden) {
+        e.preventDefault();
+        scrollToBatch();
+      }
+    }
+  });
+
+  syncModelLabel();
+  render();
 })();

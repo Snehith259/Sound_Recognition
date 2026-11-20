@@ -1,0 +1,2102 @@
+{
+  "timestamp": 1795190030.7756019,
+  "models": {
+    "resnet18": {
+      "correct_top1": 19,
+      "correct_top5": 23,
+      "total": 26,
+      "ood_correct": 0,
+      "ood_total": 4,
+      "confidences": [
+        0.9262,
+        0.501,
+        0.9939,
+        0.7439,
+        0.5731,
+        1.0,
+        0.4956,
+        0.3616,
+        0.7012,
+        0.9747,
+        0.9498,
+        0.9784,
+        0.9973,
+        0.975,
+        0.3491,
+        0.9941,
+        0.9992,
+        0.9799,
+        0.9978,
+        0.8294,
+        0.5108,
+        0.9769,
+        0.6736,
+        0.9981,
+        0.9126,
+        0.719,
+        0.9985,
+        0.992,
+        0.9582,
+        0.9723
+      ],
+      "latencies": [
+        66.2,
+        54.7,
+        93.6,
+        132.1,
+        64.2,
+        62.3,
+        63.3,
+        52.8,
+        63.2,
+        79.3,
+        88.5,
+        58.8,
+        91.8,
+        99.6,
+        77.8,
+        62.2,
+        77.8,
+        84.7,
+        66.6,
+        64.7,
+        62.0,
+        61.1,
+        55.4,
+        51.5,
+        57.0,
+        53.2,
+        57.9,
+        62.3,
+        63.2,
+        59.1
+      ]
+    },
+    "cnngru": {
+      "correct_top1": 22,
+      "correct_top5": 24,
+      "total": 26,
+      "ood_correct": 3,
+      "ood_total": 4,
+      "confidences": [
+        0.5994,
+        0.4988,
+        0.7497,
+        0.879,
+        0.4503,
+        0.3629,
+        0.7145,
+        0.8559,
+        0.8734,
+        0.773,
+        0.966,
+        0.8766,
+        0.81,
+        0.856,
+        0.4748,
+        0.9549,
+        0.8202,
+        0.8982,
+        0.8657,
+        0.8648,
+        0.5296,
+        0.9015,
+        0.895,
+        0.7975,
+        0.9223,
+        0.8561,
+        0.694,
+        0.9158,
+        0.5716,
+        0.5833
+      ],
+      "latencies": [
+        64.3,
+        21.8,
+        39.0,
+        98.8,
+        27.8,
+        24.8,
+        17.3,
+        22.6,
+        17.6,
+        30.5,
+        49.9,
+        34.5,
+        36.0,
+        41.1,
+        36.1,
+        22.3,
+        29.7,
+        29.3,
+        16.2,
+        21.8,
+        21.9,
+        16.2,
+        33.3,
+        21.3,
+        22.2,
+        20.3,
+        19.5,
+        19.1,
+        22.5,
+        23.2
+      ]
+    },
+    "vgg16": {
+      "correct_top1": 22,
+      "correct_top5": 24,
+      "total": 26,
+      "ood_correct": 0,
+      "ood_total": 4,
+      "confidences": [
+        0.6935,
+        0.9227,
+        0.9698,
+        0.3502,
+        0.4336,
+        0.9995,
+        0.4849,
+        0.6969,
+        0.4633,
+        0.9796,
+        0.9989,
+        0.9915,
+        0.9998,
+        0.988,
+        0.989,
+        0.9683,
+        0.9999,
+        0.9989,
+        0.9996,
+        0.574,
+        0.9902,
+        0.9331,
+        0.8727,
+        1.0,
+        0.9826,
+        0.9411,
+        0.9997,
+        0.9968,
+        0.9377,
+        0.9927
+      ],
+      "latencies": [
+        4253.6,
+        338.2,
+        394.2,
+        341.6,
+        356.4,
+        397.9,
+        357.3,
+        285.6,
+        395.4,
+        429.1,
+        440.2,
+        379.8,
+        476.3,
+        495.3,
+        427.7,
+        410.2,
+        411.5,
+        326.6,
+        320.3,
+        379.1,
+        313.3,
+        325.9,
+        299.0,
+        383.0,
+        297.9,
+        313.4,
+        292.4,
+        303.6,
+        331.5,
+        343.7
+      ]
+    },
+    "sresnet": {
+      "correct_top1": 22,
+      "correct_top5": 23,
+      "total": 26,
+      "ood_correct": 2,
+      "ood_total": 4,
+      "confidences": [
+        0.4679,
+        0.7798,
+        0.3677,
+        0.7361,
+        0.7886,
+        0.7867,
+        0.3334,
+        0.4312,
+        0.8089,
+        0.7314,
+        0.7874,
+        0.7448,
+        0.8126,
+        0.8578,
+        0.6426,
+        0.7811,
+        0.5338,
+        0.8457,
+        0.9195,
+        0.6296,
+        0.5541,
+        0.636,
+        0.6776,
+        0.6205,
+        0.7367,
+        0.4607,
+        0.8421,
+        0.664,
+        0.7661,
+        0.6909
+      ],
+      "latencies": [
+        51.7,
+        21.4,
+        35.3,
+        67.9,
+        32.5,
+        22.1,
+        22.0,
+        19.0,
+        14.7,
+        45.6,
+        26.0,
+        35.6,
+        32.3,
+        42.9,
+        40.1,
+        59.9,
+        17.2,
+        13.3,
+        30.0,
+        39.1,
+        27.1,
+        15.6,
+        15.0,
+        37.8,
+        16.8,
+        17.9,
+        35.0,
+        16.7,
+        13.9,
+        16.2
+      ]
+    },
+    "ensemble": {
+      "correct_top1": 22,
+      "correct_top5": 24,
+      "total": 26,
+      "ood_correct": 2,
+      "ood_total": 4,
+      "confidences": [
+        0.4136,
+        0.4487,
+        0.7703,
+        0.8709,
+        0.7342,
+        0.5287,
+        0.7792,
+        0.7443,
+        0.3068,
+        0.749,
+        0.9255,
+        0.8978,
+        0.9049,
+        0.9192,
+        0.5636,
+        0.9246,
+        0.8383,
+        0.9307,
+        0.9456,
+        0.7244,
+        0.6462,
+        0.8618,
+        0.7797,
+        0.854,
+        0.8886,
+        0.6259,
+        0.8836,
+        0.8921,
+        0.8084,
+        0.8098
+      ],
+      "latencies": [
+        555.8,
+        428.3,
+        497.3,
+        462.4,
+        480.3,
+        474.2,
+        448.7,
+        357.1,
+        390.2,
+        582.8,
+        531.4,
+        711.3,
+        662.4,
+        554.1,
+        603.2,
+        467.5,
+        451.3,
+        358.1,
+        503.5,
+        453.3,
+        428.0,
+        356.1,
+        408.8,
+        516.1,
+        388.2,
+        443.1,
+        375.8,
+        447.9,
+        361.5,
+        424.1
+      ]
+    }
+  },
+  "detailed_rows": [
+    {
+      "id": 1,
+      "sound": "dog",
+      "group": "Animals",
+      "is_ood": false,
+      "predictions": {
+        "resnet18": {
+          "pred": "drinking_sipping",
+          "conf": 0.9262,
+          "top5": [
+            "drinking_sipping",
+            "dog",
+            "coughing"
+          ],
+          "correct": false
+        },
+        "cnngru": {
+          "pred": "dog",
+          "conf": 0.5994,
+          "top5": [
+            "dog",
+            "laughing",
+            "sneezing"
+          ],
+          "correct": true
+        },
+        "vgg16": {
+          "pred": "drinking_sipping",
+          "conf": 0.6935,
+          "top5": [
+            "drinking_sipping",
+            "pig",
+            "dog"
+          ],
+          "correct": false
+        },
+        "sresnet": {
+          "pred": "dog",
+          "conf": 0.4679,
+          "top5": [
+            "dog",
+            "clock_tick",
+            "coughing"
+          ],
+          "correct": true
+        },
+        "ensemble": {
+          "pred": "drinking_sipping",
+          "conf": 0.4136,
+          "top5": [
+            "drinking_sipping",
+            "dog",
+            "pig"
+          ],
+          "correct": false
+        }
+      }
+    },
+    {
+      "id": 2,
+      "sound": "cat",
+      "group": "Animals",
+      "is_ood": false,
+      "predictions": {
+        "resnet18": {
+          "pred": "car_horn",
+          "conf": 0.501,
+          "top5": [
+            "car_horn",
+            "cat",
+            "door_wood_creaks"
+          ],
+          "correct": false
+        },
+        "cnngru": {
+          "pred": "car_horn",
+          "conf": 0.4988,
+          "top5": [
+            "car_horn",
+            "cat",
+            "door_wood_creaks"
+          ],
+          "correct": false
+        },
+        "vgg16": {
+          "pred": "cat",
+          "conf": 0.9227,
+          "top5": [
+            "cat",
+            "pig",
+            "glass_breaking"
+          ],
+          "correct": true
+        },
+        "sresnet": {
+          "pred": "Not in ESC-50 Classes",
+          "conf": 0.7798,
+          "top5": [
+            "Not in ESC-50 Classes",
+            "cat",
+            "car_horn"
+          ],
+          "correct": false
+        },
+        "ensemble": {
+          "pred": "cat",
+          "conf": 0.4487,
+          "top5": [
+            "cat",
+            "car_horn",
+            "crow"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": 3,
+      "sound": "rooster",
+      "group": "Animals",
+      "is_ood": false,
+      "predictions": {
+        "resnet18": {
+          "pred": "rooster",
+          "conf": 0.9939,
+          "top5": [
+            "rooster",
+            "cat",
+            "pouring_water"
+          ],
+          "correct": true
+        },
+        "cnngru": {
+          "pred": "rooster",
+          "conf": 0.7497,
+          "top5": [
+            "rooster",
+            "water_drops",
+            "dog"
+          ],
+          "correct": true
+        },
+        "vgg16": {
+          "pred": "rooster",
+          "conf": 0.9698,
+          "top5": [
+            "rooster",
+            "cat",
+            "crying_baby"
+          ],
+          "correct": true
+        },
+        "sresnet": {
+          "pred": "rooster",
+          "conf": 0.3677,
+          "top5": [
+            "rooster",
+            "cat",
+            "door_wood_creaks"
+          ],
+          "correct": true
+        },
+        "ensemble": {
+          "pred": "rooster",
+          "conf": 0.7703,
+          "top5": [
+            "rooster",
+            "cat",
+            "crying_baby"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": 4,
+      "sound": "thunderstorm",
+      "group": "Natural",
+      "is_ood": false,
+      "predictions": {
+        "resnet18": {
+          "pred": "Not in ESC-50 Classes",
+          "conf": 0.7439,
+          "top5": [
+            "Not in ESC-50 Classes",
+            "crackling_fire",
+            "brushing_teeth"
+          ],
+          "correct": false
+        },
+        "cnngru": {
+          "pred": "Not in ESC-50 Classes",
+          "conf": 0.879,
+          "top5": [
+            "Not in ESC-50 Classes",
+            "helicopter",
+            "sea_waves"
+          ],
+          "correct": false
+        },
+        "vgg16": {
+          "pred": "rain",
+          "conf": 0.3502,
+          "top5": [
+            "rain",
+            "sea_waves",
+            "fireworks"
+          ],
+          "correct": false
+        },
+        "sresnet": {
+          "pred": "Not in ESC-50 Classes",
+          "conf": 0.7361,
+          "top5": [
+            "Not in ESC-50 Classes",
+            "sea_waves",
+            "snoring"
+          ],
+          "correct": false
+        },
+        "ensemble": {
+          "pred": "Not in ESC-50 Classes",
+          "conf": 0.8709,
+          "top5": [
+            "Not in ESC-50 Classes",
+            "sea_waves",
+            "rain"
+          ],
+          "correct": false
+        }
+      }
+    },
+    {
+      "id": 5,
+      "sound": "siren",
+      "group": "Urban",
+      "is_ood": false,
+      "predictions": {
+        "resnet18": {
+          "pred": "clock_alarm",
+          "conf": 0.5731,
+          "top5": [
+            "clock_alarm",
+            "hen",
+            "rooster"
+          ],
+          "correct": false
+        },
+        "cnngru": {
+          "pred": "clock_alarm",
+          "conf": 0.4503,
+          "top5": [
+            "clock_alarm",
+            "rooster",
+            "mouse_click"
+          ],
+          "correct": false
+        },
+        "vgg16": {
+          "pred": "helicopter",
+          "conf": 0.4336,
+          "top5": [
+            "helicopter",
+            "clock_tick",
+            "glass_breaking"
+          ],
+          "correct": false
+        },
+        "sresnet": {
+          "pred": "Not in ESC-50 Classes",
+          "conf": 0.7886,
+          "top5": [
+            "Not in ESC-50 Classes",
+            "rooster",
+            "coughing"
+          ],
+          "correct": false
+        },
+        "ensemble": {
+          "pred": "Not in ESC-50 Classes",
+          "conf": 0.7342,
+          "top5": [
+            "Not in ESC-50 Classes",
+            "clock_alarm",
+            "rooster"
+          ],
+          "correct": false
+        }
+      }
+    },
+    {
+      "id": 6,
+      "sound": "car_horn",
+      "group": "Urban",
+      "is_ood": false,
+      "predictions": {
+        "resnet18": {
+          "pred": "siren",
+          "conf": 1.0,
+          "top5": [
+            "siren",
+            "frog",
+            "church_bells"
+          ],
+          "correct": false
+        },
+        "cnngru": {
+          "pred": "car_horn",
+          "conf": 0.3629,
+          "top5": [
+            "car_horn",
+            "crickets",
+            "siren"
+          ],
+          "correct": true
+        },
+        "vgg16": {
+          "pred": "siren",
+          "conf": 0.9995,
+          "top5": [
+            "siren",
+            "church_bells",
+            "car_horn"
+          ],
+          "correct": false
+        },
+        "sresnet": {
+          "pred": "Not in ESC-50 Classes",
+          "conf": 0.7867,
+          "top5": [
+            "Not in ESC-50 Classes",
+            "train",
+            "fireworks"
+          ],
+          "correct": false
+        },
+        "ensemble": {
+          "pred": "siren",
+          "conf": 0.5287,
+          "top5": [
+            "siren",
+            "car_horn",
+            "train"
+          ],
+          "correct": false
+        }
+      }
+    },
+    {
+      "id": 7,
+      "sound": "Out of Domain (Speech)",
+      "group": "OOD",
+      "is_ood": true,
+      "predictions": {
+        "resnet18": {
+          "pred": "rooster",
+          "conf": 0.4956,
+          "top5": [
+            "rooster",
+            "laughing",
+            "crying_baby"
+          ],
+          "correct": false
+        },
+        "cnngru": {
+          "pred": "Not in ESC-50 Classes",
+          "conf": 0.7145,
+          "top5": [
+            "Not in ESC-50 Classes",
+            "crying_baby",
+            "laughing"
+          ],
+          "correct": true
+        },
+        "vgg16": {
+          "pred": "crying_baby",
+          "conf": 0.4849,
+          "top5": [
+            "crying_baby",
+            "laughing",
+            "drinking_sipping"
+          ],
+          "correct": false
+        },
+        "sresnet": {
+          "pred": "laughing",
+          "conf": 0.3334,
+          "top5": [
+            "laughing",
+            "coughing",
+            "sneezing"
+          ],
+          "correct": false
+        },
+        "ensemble": {
+          "pred": "Not in ESC-50 Classes",
+          "conf": 0.7792,
+          "top5": [
+            "Not in ESC-50 Classes",
+            "crying_baby",
+            "laughing"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": 8,
+      "sound": "Out of Domain (Pure Tone)",
+      "group": "OOD",
+      "is_ood": true,
+      "predictions": {
+        "resnet18": {
+          "pred": "coughing",
+          "conf": 0.3616,
+          "top5": [
+            "coughing",
+            "glass_breaking",
+            "water_drops"
+          ],
+          "correct": false
+        },
+        "cnngru": {
+          "pred": "Not in ESC-50 Classes",
+          "conf": 0.8559,
+          "top5": [
+            "Not in ESC-50 Classes",
+            "water_drops",
+            "door_wood_knock"
+          ],
+          "correct": true
+        },
+        "vgg16": {
+          "pred": "glass_breaking",
+          "conf": 0.6969,
+          "top5": [
+            "glass_breaking",
+            "water_drops",
+            "can_opening"
+          ],
+          "correct": false
+        },
+        "sresnet": {
+          "pred": "siren",
+          "conf": 0.4312,
+          "top5": [
+            "siren",
+            "rooster",
+            "cat"
+          ],
+          "correct": false
+        },
+        "ensemble": {
+          "pred": "Not in ESC-50 Classes",
+          "conf": 0.7443,
+          "top5": [
+            "Not in ESC-50 Classes",
+            "glass_breaking",
+            "siren"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": 9,
+      "sound": "Out of Domain (Music)",
+      "group": "OOD",
+      "is_ood": true,
+      "predictions": {
+        "resnet18": {
+          "pred": "church_bells",
+          "conf": 0.7012,
+          "top5": [
+            "church_bells",
+            "dog",
+            "hen"
+          ],
+          "correct": false
+        },
+        "cnngru": {
+          "pred": "Not in ESC-50 Classes",
+          "conf": 0.8734,
+          "top5": [
+            "Not in ESC-50 Classes",
+            "cow",
+            "hand_saw"
+          ],
+          "correct": true
+        },
+        "vgg16": {
+          "pred": "church_bells",
+          "conf": 0.4633,
+          "top5": [
+            "church_bells",
+            "pig",
+            "dog"
+          ],
+          "correct": false
+        },
+        "sresnet": {
+          "pred": "Not in ESC-50 Classes",
+          "conf": 0.8089,
+          "top5": [
+            "Not in ESC-50 Classes",
+            "insects",
+            "toilet_flush"
+          ],
+          "correct": true
+        },
+        "ensemble": {
+          "pred": "church_bells",
+          "conf": 0.3068,
+          "top5": [
+            "church_bells",
+            "pig",
+            "insects"
+          ],
+          "correct": false
+        }
+      }
+    },
+    {
+      "id": 10,
+      "sound": "Out of Domain (White Noise)",
+      "group": "OOD",
+      "is_ood": true,
+      "predictions": {
+        "resnet18": {
+          "pred": "rain",
+          "conf": 0.9747,
+          "top5": [
+            "rain",
+            "wind",
+            "thunderstorm"
+          ],
+          "correct": false
+        },
+        "cnngru": {
+          "pred": "rain",
+          "conf": 0.773,
+          "top5": [
+            "rain",
+            "chainsaw",
+            "vacuum_cleaner"
+          ],
+          "correct": false
+        },
+        "vgg16": {
+          "pred": "rain",
+          "conf": 0.9796,
+          "top5": [
+            "rain",
+            "crow",
+            "wind"
+          ],
+          "correct": false
+        },
+        "sresnet": {
+          "pred": "Not in ESC-50 Classes",
+          "conf": 0.7314,
+          "top5": [
+            "Not in ESC-50 Classes",
+            "rain",
+            "wind"
+          ],
+          "correct": true
+        },
+        "ensemble": {
+          "pred": "rain",
+          "conf": 0.749,
+          "top5": [
+            "rain",
+            "wind",
+            "sea_waves"
+          ],
+          "correct": false
+        }
+      }
+    },
+    {
+      "id": 11,
+      "sound": "dog",
+      "group": "Animals",
+      "is_ood": false,
+      "predictions": {
+        "resnet18": {
+          "pred": "dog",
+          "conf": 0.9498,
+          "top5": [
+            "dog",
+            "coughing",
+            "drinking_sipping"
+          ],
+          "correct": true
+        },
+        "cnngru": {
+          "pred": "dog",
+          "conf": 0.966,
+          "top5": [
+            "dog",
+            "clock_tick",
+            "sneezing"
+          ],
+          "correct": true
+        },
+        "vgg16": {
+          "pred": "dog",
+          "conf": 0.9989,
+          "top5": [
+            "dog",
+            "sneezing",
+            "coughing"
+          ],
+          "correct": true
+        },
+        "sresnet": {
+          "pred": "dog",
+          "conf": 0.7874,
+          "top5": [
+            "dog",
+            "hen",
+            "laughing"
+          ],
+          "correct": true
+        },
+        "ensemble": {
+          "pred": "dog",
+          "conf": 0.9255,
+          "top5": [
+            "dog",
+            "coughing",
+            "hen"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": 12,
+      "sound": "rooster",
+      "group": "Animals",
+      "is_ood": false,
+      "predictions": {
+        "resnet18": {
+          "pred": "rooster",
+          "conf": 0.9784,
+          "top5": [
+            "rooster",
+            "cat",
+            "car_horn"
+          ],
+          "correct": true
+        },
+        "cnngru": {
+          "pred": "rooster",
+          "conf": 0.8766,
+          "top5": [
+            "rooster",
+            "sneezing",
+            "dog"
+          ],
+          "correct": true
+        },
+        "vgg16": {
+          "pred": "rooster",
+          "conf": 0.9915,
+          "top5": [
+            "rooster",
+            "dog",
+            "sneezing"
+          ],
+          "correct": true
+        },
+        "sresnet": {
+          "pred": "rooster",
+          "conf": 0.7448,
+          "top5": [
+            "rooster",
+            "door_wood_creaks",
+            "laughing"
+          ],
+          "correct": true
+        },
+        "ensemble": {
+          "pred": "rooster",
+          "conf": 0.8978,
+          "top5": [
+            "rooster",
+            "dog",
+            "cat"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": 13,
+      "sound": "cow",
+      "group": "Animals",
+      "is_ood": false,
+      "predictions": {
+        "resnet18": {
+          "pred": "cow",
+          "conf": 0.9973,
+          "top5": [
+            "cow",
+            "door_wood_creaks",
+            "dog"
+          ],
+          "correct": true
+        },
+        "cnngru": {
+          "pred": "cow",
+          "conf": 0.81,
+          "top5": [
+            "cow",
+            "pig",
+            "dog"
+          ],
+          "correct": true
+        },
+        "vgg16": {
+          "pred": "cow",
+          "conf": 0.9998,
+          "top5": [
+            "cow",
+            "chainsaw",
+            "crying_baby"
+          ],
+          "correct": true
+        },
+        "sresnet": {
+          "pred": "cow",
+          "conf": 0.8126,
+          "top5": [
+            "cow",
+            "laughing",
+            "sheep"
+          ],
+          "correct": true
+        },
+        "ensemble": {
+          "pred": "cow",
+          "conf": 0.9049,
+          "top5": [
+            "cow",
+            "laughing",
+            "pig"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": 14,
+      "sound": "hen",
+      "group": "Animals",
+      "is_ood": false,
+      "predictions": {
+        "resnet18": {
+          "pred": "hen",
+          "conf": 0.975,
+          "top5": [
+            "hen",
+            "toilet_flush",
+            "dog"
+          ],
+          "correct": true
+        },
+        "cnngru": {
+          "pred": "hen",
+          "conf": 0.856,
+          "top5": [
+            "hen",
+            "laughing",
+            "pouring_water"
+          ],
+          "correct": true
+        },
+        "vgg16": {
+          "pred": "hen",
+          "conf": 0.988,
+          "top5": [
+            "hen",
+            "pig",
+            "pouring_water"
+          ],
+          "correct": true
+        },
+        "sresnet": {
+          "pred": "hen",
+          "conf": 0.8578,
+          "top5": [
+            "hen",
+            "church_bells",
+            "cat"
+          ],
+          "correct": true
+        },
+        "ensemble": {
+          "pred": "hen",
+          "conf": 0.9192,
+          "top5": [
+            "hen",
+            "church_bells",
+            "laughing"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": 15,
+      "sound": "rain",
+      "group": "Natural",
+      "is_ood": false,
+      "predictions": {
+        "resnet18": {
+          "pred": "vacuum_cleaner",
+          "conf": 0.3491,
+          "top5": [
+            "vacuum_cleaner",
+            "rain",
+            "clapping"
+          ],
+          "correct": false
+        },
+        "cnngru": {
+          "pred": "clapping",
+          "conf": 0.4748,
+          "top5": [
+            "clapping",
+            "rain",
+            "engine"
+          ],
+          "correct": false
+        },
+        "vgg16": {
+          "pred": "rain",
+          "conf": 0.989,
+          "top5": [
+            "rain",
+            "clapping",
+            "crackling_fire"
+          ],
+          "correct": true
+        },
+        "sresnet": {
+          "pred": "rain",
+          "conf": 0.6426,
+          "top5": [
+            "rain",
+            "sea_waves",
+            "wind"
+          ],
+          "correct": true
+        },
+        "ensemble": {
+          "pred": "rain",
+          "conf": 0.5636,
+          "top5": [
+            "rain",
+            "clapping",
+            "vacuum_cleaner"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": 16,
+      "sound": "sea_waves",
+      "group": "Natural",
+      "is_ood": false,
+      "predictions": {
+        "resnet18": {
+          "pred": "sea_waves",
+          "conf": 0.9941,
+          "top5": [
+            "sea_waves",
+            "train",
+            "airplane"
+          ],
+          "correct": true
+        },
+        "cnngru": {
+          "pred": "sea_waves",
+          "conf": 0.9549,
+          "top5": [
+            "sea_waves",
+            "clapping",
+            "vacuum_cleaner"
+          ],
+          "correct": true
+        },
+        "vgg16": {
+          "pred": "sea_waves",
+          "conf": 0.9683,
+          "top5": [
+            "sea_waves",
+            "rain",
+            "train"
+          ],
+          "correct": true
+        },
+        "sresnet": {
+          "pred": "sea_waves",
+          "conf": 0.7811,
+          "top5": [
+            "sea_waves",
+            "wind",
+            "thunderstorm"
+          ],
+          "correct": true
+        },
+        "ensemble": {
+          "pred": "sea_waves",
+          "conf": 0.9246,
+          "top5": [
+            "sea_waves",
+            "rain",
+            "wind"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": 17,
+      "sound": "chirping_birds",
+      "group": "Natural",
+      "is_ood": false,
+      "predictions": {
+        "resnet18": {
+          "pred": "chirping_birds",
+          "conf": 0.9992,
+          "top5": [
+            "chirping_birds",
+            "crow",
+            "car_horn"
+          ],
+          "correct": true
+        },
+        "cnngru": {
+          "pred": "chirping_birds",
+          "conf": 0.8202,
+          "top5": [
+            "chirping_birds",
+            "sea_waves",
+            "frog"
+          ],
+          "correct": true
+        },
+        "vgg16": {
+          "pred": "chirping_birds",
+          "conf": 0.9999,
+          "top5": [
+            "chirping_birds",
+            "crickets",
+            "vacuum_cleaner"
+          ],
+          "correct": true
+        },
+        "sresnet": {
+          "pred": "chirping_birds",
+          "conf": 0.5338,
+          "top5": [
+            "chirping_birds",
+            "wind",
+            "frog"
+          ],
+          "correct": true
+        },
+        "ensemble": {
+          "pred": "chirping_birds",
+          "conf": 0.8383,
+          "top5": [
+            "chirping_birds",
+            "frog",
+            "wind"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": 18,
+      "sound": "thunderstorm",
+      "group": "Natural",
+      "is_ood": false,
+      "predictions": {
+        "resnet18": {
+          "pred": "thunderstorm",
+          "conf": 0.9799,
+          "top5": [
+            "thunderstorm",
+            "snoring",
+            "wind"
+          ],
+          "correct": true
+        },
+        "cnngru": {
+          "pred": "thunderstorm",
+          "conf": 0.8982,
+          "top5": [
+            "thunderstorm",
+            "snoring",
+            "fireworks"
+          ],
+          "correct": true
+        },
+        "vgg16": {
+          "pred": "thunderstorm",
+          "conf": 0.9989,
+          "top5": [
+            "thunderstorm",
+            "airplane",
+            "train"
+          ],
+          "correct": true
+        },
+        "sresnet": {
+          "pred": "thunderstorm",
+          "conf": 0.8457,
+          "top5": [
+            "thunderstorm",
+            "wind",
+            "door_wood_creaks"
+          ],
+          "correct": true
+        },
+        "ensemble": {
+          "pred": "thunderstorm",
+          "conf": 0.9307,
+          "top5": [
+            "thunderstorm",
+            "wind",
+            "snoring"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": 19,
+      "sound": "crying_baby",
+      "group": "Human",
+      "is_ood": false,
+      "predictions": {
+        "resnet18": {
+          "pred": "crying_baby",
+          "conf": 0.9978,
+          "top5": [
+            "crying_baby",
+            "door_wood_creaks",
+            "keyboard_typing"
+          ],
+          "correct": true
+        },
+        "cnngru": {
+          "pred": "crying_baby",
+          "conf": 0.8657,
+          "top5": [
+            "crying_baby",
+            "door_wood_creaks",
+            "hen"
+          ],
+          "correct": true
+        },
+        "vgg16": {
+          "pred": "crying_baby",
+          "conf": 0.9996,
+          "top5": [
+            "crying_baby",
+            "cat",
+            "frog"
+          ],
+          "correct": true
+        },
+        "sresnet": {
+          "pred": "crying_baby",
+          "conf": 0.9195,
+          "top5": [
+            "crying_baby",
+            "hen",
+            "sheep"
+          ],
+          "correct": true
+        },
+        "ensemble": {
+          "pred": "crying_baby",
+          "conf": 0.9456,
+          "top5": [
+            "crying_baby",
+            "hen",
+            "door_wood_creaks"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": 20,
+      "sound": "clapping",
+      "group": "Human",
+      "is_ood": false,
+      "predictions": {
+        "resnet18": {
+          "pred": "clapping",
+          "conf": 0.8294,
+          "top5": [
+            "clapping",
+            "keyboard_typing",
+            "crackling_fire"
+          ],
+          "correct": true
+        },
+        "cnngru": {
+          "pred": "clapping",
+          "conf": 0.8648,
+          "top5": [
+            "clapping",
+            "keyboard_typing",
+            "mouse_click"
+          ],
+          "correct": true
+        },
+        "vgg16": {
+          "pred": "clapping",
+          "conf": 0.574,
+          "top5": [
+            "clapping",
+            "keyboard_typing",
+            "mouse_click"
+          ],
+          "correct": true
+        },
+        "sresnet": {
+          "pred": "clapping",
+          "conf": 0.6296,
+          "top5": [
+            "clapping",
+            "toilet_flush",
+            "drinking_sipping"
+          ],
+          "correct": true
+        },
+        "ensemble": {
+          "pred": "clapping",
+          "conf": 0.7244,
+          "top5": [
+            "clapping",
+            "keyboard_typing",
+            "toilet_flush"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": 21,
+      "sound": "footsteps",
+      "group": "Human",
+      "is_ood": false,
+      "predictions": {
+        "resnet18": {
+          "pred": "footsteps",
+          "conf": 0.5108,
+          "top5": [
+            "footsteps",
+            "door_wood_knock",
+            "can_opening"
+          ],
+          "correct": true
+        },
+        "cnngru": {
+          "pred": "footsteps",
+          "conf": 0.5296,
+          "top5": [
+            "footsteps",
+            "door_wood_knock",
+            "fireworks"
+          ],
+          "correct": true
+        },
+        "vgg16": {
+          "pred": "footsteps",
+          "conf": 0.9902,
+          "top5": [
+            "footsteps",
+            "door_wood_knock",
+            "dog"
+          ],
+          "correct": true
+        },
+        "sresnet": {
+          "pred": "footsteps",
+          "conf": 0.5541,
+          "top5": [
+            "footsteps",
+            "door_wood_knock",
+            "water_drops"
+          ],
+          "correct": true
+        },
+        "ensemble": {
+          "pred": "footsteps",
+          "conf": 0.6462,
+          "top5": [
+            "footsteps",
+            "door_wood_knock",
+            "can_opening"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": 22,
+      "sound": "door_wood_knock",
+      "group": "Interior",
+      "is_ood": false,
+      "predictions": {
+        "resnet18": {
+          "pred": "door_wood_knock",
+          "conf": 0.9769,
+          "top5": [
+            "door_wood_knock",
+            "water_drops",
+            "coughing"
+          ],
+          "correct": true
+        },
+        "cnngru": {
+          "pred": "door_wood_knock",
+          "conf": 0.9015,
+          "top5": [
+            "door_wood_knock",
+            "coughing",
+            "fireworks"
+          ],
+          "correct": true
+        },
+        "vgg16": {
+          "pred": "door_wood_knock",
+          "conf": 0.9331,
+          "top5": [
+            "door_wood_knock",
+            "can_opening",
+            "drinking_sipping"
+          ],
+          "correct": true
+        },
+        "sresnet": {
+          "pred": "door_wood_knock",
+          "conf": 0.636,
+          "top5": [
+            "door_wood_knock",
+            "thunderstorm",
+            "footsteps"
+          ],
+          "correct": true
+        },
+        "ensemble": {
+          "pred": "door_wood_knock",
+          "conf": 0.8618,
+          "top5": [
+            "door_wood_knock",
+            "thunderstorm",
+            "footsteps"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": 23,
+      "sound": "keyboard_typing",
+      "group": "Interior",
+      "is_ood": false,
+      "predictions": {
+        "resnet18": {
+          "pred": "keyboard_typing",
+          "conf": 0.6736,
+          "top5": [
+            "keyboard_typing",
+            "crackling_fire",
+            "mouse_click"
+          ],
+          "correct": true
+        },
+        "cnngru": {
+          "pred": "keyboard_typing",
+          "conf": 0.895,
+          "top5": [
+            "keyboard_typing",
+            "mouse_click",
+            "washing_machine"
+          ],
+          "correct": true
+        },
+        "vgg16": {
+          "pred": "keyboard_typing",
+          "conf": 0.8727,
+          "top5": [
+            "keyboard_typing",
+            "water_drops",
+            "can_opening"
+          ],
+          "correct": true
+        },
+        "sresnet": {
+          "pred": "keyboard_typing",
+          "conf": 0.6776,
+          "top5": [
+            "keyboard_typing",
+            "crackling_fire",
+            "clock_tick"
+          ],
+          "correct": true
+        },
+        "ensemble": {
+          "pred": "keyboard_typing",
+          "conf": 0.7797,
+          "top5": [
+            "keyboard_typing",
+            "crackling_fire",
+            "mouse_click"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": 24,
+      "sound": "clock_alarm",
+      "group": "Interior",
+      "is_ood": false,
+      "predictions": {
+        "resnet18": {
+          "pred": "clock_alarm",
+          "conf": 0.9981,
+          "top5": [
+            "clock_alarm",
+            "fireworks",
+            "clock_tick"
+          ],
+          "correct": true
+        },
+        "cnngru": {
+          "pred": "clock_alarm",
+          "conf": 0.7975,
+          "top5": [
+            "clock_alarm",
+            "mouse_click",
+            "crickets"
+          ],
+          "correct": true
+        },
+        "vgg16": {
+          "pred": "clock_alarm",
+          "conf": 1.0,
+          "top5": [
+            "clock_alarm",
+            "can_opening",
+            "frog"
+          ],
+          "correct": true
+        },
+        "sresnet": {
+          "pred": "clock_alarm",
+          "conf": 0.6205,
+          "top5": [
+            "clock_alarm",
+            "door_wood_creaks",
+            "siren"
+          ],
+          "correct": true
+        },
+        "ensemble": {
+          "pred": "clock_alarm",
+          "conf": 0.854,
+          "top5": [
+            "clock_alarm",
+            "door_wood_creaks",
+            "mouse_click"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": 25,
+      "sound": "glass_breaking",
+      "group": "Interior",
+      "is_ood": false,
+      "predictions": {
+        "resnet18": {
+          "pred": "glass_breaking",
+          "conf": 0.9126,
+          "top5": [
+            "glass_breaking",
+            "coughing",
+            "can_opening"
+          ],
+          "correct": true
+        },
+        "cnngru": {
+          "pred": "glass_breaking",
+          "conf": 0.9223,
+          "top5": [
+            "glass_breaking",
+            "sneezing",
+            "can_opening"
+          ],
+          "correct": true
+        },
+        "vgg16": {
+          "pred": "glass_breaking",
+          "conf": 0.9826,
+          "top5": [
+            "glass_breaking",
+            "can_opening",
+            "sneezing"
+          ],
+          "correct": true
+        },
+        "sresnet": {
+          "pred": "glass_breaking",
+          "conf": 0.7367,
+          "top5": [
+            "glass_breaking",
+            "can_opening",
+            "mouse_click"
+          ],
+          "correct": true
+        },
+        "ensemble": {
+          "pred": "glass_breaking",
+          "conf": 0.8886,
+          "top5": [
+            "glass_breaking",
+            "coughing",
+            "can_opening"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": 26,
+      "sound": "helicopter",
+      "group": "Urban",
+      "is_ood": false,
+      "predictions": {
+        "resnet18": {
+          "pred": "engine",
+          "conf": 0.719,
+          "top5": [
+            "engine",
+            "helicopter",
+            "wind"
+          ],
+          "correct": false
+        },
+        "cnngru": {
+          "pred": "helicopter",
+          "conf": 0.8561,
+          "top5": [
+            "helicopter",
+            "thunderstorm",
+            "engine"
+          ],
+          "correct": true
+        },
+        "vgg16": {
+          "pred": "helicopter",
+          "conf": 0.9411,
+          "top5": [
+            "helicopter",
+            "engine",
+            "crickets"
+          ],
+          "correct": true
+        },
+        "sresnet": {
+          "pred": "helicopter",
+          "conf": 0.4607,
+          "top5": [
+            "helicopter",
+            "airplane",
+            "engine"
+          ],
+          "correct": true
+        },
+        "ensemble": {
+          "pred": "helicopter",
+          "conf": 0.6259,
+          "top5": [
+            "helicopter",
+            "engine",
+            "airplane"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": 27,
+      "sound": "siren",
+      "group": "Urban",
+      "is_ood": false,
+      "predictions": {
+        "resnet18": {
+          "pred": "siren",
+          "conf": 0.9985,
+          "top5": [
+            "siren",
+            "car_horn",
+            "wind"
+          ],
+          "correct": true
+        },
+        "cnngru": {
+          "pred": "siren",
+          "conf": 0.694,
+          "top5": [
+            "siren",
+            "church_bells",
+            "cow"
+          ],
+          "correct": true
+        },
+        "vgg16": {
+          "pred": "siren",
+          "conf": 0.9997,
+          "top5": [
+            "siren",
+            "cow",
+            "chainsaw"
+          ],
+          "correct": true
+        },
+        "sresnet": {
+          "pred": "siren",
+          "conf": 0.8421,
+          "top5": [
+            "siren",
+            "crying_baby",
+            "sheep"
+          ],
+          "correct": true
+        },
+        "ensemble": {
+          "pred": "siren",
+          "conf": 0.8836,
+          "top5": [
+            "siren",
+            "church_bells",
+            "cow"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": 28,
+      "sound": "car_horn",
+      "group": "Urban",
+      "is_ood": false,
+      "predictions": {
+        "resnet18": {
+          "pred": "car_horn",
+          "conf": 0.992,
+          "top5": [
+            "car_horn",
+            "pig",
+            "rooster"
+          ],
+          "correct": true
+        },
+        "cnngru": {
+          "pred": "car_horn",
+          "conf": 0.9158,
+          "top5": [
+            "car_horn",
+            "door_wood_creaks",
+            "mouse_click"
+          ],
+          "correct": true
+        },
+        "vgg16": {
+          "pred": "car_horn",
+          "conf": 0.9968,
+          "top5": [
+            "car_horn",
+            "door_wood_creaks",
+            "glass_breaking"
+          ],
+          "correct": true
+        },
+        "sresnet": {
+          "pred": "car_horn",
+          "conf": 0.664,
+          "top5": [
+            "car_horn",
+            "door_wood_creaks",
+            "helicopter"
+          ],
+          "correct": true
+        },
+        "ensemble": {
+          "pred": "car_horn",
+          "conf": 0.8921,
+          "top5": [
+            "car_horn",
+            "door_wood_creaks",
+            "cat"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": 29,
+      "sound": "engine",
+      "group": "Urban",
+      "is_ood": false,
+      "predictions": {
+        "resnet18": {
+          "pred": "engine",
+          "conf": 0.9582,
+          "top5": [
+            "engine",
+            "wind",
+            "crickets"
+          ],
+          "correct": true
+        },
+        "cnngru": {
+          "pred": "engine",
+          "conf": 0.5716,
+          "top5": [
+            "engine",
+            "helicopter",
+            "airplane"
+          ],
+          "correct": true
+        },
+        "vgg16": {
+          "pred": "engine",
+          "conf": 0.9377,
+          "top5": [
+            "engine",
+            "wind",
+            "washing_machine"
+          ],
+          "correct": true
+        },
+        "sresnet": {
+          "pred": "engine",
+          "conf": 0.7661,
+          "top5": [
+            "engine",
+            "toilet_flush",
+            "clapping"
+          ],
+          "correct": true
+        },
+        "ensemble": {
+          "pred": "engine",
+          "conf": 0.8084,
+          "top5": [
+            "engine",
+            "helicopter",
+            "airplane"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": 30,
+      "sound": "train",
+      "group": "Urban",
+      "is_ood": false,
+      "predictions": {
+        "resnet18": {
+          "pred": "train",
+          "conf": 0.9723,
+          "top5": [
+            "train",
+            "clapping",
+            "footsteps"
+          ],
+          "correct": true
+        },
+        "cnngru": {
+          "pred": "train",
+          "conf": 0.5833,
+          "top5": [
+            "train",
+            "airplane",
+            "sea_waves"
+          ],
+          "correct": true
+        },
+        "vgg16": {
+          "pred": "train",
+          "conf": 0.9927,
+          "top5": [
+            "train",
+            "footsteps",
+            "clapping"
+          ],
+          "correct": true
+        },
+        "sresnet": {
+          "pred": "train",
+          "conf": 0.6909,
+          "top5": [
+            "train",
+            "vacuum_cleaner",
+            "hand_saw"
+          ],
+          "correct": true
+        },
+        "ensemble": {
+          "pred": "train",
+          "conf": 0.8098,
+          "top5": [
+            "train",
+            "airplane",
+            "vacuum_cleaner"
+          ],
+          "correct": true
+        }
+      }
+    }
+  ]
+}

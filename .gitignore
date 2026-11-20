@@ -35,6 +35,13 @@ Thumbs.db
 .env
 .env.local
 
+# Scratch media & temporary benchmark test audio
+scratch/*.wav
+scratch/*.mp3
+scratch/*.mpg
+scratch/*.mpeg
+scratch/multiformat_corpus/
+
 # Graphify caches
 graphify-out/cache/
 graphify-out/2026-*/

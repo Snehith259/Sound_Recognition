@@ -391,19 +391,39 @@ def load_audio_waveform(
                     y = y.astype(np.float32) / 2147483648.0
             except Exception:
                 try:
-                    y, sr = librosa.load(io.BytesIO(audio_input), sr=target_sr, mono=True)
+                    import subprocess
+                    cmd = ['ffmpeg', '-v', 'error', '-i', 'pipe:0', '-f', 'f32le', '-ar', str(target_sr), '-ac', '1', 'pipe:1']
+                    proc = subprocess.run(cmd, input=bytes(audio_input), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10)
+                    if proc.returncode == 0 and len(proc.stdout) > 0:
+                        y = np.frombuffer(proc.stdout, dtype=np.float32)
+                        sr = target_sr
+                    else:
+                        raise RuntimeError("ffmpeg pipe decode failed")
                 except Exception:
-                    # Raw PCM fallback
                     try:
-                        y = np.frombuffer(audio_input, dtype=np.float32)
+                        y, sr = librosa.load(io.BytesIO(audio_input), sr=target_sr, mono=True)
                     except Exception:
-                        y = np.zeros(int(target_sr * (target_duration or 1.0)), dtype=np.float32)
+                        # Raw PCM fallback
+                        try:
+                            y = np.frombuffer(audio_input, dtype=np.float32)
+                        except Exception:
+                            y = np.zeros(int(target_sr * (target_duration or 1.0)), dtype=np.float32)
     else:
         # Load from file path
         try:
             y, sr = sf.read(str(audio_input))
         except Exception:
-            y, sr = librosa.load(str(audio_input), sr=target_sr, mono=True)
+            try:
+                import subprocess
+                cmd = ['ffmpeg', '-v', 'error', '-i', str(audio_input), '-f', 'f32le', '-ar', str(target_sr), '-ac', '1', 'pipe:1']
+                proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10)
+                if proc.returncode == 0 and len(proc.stdout) > 0:
+                    y = np.frombuffer(proc.stdout, dtype=np.float32)
+                    sr = target_sr
+                else:
+                    raise RuntimeError("ffmpeg file decode failed")
+            except Exception:
+                y, sr = librosa.load(str(audio_input), sr=target_sr, mono=True)
 
     y = np.asarray(y, dtype=np.float32)
 
@@ -607,6 +627,7 @@ def run_acoustic_inference(audio_input: bytes | str | Path, model_name: str = "r
         return _build_silence_result(metrics, model_name, t_start)
 
     t_infer = time.time()
+    engine_error = None
     is_multi_ensemble = any(w in model_name.lower() for w in ["ensemble", "auto", "fusion", "all"])
     model_entry = None if is_multi_ensemble else load_model_checkpoint(model_name)
     arch_probs = None

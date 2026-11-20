@@ -19,7 +19,7 @@
 ### End-User Pages (Inference & Interaction):
 
 #### Prediction Interface & Input Controls (File upload, live recording, parameter tuning):
-- **Universal Audio File Placer**: Drag-and-drop file upload zone supporting full-page drops and File Explorer drops. Supports all standard audio formats: WAV, MP3, MPEG, MPG, OGG, FLAC, M4A, and AAC. Displays file metadata (name, formatted size) and a 1-click remove button.
+- **Universal Audio File Placer**: Drag-and-drop file upload zone supporting full-page drops and File Explorer drops. Supports core audio formats: WAV, MP3, and MPEG/MPG. Displays file metadata (name, formatted size) and a 1-click remove button.
 - **Interactive Audio Waveform Player**: Real-time waveform visualizer rendered via HTML5 Canvas with click-to-seek scrub bar, elapsed/total time display, and play/pause audio preview toggle.
 - **Live Microphone Recording Module**: Browser Web Audio API `MediaRecorder` capture with real-time audio volume visualizer (`#mic-level-fill`). Automatically captures ambient sounds and converts recordings into analyzed audio buffers.
 - **1-Click Quick Test Presets**: Verified ESC-50 audio presets (Dog Bark, Rain, Clock Alarm, Keyboard Typing, Siren) with synthetic acoustic synthesis fallback for instant zero-latency evaluation.
@@ -109,7 +109,7 @@
 | `POST` | `/api/model/cloud-sync` | Hugging Face Hub weight retrieval | JSON: `{ repo }` | JSON: `{ success, source, message, cachedCheckpoints, status }` |
 
 ### Asynchronous Communication & Payload Handling (JSON, multipart/form-data for audio/files):
-- **Multipart Uploads**: Configured `multer` disk storage with secure filename hashing, 50MB file size limits, and strict MIME/extension filtering (`.wav`, `.mp3`, `.ogg`, `.flac`, `.aac`, `.m4a`, `.mpg`, `.mpeg`).
+- **Multipart Uploads**: Configured `multer` disk storage with secure filename hashing, 50MB file size limits, and strict MIME/extension filtering (`.wav`, `.mp3`, `.mpg`, `.mpeg`).
 - **Temporary File Lifecycle**: Ingested audio files are processed asynchronously and immediately cleaned up via `fs.unlinkSync()` after feature computation to prevent disk bloat.
 - **Non-Blocking Architecture**: Express.js REST API handles concurrent requests asynchronously with zero event loop blocking.
 
@@ -161,7 +161,7 @@
 ### Architectural / Integration Challenges Faced:
 1. **Full-Stack / Standalone Dual-Mode Operation**: Built the client to seamlessly detect backend availability via `/api/health`. When running with the Express server, audio files are submitted via `FormData` to `/api/predict`; if running standalone without Node.js, the client gracefully falls back to in-browser Web Audio synthesis and offline analysis without failing.
 2. **Real-Time Convergence Canvas Rendering**: Plotting dynamic loss and accuracy curves during training polling required canvas double-buffering and coordinate scaling to avoid flickering during 500ms intervals.
-3. **MPEG/MPG Audio Ingestion**: Standard HTML5 file inputs often reject `.mpg` and `.mpeg` extensions when only `audio/*` is specified. Solved by explicitly configuring `accept="audio/*,.wav,.mp3,.ogg,.flac,.aac,.m4a,.mpg,.mpeg,audio/mpeg,video/mpeg"` in both frontend and backend multer filters.
+3. **MPEG/MPG Audio Ingestion**: Standard HTML5 file inputs often reject `.mpg` and `.mpeg` extensions when only `audio/*` is specified. Solved by explicitly configuring `accept=".wav,.mp3,.mpg,.mpeg,audio/wav,audio/x-wav,audio/mp3,audio/mpeg,video/mpeg"` in both frontend and backend multer filters.
 
 ### Core Frontend Component or API Route Code Snippet:
 

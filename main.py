@@ -326,12 +326,24 @@ async def predict(
     model: str = Form("resnet18"),
     threshold: Optional[float] = Form(None),
 ):
-    allowed_exts = {".wav", ".mp3", ".ogg", ".flac", ".aac", ".m4a", ".webm", ".mpg", ".mpeg"}
+    disallowed_exts = {".ogg", ".flac", ".m4a", ".aac"}
+    allowed_exts = {".wav", ".mp3", ".mpg", ".mpeg", ".webm"}
     file_ext = Path(audio.filename or "").suffix.lower()
-    is_audio_mime = (audio.content_type or "").startswith("audio/")
+    content_type = (audio.content_type or "").lower()
 
-    if file_ext not in allowed_exts and not is_audio_mime:
-        raise HTTPException(status_code=400, detail="Only audio files are accepted")
+    if file_ext in disallowed_exts or any(d in content_type for d in ["ogg", "flac", "m4a", "aac"]):
+        raise HTTPException(
+            status_code=400,
+            detail="OGG, FLAC, and M4A files are not accepted. Please upload WAV, MP3, or MPEG/MPG."
+        )
+
+    is_allowed_mime = (
+        content_type in {"audio/wav", "audio/x-wav", "audio/mp3", "audio/mpeg", "video/mpeg", "audio/webm", "application/octet-stream"}
+        or (content_type.startswith("audio/") and not any(d in content_type for d in ["ogg", "flac", "m4a", "aac"]))
+    )
+
+    if file_ext not in allowed_exts and not is_allowed_mime:
+        raise HTTPException(status_code=400, detail="Only WAV, MP3, and MPEG/MPG audio files are accepted")
 
     stamp = int(time.time() * 1000)
     file_name = audio.filename or f"upload_{stamp}{file_ext or '.wav'}"
@@ -396,6 +408,105 @@ async def predict(
             status_code=500,
             content={"error": "Inference failed", "details": str(err)}
         )
+
+# ══════════════════════════════════════════════════════════════════
+# ROUTE 1B: POST /api/predict/batch — Batch Audio Inference Endpoint
+# ══════════════════════════════════════════════════════════════════
+@app.post("/api/predict/batch")
+async def predict_batch(
+    audio: List[UploadFile] = File(...),
+    model: str = Form("resnet18"),
+    threshold: Optional[float] = Form(None),
+):
+    if not audio:
+        raise HTTPException(status_code=400, detail="No audio files provided")
+
+    if len(audio) > 100:
+        raise HTTPException(status_code=400, detail="Maximum 100 files allowed per batch")
+
+    from Preproccesing.acoustic_inference import run_acoustic_inference
+
+    disallowed_exts = {".ogg", ".flac", ".m4a", ".aac"}
+    allowed_exts = {".wav", ".mp3", ".mpg", ".mpeg", ".webm"}
+
+    results = []
+    for file in audio:
+        file_ext = Path(file.filename or "").suffix.lower()
+        content_type = (file.content_type or "").lower()
+
+        if file_ext in disallowed_exts or any(d in content_type for d in ["ogg", "flac", "m4a", "aac"]):
+            results.append({
+                "fileName": file.filename or "unknown",
+                "success": False,
+                "error": "Disallowed format (OGG/FLAC/M4A/AAC). Please use WAV, MP3, or MPEG/MPG."
+            })
+            continue
+
+        try:
+            content = await file.read()
+            if len(content) > 50 * 1024 * 1024:
+                results.append({
+                    "fileName": file.filename or "unknown",
+                    "success": False,
+                    "error": "File exceeds 50 MB limit"
+                })
+                continue
+
+            res = await run_in_threadpool(run_acoustic_inference, content, model)
+            server_state["total_predictions"] += 1
+            stamp = int(time.time() * 1000)
+            history_id = f"hist_{stamp}_{uuid.uuid4().hex[:6]}"
+
+            history_entry = {
+                "id": history_id,
+                "fileName": file.filename or "audio_clip.wav",
+                "fileSize": len(content),
+                "modelKey": model,
+                "modelName": res.get("category", {}).get("name", "Unknown"),
+                "engine": res.get("engine"),
+                "topPrediction": {
+                    "category": res["category"]["name"],
+                    "emoji": res["category"].get("emoji", "🔊"),
+                    "group": res["category"].get("group", "Other"),
+                    "confidence": res["confidence"],
+                    "confidencePercent": f"{round(res['confidence'] * 100, 1)}%",
+                    "isOutOfScope": res.get("isOutOfScope", False),
+                },
+                "predictions": res["predictions"],
+                "inferenceSource": "api_batch",
+                "latencyMs": res["inferenceTime"],
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+            user_history.insert(0, history_entry)
+            if len(user_history) > 200:
+                user_history.pop()
+
+            results.append({
+                "fileName": file.filename,
+                "success": True,
+                "isOutOfScope": res.get("isOutOfScope", False),
+                "category": res["category"],
+                "confidence": res["confidence"],
+                "predictions": res["predictions"],
+                "inferenceTime": res["inferenceTime"],
+                "engine": res.get("engine"),
+            })
+        except Exception as e:
+            results.append({
+                "fileName": file.filename or "unknown",
+                "success": False,
+                "error": str(e)
+            })
+
+    return {
+        "success": True,
+        "model": model,
+        "count": len(results),
+        "successful": sum(1 for r in results if r.get("success")),
+        "failed": sum(1 for r in results if not r.get("success")),
+        "results": results,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
 
 # ══════════════════════════════════════════════════════════════════
 # ROUTE 2: POST /api/train — Trigger Model Training Run
@@ -819,6 +930,7 @@ async def health():
             {"method": "GET", "path": "/api/auth/me", "description": "Verify developer session"},
             {"method": "POST", "path": "/api/auth/logout", "description": "Developer logout"},
             {"method": "POST", "path": "/api/predict", "description": "Audio classification inference"},
+            {"method": "POST", "path": "/api/predict/batch", "description": "Batch audio classification inference"},
             {"method": "POST", "path": "/api/train", "description": "Trigger model training"},
             {"method": "GET", "path": "/api/train", "description": "List training jobs"},
             {"method": "GET", "path": "/api/train/{jobId}", "description": "Check training job status"},

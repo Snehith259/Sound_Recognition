@@ -55,11 +55,18 @@ const upload = multer({
   storage,
   limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
   fileFilter: (_req, file, cb) => {
-    const allowed = /\.(wav|mp3|ogg|flac|aac|m4a|webm|mpg|mpeg)$/i;
-    if (allowed.test(path.extname(file.originalname)) || file.mimetype.startsWith('audio/')) {
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    const mime = (file.mimetype || '').toLowerCase();
+    const disallowedExts = /\.(ogg|flac|m4a|aac)$/i;
+    if (disallowedExts.test(ext) || mime.includes('ogg') || mime.includes('flac') || mime.includes('m4a') || mime.includes('aac')) {
+      return cb(new Error('OGG, FLAC, and M4A files are not accepted. Please upload WAV, MP3, or MPEG/MPG.'), false);
+    }
+    const allowed = /\.(wav|mp3|mpg|mpeg|mpga|mpe|webm)$/i;
+    const allowedMimes = ['audio/wav', 'audio/x-wav', 'audio/mp3', 'audio/mpeg', 'video/mpeg', 'audio/webm'];
+    if (allowed.test(ext) || allowedMimes.includes(mime)) {
       cb(null, true);
     } else {
-      cb(new Error('Only audio files are accepted'), false);
+      cb(new Error('Only WAV, MP3, and MPEG/MPG audio files are accepted'), false);
     }
   },
 });
@@ -296,6 +303,97 @@ app.post('/api/predict', upload.single('audio'), (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: 'Inference failed', details: err.message });
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════
+   ROUTE 1B: POST /api/predict/batch — Batch Audio Inference Endpoint
+   ══════════════════════════════════════════════════════════════ */
+app.post('/api/predict/batch', upload.array('audio', 100), (req, res) => {
+  try {
+    const files = req.files;
+    if (!files || !files.length) {
+      return res.status(400).json({ error: 'No audio files provided. Send multipart/form-data with field "audio".' });
+    }
+
+    const modelKey = req.body.model || 'resnet18';
+    const pyScript = path.join(__dirname, 'Preproccesing', 'acoustic_inference.py');
+
+    if (!fs.existsSync(pyScript)) {
+      return res.status(503).json({
+        success: false,
+        error: 'Model inference is unavailable. Python script not found.',
+      });
+    }
+
+    const results = [];
+    for (const f of files) {
+      const fileName = f.originalname || `upload_${Date.now()}.wav`;
+      try {
+        const pyProc = spawnSync('python', [pyScript, '-', modelKey], {
+          input: f.buffer,
+          encoding: 'utf8',
+          timeout: 30000,
+          maxBuffer: 10 * 1024 * 1024,
+        });
+
+        if (pyProc.status === 0 && pyProc.stdout) {
+          const result = JSON.parse(pyProc.stdout.trim());
+          if (result && result.success) {
+            serverState.totalPredictions++;
+            const stamp = Date.now();
+            const historyId = `hist_${stamp}_${Math.random().toString(36).substring(2, 8)}`;
+            const historyEntry = {
+              id: historyId,
+              fileName,
+              fileSize: f.size || f.buffer.length,
+              modelKey,
+              modelName: result.isOutOfScope ? 'Not in ESC-50 Classes' : (result.category?.name || 'Unknown'),
+              topPrediction: {
+                category: result.category?.name || 'Unknown',
+                emoji: result.category?.emoji || '🔊',
+                group: result.category?.group || 'Other',
+                confidence: result.confidence,
+                confidencePercent: `${Math.round(result.confidence * 100)}%`,
+                isOutOfScope: result.isOutOfScope,
+              },
+              predictions: result.predictions,
+              inferenceSource: 'api_batch',
+              latencyMs: result.inferenceTime || 8.2,
+              timestamp: new Date().toISOString(),
+            };
+            userHistory.unshift(historyEntry);
+            if (userHistory.length > 200) userHistory.pop();
+
+            results.push({
+              fileName,
+              success: true,
+              isOutOfScope: result.isOutOfScope,
+              category: result.category,
+              confidence: result.confidence,
+              predictions: result.predictions,
+              inferenceTime: result.inferenceTime || 8.2,
+            });
+            continue;
+          }
+        }
+        results.push({ fileName, success: false, error: 'Inference failed' });
+      } catch (fErr) {
+        results.push({ fileName, success: false, error: fErr.message });
+      }
+    }
+
+    return res.json({
+      success: true,
+      model: modelKey,
+      count: results.length,
+      successful: results.filter(r => r.success).length,
+      failed: results.filter(r => !r.success).length,
+      results,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Batch inference failed', details: err.message });
   }
 });
 
@@ -684,6 +782,7 @@ app.get('/api/health', (_req, res) => {
       { method: 'GET', path: '/api/auth/me', description: 'Verify developer session' },
       { method: 'POST', path: '/api/auth/logout', description: 'Developer logout' },
       { method: 'POST', path: '/api/predict', description: 'Audio classification inference' },
+      { method: 'POST', path: '/api/predict/batch', description: 'Batch audio classification inference' },
       { method: 'POST', path: '/api/train', description: 'Trigger model training' },
       { method: 'GET', path: '/api/train', description: 'List training jobs' },
       { method: 'GET', path: '/api/train/:jobId', description: 'Check training job status' },

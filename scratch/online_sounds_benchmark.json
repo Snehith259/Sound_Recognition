@@ -1,8 +1,8 @@
 {
   "total_cases": 8,
   "total_evaluations": 40,
-  "correct_evaluations": 25,
-  "accuracy_percent": 62.5,
+  "correct_evaluations": 14,
+  "accuracy_percent": 35.0,
   "results": [
     {
       "case_id": "ONLINE-01",
@@ -11,26 +11,26 @@
       "expected": "dog",
       "is_ood_case": false,
       "model": "ensemble",
-      "engine": "ensemble+ast-ensemble",
-      "predicted": "dog",
-      "confidence": 0.604,
+      "engine": "ensemble-checkpoint",
+      "predicted": "drinking_sipping",
+      "confidence": 0.4136,
       "is_ood_detected": false,
-      "correct": true,
+      "correct": false,
       "top3": [
         [
-          "dog",
-          60.4
+          "drinking_sipping",
+          41.4
         ],
         [
-          "drinking_sipping",
-          20.6
+          "dog",
+          28.6
         ],
         [
           "pig",
-          2.9
+          5.6
         ]
       ],
-      "latency_ms": 141122.8
+      "latency_ms": 15175.4
     },
     {
       "case_id": "ONLINE-01",
@@ -39,250 +39,250 @@
       "expected": "dog",
       "is_ood_case": false,
       "model": "resnet18",
-      "engine": "resnet18+ast-ensemble",
-      "predicted": "dog",
-      "confidence": 0.5203,
+      "engine": "resnet18-checkpoint",
+      "predicted": "drinking_sipping",
+      "confidence": 0.9262,
       "is_ood_detected": false,
-      "correct": true,
+      "correct": false,
       "top3": [
-        [
-          "dog",
-          52.0
-        ],
         [
           "drinking_sipping",
-          46.0
+          92.6
         ],
-        [
-          "coughing",
-          1.1
-        ]
-      ],
-      "latency_ms": 12877.9
-    },
-    {
-      "case_id": "ONLINE-01",
-      "name": "Dog Barking",
-      "source": "Wikimedia Commons (File:Barking_of_a_dog.ogg)",
-      "expected": "dog",
-      "is_ood_case": false,
-      "model": "cnngru",
-      "engine": "cnngru+ast-ensemble",
-      "predicted": "dog",
-      "confidence": 0.7943,
-      "is_ood_detected": false,
-      "correct": true,
-      "top3": [
         [
           "dog",
-          79.4
-        ],
-        [
-          "laughing",
-          3.1
-        ],
-        [
-          "sneezing",
-          2.3
-        ]
-      ],
-      "latency_ms": 10489.8
-    },
-    {
-      "case_id": "ONLINE-01",
-      "name": "Dog Barking",
-      "source": "Wikimedia Commons (File:Barking_of_a_dog.ogg)",
-      "expected": "dog",
-      "is_ood_case": false,
-      "model": "vgg16",
-      "engine": "vgg16+ast-ensemble",
-      "predicted": "dog",
-      "confidence": 0.5092,
-      "is_ood_detected": false,
-      "correct": true,
-      "top3": [
-        [
-          "dog",
-          50.9
-        ],
-        [
-          "drinking_sipping",
-          35.4
-        ],
-        [
-          "pig",
-          10.3
-        ]
-      ],
-      "latency_ms": 10165.4
-    },
-    {
-      "case_id": "ONLINE-01",
-      "name": "Dog Barking",
-      "source": "Wikimedia Commons (File:Barking_of_a_dog.ogg)",
-      "expected": "dog",
-      "is_ood_case": false,
-      "model": "sresnet",
-      "engine": "sresnet+ast-ensemble",
-      "predicted": "dog",
-      "confidence": 0.5921,
-      "is_ood_detected": false,
-      "correct": true,
-      "top3": [
-        [
-          "dog",
-          59.2
-        ],
-        [
-          "hen",
-          3.8
-        ],
-        [
-          "laughing",
-          3.4
-        ]
-      ],
-      "latency_ms": 5216.7
-    },
-    {
-      "case_id": "ONLINE-02",
-      "name": "Cat Meowing",
-      "source": "Wikimedia Commons (File:Meow.ogg)",
-      "expected": "cat",
-      "is_ood_case": false,
-      "model": "ensemble",
-      "engine": "ensemble+ast-ensemble",
-      "predicted": "cat",
-      "confidence": 0.6548,
-      "is_ood_detected": false,
-      "correct": true,
-      "top3": [
-        [
-          "cat",
-          65.5
-        ],
-        [
-          "car_horn",
-          16.0
-        ],
-        [
-          "door_wood_creaks",
-          1.3
-        ]
-      ],
-      "latency_ms": 6591.8
-    },
-    {
-      "case_id": "ONLINE-02",
-      "name": "Cat Meowing",
-      "source": "Wikimedia Commons (File:Meow.ogg)",
-      "expected": "cat",
-      "is_ood_case": false,
-      "model": "resnet18",
-      "engine": "resnet18+ast-ensemble",
-      "predicted": "cat",
-      "confidence": 0.631,
-      "is_ood_detected": false,
-      "correct": true,
-      "top3": [
-        [
-          "cat",
-          63.1
-        ],
-        [
-          "car_horn",
-          34.8
-        ],
-        [
-          "door_wood_creaks",
-          0.4
-        ]
-      ],
-      "latency_ms": 19060.9
-    },
-    {
-      "case_id": "ONLINE-02",
-      "name": "Cat Meowing",
-      "source": "Wikimedia Commons (File:Meow.ogg)",
-      "expected": "cat",
-      "is_ood_case": false,
-      "model": "cnngru",
-      "engine": "cnngru+ast-ensemble",
-      "predicted": "cat",
-      "confidence": 0.5569,
-      "is_ood_detected": false,
-      "correct": true,
-      "top3": [
-        [
-          "cat",
-          55.7
-        ],
-        [
-          "car_horn",
-          27.3
-        ],
-        [
-          "door_wood_creaks",
-          2.6
-        ]
-      ],
-      "latency_ms": 7634.8
-    },
-    {
-      "case_id": "ONLINE-02",
-      "name": "Cat Meowing",
-      "source": "Wikimedia Commons (File:Meow.ogg)",
-      "expected": "cat",
-      "is_ood_case": false,
-      "model": "vgg16",
-      "engine": "vgg16+ast-ensemble",
-      "predicted": "cat",
-      "confidence": 0.9224,
-      "is_ood_detected": false,
-      "correct": true,
-      "top3": [
-        [
-          "cat",
-          92.2
-        ],
-        [
-          "pig",
-          2.0
-        ],
-        [
-          "glass_breaking",
-          1.7
-        ]
-      ],
-      "latency_ms": 9113.2
-    },
-    {
-      "case_id": "ONLINE-02",
-      "name": "Cat Meowing",
-      "source": "Wikimedia Commons (File:Meow.ogg)",
-      "expected": "cat",
-      "is_ood_case": false,
-      "model": "sresnet",
-      "engine": "sresnet+ast-ensemble",
-      "predicted": "cat",
-      "confidence": 0.5089,
-      "is_ood_detected": false,
-      "correct": true,
-      "top3": [
-        [
-          "cat",
-          50.9
-        ],
-        [
-          "can_opening",
-          2.1
+          4.6
         ],
         [
           "coughing",
           1.8
         ]
       ],
-      "latency_ms": 7175.4
+      "latency_ms": 96.3
+    },
+    {
+      "case_id": "ONLINE-01",
+      "name": "Dog Barking",
+      "source": "Wikimedia Commons (File:Barking_of_a_dog.ogg)",
+      "expected": "dog",
+      "is_ood_case": false,
+      "model": "cnngru",
+      "engine": "cnngru-checkpoint",
+      "predicted": "dog",
+      "confidence": 0.5994,
+      "is_ood_detected": false,
+      "correct": true,
+      "top3": [
+        [
+          "dog",
+          59.9
+        ],
+        [
+          "laughing",
+          6.0
+        ],
+        [
+          "sneezing",
+          4.6
+        ]
+      ],
+      "latency_ms": 34.6
+    },
+    {
+      "case_id": "ONLINE-01",
+      "name": "Dog Barking",
+      "source": "Wikimedia Commons (File:Barking_of_a_dog.ogg)",
+      "expected": "dog",
+      "is_ood_case": false,
+      "model": "vgg16",
+      "engine": "vgg16-checkpoint",
+      "predicted": "drinking_sipping",
+      "confidence": 0.6935,
+      "is_ood_detected": false,
+      "correct": false,
+      "top3": [
+        [
+          "drinking_sipping",
+          69.3
+        ],
+        [
+          "pig",
+          21.3
+        ],
+        [
+          "dog",
+          2.9
+        ]
+      ],
+      "latency_ms": 434.7
+    },
+    {
+      "case_id": "ONLINE-01",
+      "name": "Dog Barking",
+      "source": "Wikimedia Commons (File:Barking_of_a_dog.ogg)",
+      "expected": "dog",
+      "is_ood_case": false,
+      "model": "sresnet",
+      "engine": "sresnet-checkpoint",
+      "predicted": "dog",
+      "confidence": 0.4679,
+      "is_ood_detected": false,
+      "correct": true,
+      "top3": [
+        [
+          "dog",
+          46.8
+        ],
+        [
+          "clock_tick",
+          5.2
+        ],
+        [
+          "coughing",
+          5.0
+        ]
+      ],
+      "latency_ms": 25.5
+    },
+    {
+      "case_id": "ONLINE-02",
+      "name": "Cat Meowing",
+      "source": "Wikimedia Commons (File:Meow.ogg)",
+      "expected": "cat",
+      "is_ood_case": false,
+      "model": "ensemble",
+      "engine": "ensemble-checkpoint",
+      "predicted": "cat",
+      "confidence": 0.4487,
+      "is_ood_detected": false,
+      "correct": true,
+      "top3": [
+        [
+          "cat",
+          44.9
+        ],
+        [
+          "car_horn",
+          27.9
+        ],
+        [
+          "crow",
+          2.8
+        ]
+      ],
+      "latency_ms": 488.5
+    },
+    {
+      "case_id": "ONLINE-02",
+      "name": "Cat Meowing",
+      "source": "Wikimedia Commons (File:Meow.ogg)",
+      "expected": "cat",
+      "is_ood_case": false,
+      "model": "resnet18",
+      "engine": "resnet18-checkpoint",
+      "predicted": "car_horn",
+      "confidence": 0.501,
+      "is_ood_detected": false,
+      "correct": false,
+      "top3": [
+        [
+          "car_horn",
+          50.1
+        ],
+        [
+          "cat",
+          48.7
+        ],
+        [
+          "door_wood_creaks",
+          0.6
+        ]
+      ],
+      "latency_ms": 71.5
+    },
+    {
+      "case_id": "ONLINE-02",
+      "name": "Cat Meowing",
+      "source": "Wikimedia Commons (File:Meow.ogg)",
+      "expected": "cat",
+      "is_ood_case": false,
+      "model": "cnngru",
+      "engine": "cnngru-checkpoint",
+      "predicted": "car_horn",
+      "confidence": 0.4988,
+      "is_ood_detected": false,
+      "correct": false,
+      "top3": [
+        [
+          "car_horn",
+          49.9
+        ],
+        [
+          "cat",
+          16.5
+        ],
+        [
+          "door_wood_creaks",
+          5.3
+        ]
+      ],
+      "latency_ms": 26.7
+    },
+    {
+      "case_id": "ONLINE-02",
+      "name": "Cat Meowing",
+      "source": "Wikimedia Commons (File:Meow.ogg)",
+      "expected": "cat",
+      "is_ood_case": false,
+      "model": "vgg16",
+      "engine": "vgg16-checkpoint",
+      "predicted": "cat",
+      "confidence": 0.9227,
+      "is_ood_detected": false,
+      "correct": true,
+      "top3": [
+        [
+          "cat",
+          92.3
+        ],
+        [
+          "pig",
+          2.3
+        ],
+        [
+          "glass_breaking",
+          1.8
+        ]
+      ],
+      "latency_ms": 376.9
+    },
+    {
+      "case_id": "ONLINE-02",
+      "name": "Cat Meowing",
+      "source": "Wikimedia Commons (File:Meow.ogg)",
+      "expected": "cat",
+      "is_ood_case": false,
+      "model": "sresnet",
+      "engine": "sresnet-checkpoint",
+      "predicted": "Not in ESC-50 Classes",
+      "confidence": 0.7798,
+      "is_ood_detected": true,
+      "correct": false,
+      "top3": [
+        [
+          "Not in ESC-50 Classes",
+          78.0
+        ],
+        [
+          "cat",
+          22.0
+        ],
+        [
+          "car_horn",
+          10.7
+        ]
+      ],
+      "latency_ms": 21.5
     },
     {
       "case_id": "ONLINE-03",
@@ -291,26 +291,26 @@
       "expected": "rooster",
       "is_ood_case": false,
       "model": "ensemble",
-      "engine": "ensemble+ast-ensemble",
+      "engine": "ensemble-checkpoint",
       "predicted": "rooster",
-      "confidence": 0.8504,
+      "confidence": 0.7703,
       "is_ood_detected": false,
       "correct": true,
       "top3": [
         [
           "rooster",
-          85.0
+          77.0
         ],
         [
           "cat",
-          1.5
+          3.6
         ],
         [
-          "hen",
-          1.4
+          "crying_baby",
+          1.5
         ]
       ],
-      "latency_ms": 7523.3
+      "latency_ms": 571.0
     },
     {
       "case_id": "ONLINE-03",
@@ -319,26 +319,26 @@
       "expected": "rooster",
       "is_ood_case": false,
       "model": "resnet18",
-      "engine": "resnet18+ast-ensemble",
+      "engine": "resnet18-checkpoint",
       "predicted": "rooster",
-      "confidence": 0.9816,
+      "confidence": 0.9939,
       "is_ood_detected": false,
       "correct": true,
       "top3": [
         [
           "rooster",
-          98.2
-        ],
-        [
-          "hen",
-          1.2
+          99.4
         ],
         [
           "cat",
+          0.2
+        ],
+        [
+          "pouring_water",
           0.1
         ]
       ],
-      "latency_ms": 4457.0
+      "latency_ms": 80.3
     },
     {
       "case_id": "ONLINE-03",
@@ -347,26 +347,26 @@
       "expected": "rooster",
       "is_ood_case": false,
       "model": "cnngru",
-      "engine": "cnngru+ast-ensemble",
+      "engine": "cnngru-checkpoint",
       "predicted": "rooster",
-      "confidence": 0.8594,
+      "confidence": 0.7497,
       "is_ood_detected": false,
       "correct": true,
       "top3": [
         [
           "rooster",
-          85.9
-        ],
-        [
-          "hen",
-          1.5
+          75.0
         ],
         [
           "water_drops",
-          1.5
+          2.9
+        ],
+        [
+          "dog",
+          2.6
         ]
       ],
-      "latency_ms": 3817.4
+      "latency_ms": 31.3
     },
     {
       "case_id": "ONLINE-03",
@@ -375,9 +375,9 @@
       "expected": "rooster",
       "is_ood_case": false,
       "model": "vgg16",
-      "engine": "vgg16+ast-ensemble",
+      "engine": "vgg16-checkpoint",
       "predicted": "rooster",
-      "confidence": 0.9695,
+      "confidence": 0.9698,
       "is_ood_detected": false,
       "correct": true,
       "top3": [
@@ -386,15 +386,15 @@
           97.0
         ],
         [
-          "hen",
+          "cat",
           1.3
         ],
         [
-          "cat",
-          0.7
+          "crying_baby",
+          0.8
         ]
       ],
-      "latency_ms": 4699.9
+      "latency_ms": 396.0
     },
     {
       "case_id": "ONLINE-03",
@@ -403,26 +403,26 @@
       "expected": "rooster",
       "is_ood_case": false,
       "model": "sresnet",
-      "engine": "sresnet+ast-ensemble",
+      "engine": "sresnet-checkpoint",
       "predicted": "rooster",
-      "confidence": 0.5912,
+      "confidence": 0.3677,
       "is_ood_detected": false,
       "correct": true,
       "top3": [
         [
           "rooster",
-          59.1
+          36.8
         ],
         [
           "cat",
-          4.8
+          12.4
         ],
         [
-          "crying_baby",
-          2.7
+          "door_wood_creaks",
+          5.2
         ]
       ],
-      "latency_ms": 3623.3
+      "latency_ms": 31.7
     },
     {
       "case_id": "ONLINE-04",
@@ -431,26 +431,26 @@
       "expected": "thunderstorm",
       "is_ood_case": false,
       "model": "ensemble",
-      "engine": "ensemble+ast-ensemble",
-      "predicted": "rain",
-      "confidence": 0.4559,
-      "is_ood_detected": false,
+      "engine": "ensemble-checkpoint",
+      "predicted": "Not in ESC-50 Classes",
+      "confidence": 0.8709,
+      "is_ood_detected": true,
       "correct": false,
       "top3": [
         [
-          "rain",
-          45.6
+          "Not in ESC-50 Classes",
+          87.1
         ],
         [
           "sea_waves",
-          12.7
+          12.9
         ],
         [
-          "thunderstorm",
-          4.9
+          "rain",
+          12.0
         ]
       ],
-      "latency_ms": 20221.5
+      "latency_ms": 549.0
     },
     {
       "case_id": "ONLINE-04",
@@ -459,26 +459,26 @@
       "expected": "thunderstorm",
       "is_ood_case": false,
       "model": "resnet18",
-      "engine": "resnet18+ast-ensemble",
-      "predicted": "rain",
-      "confidence": 0.4086,
-      "is_ood_detected": false,
+      "engine": "resnet18-checkpoint",
+      "predicted": "Not in ESC-50 Classes",
+      "confidence": 0.7439,
+      "is_ood_detected": true,
       "correct": false,
       "top3": [
         [
-          "rain",
-          40.9
+          "Not in ESC-50 Classes",
+          74.4
         ],
         [
           "crackling_fire",
-          12.6
+          25.6
         ],
         [
-          "keyboard_typing",
-          8.8
+          "brushing_teeth",
+          17.0
         ]
       ],
-      "latency_ms": 16843.9
+      "latency_ms": 89.4
     },
     {
       "case_id": "ONLINE-04",
@@ -487,26 +487,26 @@
       "expected": "thunderstorm",
       "is_ood_case": false,
       "model": "cnngru",
-      "engine": "cnngru+ast-ensemble",
-      "predicted": "rain",
-      "confidence": 0.4461,
-      "is_ood_detected": false,
+      "engine": "cnngru-checkpoint",
+      "predicted": "Not in ESC-50 Classes",
+      "confidence": 0.879,
+      "is_ood_detected": true,
       "correct": false,
       "top3": [
         [
-          "rain",
-          44.6
+          "Not in ESC-50 Classes",
+          87.9
         ],
         [
           "helicopter",
-          6.2
+          12.1
         ],
         [
           "sea_waves",
-          6.0
+          10.4
         ]
       ],
-      "latency_ms": 22005.5
+      "latency_ms": 32.1
     },
     {
       "case_id": "ONLINE-04",
@@ -515,26 +515,26 @@
       "expected": "thunderstorm",
       "is_ood_case": false,
       "model": "vgg16",
-      "engine": "vgg16+ast-ensemble",
+      "engine": "vgg16-checkpoint",
       "predicted": "rain",
-      "confidence": 0.5716,
+      "confidence": 0.3502,
       "is_ood_detected": false,
       "correct": false,
       "top3": [
         [
           "rain",
-          57.2
+          35.0
         ],
         [
           "sea_waves",
-          8.0
+          14.5
         ],
         [
-          "helicopter",
-          5.4
+          "fireworks",
+          10.7
         ]
       ],
-      "latency_ms": 27717.6
+      "latency_ms": 436.3
     },
     {
       "case_id": "ONLINE-04",
@@ -543,26 +543,26 @@
       "expected": "thunderstorm",
       "is_ood_case": false,
       "model": "sresnet",
-      "engine": "sresnet+ast-ensemble",
-      "predicted": "rain",
-      "confidence": 0.3972,
-      "is_ood_detected": false,
+      "engine": "sresnet-checkpoint",
+      "predicted": "Not in ESC-50 Classes",
+      "confidence": 0.7361,
+      "is_ood_detected": true,
       "correct": false,
       "top3": [
         [
-          "rain",
-          39.7
+          "Not in ESC-50 Classes",
+          73.6
         ],
         [
           "sea_waves",
-          35.7
+          26.4
         ],
         [
-          "thunderstorm",
-          4.9
+          "snoring",
+          11.3
         ]
       ],
-      "latency_ms": 36575.0
+      "latency_ms": 21.5
     },
     {
       "case_id": "ONLINE-05",
@@ -590,7 +590,7 @@
           1.0
         ]
       ],
-      "latency_ms": 1019.8
+      "latency_ms": 367.5
     },
     {
       "case_id": "ONLINE-05",
@@ -618,7 +618,7 @@
           1.0
         ]
       ],
-      "latency_ms": 2.0
+      "latency_ms": 2.1
     },
     {
       "case_id": "ONLINE-05",
@@ -646,7 +646,7 @@
           1.0
         ]
       ],
-      "latency_ms": 2.7
+      "latency_ms": 1.7
     },
     {
       "case_id": "ONLINE-05",
@@ -674,7 +674,7 @@
           1.0
         ]
       ],
-      "latency_ms": 1.5
+      "latency_ms": 1.4
     },
     {
       "case_id": "ONLINE-05",
@@ -702,7 +702,7 @@
           1.0
         ]
       ],
-      "latency_ms": 1.9
+      "latency_ms": 1.7
     },
     {
       "case_id": "ONLINE-06",
@@ -711,278 +711,278 @@
       "expected": "car_horn",
       "is_ood_case": false,
       "model": "ensemble",
-      "engine": "ensemble+ast-ensemble",
+      "engine": "ensemble-checkpoint",
       "predicted": "siren",
-      "confidence": 0.4699,
+      "confidence": 0.5287,
       "is_ood_detected": false,
       "correct": false,
       "top3": [
         [
           "siren",
-          47.0
+          52.9
         ],
         [
           "car_horn",
-          23.8
+          9.3
         ],
         [
           "train",
-          3.9
-        ]
-      ],
-      "latency_ms": 13129.4
-    },
-    {
-      "case_id": "ONLINE-06",
-      "name": "Car Horn",
-      "source": "GitHub Open Audio (pdx-cs-sound/car-horn.wav)",
-      "expected": "car_horn",
-      "is_ood_case": false,
-      "model": "resnet18",
-      "engine": "resnet18+ast-ensemble",
-      "predicted": "siren",
-      "confidence": 0.7055,
-      "is_ood_detected": false,
-      "correct": false,
-      "top3": [
-        [
-          "siren",
-          70.5
-        ],
-        [
-          "car_horn",
-          19.2
-        ],
-        [
-          "door_wood_creaks",
-          2.1
-        ]
-      ],
-      "latency_ms": 9555.8
-    },
-    {
-      "case_id": "ONLINE-06",
-      "name": "Car Horn",
-      "source": "GitHub Open Audio (pdx-cs-sound/car-horn.wav)",
-      "expected": "car_horn",
-      "is_ood_case": false,
-      "model": "cnngru",
-      "engine": "cnngru+ast-ensemble",
-      "predicted": "car_horn",
-      "confidence": 0.374,
-      "is_ood_detected": false,
-      "correct": true,
-      "top3": [
-        [
-          "car_horn",
-          37.4
-        ],
-        [
-          "siren",
-          26.3
-        ],
-        [
-          "door_wood_creaks",
-          7.6
-        ]
-      ],
-      "latency_ms": 7721.3
-    },
-    {
-      "case_id": "ONLINE-06",
-      "name": "Car Horn",
-      "source": "GitHub Open Audio (pdx-cs-sound/car-horn.wav)",
-      "expected": "car_horn",
-      "is_ood_case": false,
-      "model": "vgg16",
-      "engine": "vgg16+ast-ensemble",
-      "predicted": "siren",
-      "confidence": 0.7053,
-      "is_ood_detected": false,
-      "correct": false,
-      "top3": [
-        [
-          "siren",
-          70.5
-        ],
-        [
-          "car_horn",
-          19.2
-        ],
-        [
-          "door_wood_creaks",
-          2.1
-        ]
-      ],
-      "latency_ms": 6921.1
-    },
-    {
-      "case_id": "ONLINE-06",
-      "name": "Car Horn",
-      "source": "GitHub Open Audio (pdx-cs-sound/car-horn.wav)",
-      "expected": "car_horn",
-      "is_ood_case": false,
-      "model": "sresnet",
-      "engine": "sresnet+ast-ensemble",
-      "predicted": "Not in ESC-50 Classes",
-      "confidence": 0.7937,
-      "is_ood_detected": true,
-      "correct": false,
-      "top3": [
-        [
-          "Not in ESC-50 Classes",
-          79.4
-        ],
-        [
-          "siren",
-          20.6
-        ],
-        [
-          "car_horn",
-          19.5
-        ]
-      ],
-      "latency_ms": 6248.5
-    },
-    {
-      "case_id": "ONLINE-07",
-      "name": "Human Spoken Speech",
-      "source": "GitHub Open Audio (gsoc-wav2vec2/sample.wav)",
-      "expected": "Not in ESC-50 Classes (Speech)",
-      "is_ood_case": true,
-      "model": "ensemble",
-      "engine": "ensemble+ast-ensemble",
-      "predicted": "Not in ESC-50 Classes",
-      "confidence": 0.8812,
-      "is_ood_detected": true,
-      "correct": true,
-      "top3": [
-        [
-          "Not in ESC-50 Classes",
-          88.1
-        ],
-        [
-          "crying_baby",
-          11.9
-        ],
-        [
-          "laughing",
-          10.1
-        ]
-      ],
-      "latency_ms": 3425.9
-    },
-    {
-      "case_id": "ONLINE-07",
-      "name": "Human Spoken Speech",
-      "source": "GitHub Open Audio (gsoc-wav2vec2/sample.wav)",
-      "expected": "Not in ESC-50 Classes (Speech)",
-      "is_ood_case": true,
-      "model": "resnet18",
-      "engine": "resnet18+ast-ensemble",
-      "predicted": "Not in ESC-50 Classes",
-      "confidence": 0.7019,
-      "is_ood_detected": true,
-      "correct": true,
-      "top3": [
-        [
-          "Not in ESC-50 Classes",
-          70.2
-        ],
-        [
-          "rooster",
-          29.8
-        ],
-        [
-          "laughing",
-          9.2
-        ]
-      ],
-      "latency_ms": 2826.4
-    },
-    {
-      "case_id": "ONLINE-07",
-      "name": "Human Spoken Speech",
-      "source": "GitHub Open Audio (gsoc-wav2vec2/sample.wav)",
-      "expected": "Not in ESC-50 Classes (Speech)",
-      "is_ood_case": true,
-      "model": "cnngru",
-      "engine": "cnngru+ast-ensemble",
-      "predicted": "Not in ESC-50 Classes",
-      "confidence": 0.8498,
-      "is_ood_detected": true,
-      "correct": true,
-      "top3": [
-        [
-          "Not in ESC-50 Classes",
-          85.0
-        ],
-        [
-          "crying_baby",
-          15.0
-        ],
-        [
-          "laughing",
-          8.3
-        ]
-      ],
-      "latency_ms": 2768.9
-    },
-    {
-      "case_id": "ONLINE-07",
-      "name": "Human Spoken Speech",
-      "source": "GitHub Open Audio (gsoc-wav2vec2/sample.wav)",
-      "expected": "Not in ESC-50 Classes (Speech)",
-      "is_ood_case": true,
-      "model": "vgg16",
-      "engine": "vgg16+ast-ensemble",
-      "predicted": "Not in ESC-50 Classes",
-      "confidence": 0.7498,
-      "is_ood_detected": true,
-      "correct": true,
-      "top3": [
-        [
-          "Not in ESC-50 Classes",
-          75.0
-        ],
-        [
-          "crying_baby",
-          25.0
-        ],
-        [
-          "laughing",
-          13.5
-        ]
-      ],
-      "latency_ms": 2898.3
-    },
-    {
-      "case_id": "ONLINE-07",
-      "name": "Human Spoken Speech",
-      "source": "GitHub Open Audio (gsoc-wav2vec2/sample.wav)",
-      "expected": "Not in ESC-50 Classes (Speech)",
-      "is_ood_case": true,
-      "model": "sresnet",
-      "engine": "sresnet+ast-ensemble",
-      "predicted": "Not in ESC-50 Classes",
-      "confidence": 0.9064,
-      "is_ood_detected": true,
-      "correct": true,
-      "top3": [
-        [
-          "Not in ESC-50 Classes",
-          90.6
-        ],
-        [
-          "laughing",
-          9.4
-        ],
-        [
-          "footsteps",
           5.5
         ]
       ],
-      "latency_ms": 2912.8
+      "latency_ms": 552.3
+    },
+    {
+      "case_id": "ONLINE-06",
+      "name": "Car Horn",
+      "source": "GitHub Open Audio (pdx-cs-sound/car-horn.wav)",
+      "expected": "car_horn",
+      "is_ood_case": false,
+      "model": "resnet18",
+      "engine": "resnet18-checkpoint",
+      "predicted": "siren",
+      "confidence": 1.0,
+      "is_ood_detected": false,
+      "correct": false,
+      "top3": [
+        [
+          "siren",
+          100.0
+        ],
+        [
+          "frog",
+          0.0
+        ],
+        [
+          "church_bells",
+          0.0
+        ]
+      ],
+      "latency_ms": 79.9
+    },
+    {
+      "case_id": "ONLINE-06",
+      "name": "Car Horn",
+      "source": "GitHub Open Audio (pdx-cs-sound/car-horn.wav)",
+      "expected": "car_horn",
+      "is_ood_case": false,
+      "model": "cnngru",
+      "engine": "cnngru-checkpoint",
+      "predicted": "car_horn",
+      "confidence": 0.3629,
+      "is_ood_detected": false,
+      "correct": true,
+      "top3": [
+        [
+          "car_horn",
+          36.3
+        ],
+        [
+          "crickets",
+          11.7
+        ],
+        [
+          "siren",
+          11.3
+        ]
+      ],
+      "latency_ms": 29.0
+    },
+    {
+      "case_id": "ONLINE-06",
+      "name": "Car Horn",
+      "source": "GitHub Open Audio (pdx-cs-sound/car-horn.wav)",
+      "expected": "car_horn",
+      "is_ood_case": false,
+      "model": "vgg16",
+      "engine": "vgg16-checkpoint",
+      "predicted": "siren",
+      "confidence": 0.9995,
+      "is_ood_detected": false,
+      "correct": false,
+      "top3": [
+        [
+          "siren",
+          100.0
+        ],
+        [
+          "church_bells",
+          0.0
+        ],
+        [
+          "car_horn",
+          0.0
+        ]
+      ],
+      "latency_ms": 452.3
+    },
+    {
+      "case_id": "ONLINE-06",
+      "name": "Car Horn",
+      "source": "GitHub Open Audio (pdx-cs-sound/car-horn.wav)",
+      "expected": "car_horn",
+      "is_ood_case": false,
+      "model": "sresnet",
+      "engine": "sresnet-checkpoint",
+      "predicted": "Not in ESC-50 Classes",
+      "confidence": 0.7867,
+      "is_ood_detected": true,
+      "correct": false,
+      "top3": [
+        [
+          "Not in ESC-50 Classes",
+          78.7
+        ],
+        [
+          "train",
+          21.3
+        ],
+        [
+          "fireworks",
+          18.4
+        ]
+      ],
+      "latency_ms": 19.0
+    },
+    {
+      "case_id": "ONLINE-07",
+      "name": "Human Spoken Speech",
+      "source": "GitHub Open Audio (gsoc-wav2vec2/sample.wav)",
+      "expected": "Not in ESC-50 Classes (Speech)",
+      "is_ood_case": true,
+      "model": "ensemble",
+      "engine": "ensemble-checkpoint",
+      "predicted": "Not in ESC-50 Classes",
+      "confidence": 0.7792,
+      "is_ood_detected": true,
+      "correct": true,
+      "top3": [
+        [
+          "Not in ESC-50 Classes",
+          77.9
+        ],
+        [
+          "crying_baby",
+          22.1
+        ],
+        [
+          "laughing",
+          20.5
+        ]
+      ],
+      "latency_ms": 560.2
+    },
+    {
+      "case_id": "ONLINE-07",
+      "name": "Human Spoken Speech",
+      "source": "GitHub Open Audio (gsoc-wav2vec2/sample.wav)",
+      "expected": "Not in ESC-50 Classes (Speech)",
+      "is_ood_case": true,
+      "model": "resnet18",
+      "engine": "resnet18-checkpoint",
+      "predicted": "rooster",
+      "confidence": 0.4956,
+      "is_ood_detected": false,
+      "correct": false,
+      "top3": [
+        [
+          "rooster",
+          49.6
+        ],
+        [
+          "laughing",
+          14.7
+        ],
+        [
+          "crying_baby",
+          8.3
+        ]
+      ],
+      "latency_ms": 64.3
+    },
+    {
+      "case_id": "ONLINE-07",
+      "name": "Human Spoken Speech",
+      "source": "GitHub Open Audio (gsoc-wav2vec2/sample.wav)",
+      "expected": "Not in ESC-50 Classes (Speech)",
+      "is_ood_case": true,
+      "model": "cnngru",
+      "engine": "cnngru-checkpoint",
+      "predicted": "Not in ESC-50 Classes",
+      "confidence": 0.7145,
+      "is_ood_detected": true,
+      "correct": true,
+      "top3": [
+        [
+          "Not in ESC-50 Classes",
+          71.5
+        ],
+        [
+          "crying_baby",
+          28.5
+        ],
+        [
+          "laughing",
+          13.7
+        ]
+      ],
+      "latency_ms": 26.3
+    },
+    {
+      "case_id": "ONLINE-07",
+      "name": "Human Spoken Speech",
+      "source": "GitHub Open Audio (gsoc-wav2vec2/sample.wav)",
+      "expected": "Not in ESC-50 Classes (Speech)",
+      "is_ood_case": true,
+      "model": "vgg16",
+      "engine": "vgg16-checkpoint",
+      "predicted": "crying_baby",
+      "confidence": 0.4849,
+      "is_ood_detected": false,
+      "correct": false,
+      "top3": [
+        [
+          "crying_baby",
+          48.5
+        ],
+        [
+          "laughing",
+          20.3
+        ],
+        [
+          "drinking_sipping",
+          6.2
+        ]
+      ],
+      "latency_ms": 402.6
+    },
+    {
+      "case_id": "ONLINE-07",
+      "name": "Human Spoken Speech",
+      "source": "GitHub Open Audio (gsoc-wav2vec2/sample.wav)",
+      "expected": "Not in ESC-50 Classes (Speech)",
+      "is_ood_case": true,
+      "model": "sresnet",
+      "engine": "sresnet-checkpoint",
+      "predicted": "laughing",
+      "confidence": 0.3334,
+      "is_ood_detected": false,
+      "correct": false,
+      "top3": [
+        [
+          "laughing",
+          33.3
+        ],
+        [
+          "coughing",
+          17.1
+        ],
+        [
+          "sneezing",
+          9.2
+        ]
+      ],
+      "latency_ms": 20.1
     },
     {
       "case_id": "ONLINE-08",
@@ -991,26 +991,26 @@
       "expected": "Not in ESC-50 Classes (Synthetic)",
       "is_ood_case": true,
       "model": "ensemble",
-      "engine": "ensemble+ast-ensemble",
+      "engine": "ensemble-checkpoint",
       "predicted": "Not in ESC-50 Classes",
-      "confidence": 0.8592,
+      "confidence": 0.7443,
       "is_ood_detected": true,
       "correct": true,
       "top3": [
         [
           "Not in ESC-50 Classes",
-          85.9
+          74.4
         ],
         [
           "glass_breaking",
-          14.1
+          25.6
         ],
         [
-          "vacuum_cleaner",
-          9.6
+          "siren",
+          11.3
         ]
       ],
-      "latency_ms": 3046.5
+      "latency_ms": 693.4
     },
     {
       "case_id": "ONLINE-08",
@@ -1019,26 +1019,26 @@
       "expected": "Not in ESC-50 Classes (Synthetic)",
       "is_ood_case": true,
       "model": "resnet18",
-      "engine": "resnet18+ast-ensemble",
-      "predicted": "Not in ESC-50 Classes",
-      "confidence": 0.8148,
-      "is_ood_detected": true,
-      "correct": true,
+      "engine": "resnet18-checkpoint",
+      "predicted": "coughing",
+      "confidence": 0.3616,
+      "is_ood_detected": false,
+      "correct": false,
       "top3": [
         [
-          "Not in ESC-50 Classes",
-          81.5
-        ],
-        [
           "coughing",
-          18.5
+          36.2
         ],
         [
           "glass_breaking",
-          13.5
+          25.6
+        ],
+        [
+          "water_drops",
+          11.8
         ]
       ],
-      "latency_ms": 2806.1
+      "latency_ms": 145.8
     },
     {
       "case_id": "ONLINE-08",
@@ -1047,26 +1047,26 @@
       "expected": "Not in ESC-50 Classes (Synthetic)",
       "is_ood_case": true,
       "model": "cnngru",
-      "engine": "cnngru+ast-ensemble",
+      "engine": "cnngru-checkpoint",
       "predicted": "Not in ESC-50 Classes",
-      "confidence": 0.9041,
+      "confidence": 0.8559,
       "is_ood_detected": true,
       "correct": true,
       "top3": [
         [
           "Not in ESC-50 Classes",
-          90.4
-        ],
-        [
-          "vacuum_cleaner",
-          9.6
+          85.6
         ],
         [
           "water_drops",
-          7.4
+          14.4
+        ],
+        [
+          "door_wood_knock",
+          8.0
         ]
       ],
-      "latency_ms": 2944.4
+      "latency_ms": 50.8
     },
     {
       "case_id": "ONLINE-08",
@@ -1075,26 +1075,26 @@
       "expected": "Not in ESC-50 Classes (Synthetic)",
       "is_ood_case": true,
       "model": "vgg16",
-      "engine": "vgg16+ast-ensemble",
+      "engine": "vgg16-checkpoint",
       "predicted": "glass_breaking",
-      "confidence": 0.3621,
+      "confidence": 0.6969,
       "is_ood_detected": false,
       "correct": false,
       "top3": [
         [
           "glass_breaking",
-          36.2
-        ],
-        [
-          "vacuum_cleaner",
-          9.2
+          69.7
         ],
         [
           "water_drops",
-          8.1
+          17.8
+        ],
+        [
+          "can_opening",
+          4.9
         ]
       ],
-      "latency_ms": 3250.3
+      "latency_ms": 546.4
     },
     {
       "case_id": "ONLINE-08",
@@ -1103,26 +1103,26 @@
       "expected": "Not in ESC-50 Classes (Synthetic)",
       "is_ood_case": true,
       "model": "sresnet",
-      "engine": "sresnet+ast-ensemble",
-      "predicted": "Not in ESC-50 Classes",
-      "confidence": 0.8953,
-      "is_ood_detected": true,
-      "correct": true,
+      "engine": "sresnet-checkpoint",
+      "predicted": "siren",
+      "confidence": 0.4312,
+      "is_ood_detected": false,
+      "correct": false,
       "top3": [
         [
-          "Not in ESC-50 Classes",
-          89.5
+          "siren",
+          43.1
         ],
         [
-          "vacuum_cleaner",
-          10.5
+          "rooster",
+          18.8
         ],
         [
-          "clock_alarm",
-          7.1
+          "cat",
+          18.2
         ]
       ],
-      "latency_ms": 4095.8
+      "latency_ms": 36.1
     }
   ]
 }
