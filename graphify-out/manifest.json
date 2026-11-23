@@ -390,20 +390,20 @@
     "semantic_hash": ""
   },
   "checkpoints/model_report.json": {
-    "mtime": 1795455991.7336204,
-    "seen": 1795456344.0333052,
+    "mtime": 1795456687.1528754,
+    "seen": 1795456783.8487866,
     "ast_hash": "48bfa848b6a4381c38e6b224106d9719",
     "semantic_hash": ""
   },
   "tests/test_api_endpoints.py": {
-    "mtime": 1795456181.4679217,
-    "seen": 1795456344.033536,
+    "mtime": 1795456687.3206122,
+    "seen": 1795456783.8488312,
     "ast_hash": "ae6da81e09423871970cf6d92fb0222e",
     "semantic_hash": ""
   },
   "tests/test_system_integration.py": {
-    "mtime": 1795456181.7356732,
-    "seen": 1795456344.0335622,
+    "mtime": 1795456687.363135,
+    "seen": 1795456783.8488348,
     "ast_hash": "afcb970c17a24e7b9b4f24ba6fb4864c",
     "semantic_hash": ""
   },
@@ -657,12 +657,6 @@
     "mtime": 1795455991.7799113,
     "seen": 1795456344.0336227,
     "ast_hash": "144dc0ee86f31839ab808a6a000bb169",
-    "semantic_hash": ""
-  },
-  "scratch/test_models.py": {
-    "mtime": 1795455757.5179684,
-    "seen": 1795456344.0335157,
-    "ast_hash": "cd9337ca7ab58c9f843577f523768acf",
     "semantic_hash": ""
   },
   "package-lock.json": {

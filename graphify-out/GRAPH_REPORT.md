@@ -1,17 +1,17 @@
 # Graph Report - Sound_Recognition  (2026-11-23)
 
 ## Corpus Check
-- 92 files · ~128,560 words
+- 91 files · ~128,471 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 6019 file(s) not represented in the graph (top: .npy 5994, .csv 18, (none) 3)
 
 ## Summary
-- 961 nodes · 1795 edges · 55 communities (40 shown, 15 thin omitted)
+- 960 nodes · 1790 edges · 60 communities (39 shown, 21 thin omitted)
 - Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 65 edges (avg confidence: 0.89)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `1cedd476`
+- Built from commit: `bfccf640`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -23,10 +23,10 @@
 - Node.js Server & Package Dependencies
 - PyTorch Neural Architectures & Models
 - UI Animation & Status Management
-- numpy
+- soundfile
 - main.py
 - SoundSense — Environmental Sound Classification Studio
-- pathlib
+- list_audio_files
 - Preproccesing/__init__.py
 - SoundSense — Truthful High-Accuracy Recovery Plan
 - Render Cloud Deployment Config
@@ -53,12 +53,11 @@
 - copilot-instructions.md
 - json
 - run
-- report.py
+- os
 - dataset_loader.py
 - audio_processor.py
 - loadTaxonomyCategory
 - run_acoustic_inference
-- evaluate_external
 - load_model_checkpoint
 - eval_robustness.py
 - loadAnalyticsData
@@ -66,30 +65,35 @@
 - eval_signal_gates.py
 - 4. Plan A — deploy AST as the production model
 - run
-- onResize
+- numpy
+- verify_and_report.py
+- benchmark_all_models_multiformat.py
+- eval_esc50_cv.py
+- Hubert_t-Sne_visu.py
+- split_long_audio.py
 
 ## God Nodes (most connected - your core abstractions)
-1. `run_acoustic_inference()` - 37 edges
+1. `run_acoustic_inference()` - 36 edges
 2. `classification_metrics()` - 17 edges
 3. `loadAudioFile()` - 17 edges
 4. `SoundSense — Truthful High-Accuracy Recovery Plan` - 17 edges
-5. `load_model_checkpoint()` - 16 edges
+5. `load_model_checkpoint()` - 15 edges
 6. `switchView()` - 13 edges
 7. `train_model()` - 12 edges
 8. `model_status()` - 12 edges
-9. `load_audio_waveform()` - 11 edges
-10. `showToast()` - 11 edges
+9. `extract_all_features()` - 11 edges
+10. `extract_log_mel_spectrogram()` - 11 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `A7. Verification tests` --references--> `run_acoustic_inference()`  [INFERRED]
-  PLAN.md → Preproccesing/acoustic_inference.py
 - `B4. Publication gate for the four models` --references--> `load_model_checkpoint()`  [INFERRED]
+  PLAN.md → Preproccesing/acoustic_inference.py
+- `A7. Verification tests` --references--> `run_acoustic_inference()`  [INFERRED]
   PLAN.md → Preproccesing/acoustic_inference.py
 - `A5. Backend defaults and parity` --references--> `test_ast_checkpoint_available()`  [INFERRED]
   PLAN.md → tests/test_system_integration.py
 - `A3. Add a clean AST evaluator` --references--> `classification_metrics()`  [INFERRED]
   PLAN.md → eval/metrics.py
-- `A3. Add a clean AST evaluator` --references--> `run_acoustic_inference()`  [INFERRED]
+- `10. Ordered execution checklist` --references--> `model_status()`  [INFERRED]
   PLAN.md → Preproccesing/acoustic_inference.py
 
 ## Import Cycles
@@ -97,15 +101,15 @@
 - 2-file cycle: `Preproccesing/__init__.py -> Preproccesing/audio_processor.py -> Preproccesing/__init__.py`
 - 2-file cycle: `Preproccesing/__init__.py -> Preproccesing/dataset_loader.py -> Preproccesing/__init__.py`
 - 2-file cycle: `Preproccesing/__init__.py -> Preproccesing/feature_extractor.py -> Preproccesing/__init__.py`
-- 3-file cycle: `Preproccesing/__init__.py -> Preproccesing/dataset_loader.py -> Preproccesing/audio_processor.py -> Preproccesing/__init__.py`
 - 3-file cycle: `Preproccesing/__init__.py -> Preproccesing/feature_extractor.py -> Preproccesing/audio_processor.py -> Preproccesing/__init__.py`
+- 3-file cycle: `Preproccesing/__init__.py -> Preproccesing/dataset_loader.py -> Preproccesing/audio_processor.py -> Preproccesing/__init__.py`
 - 3-file cycle: `Preproccesing/__init__.py -> Preproccesing/dataset_loader.py -> Preproccesing/feature_extractor.py -> Preproccesing/__init__.py`
 - 4-file cycle: `Preproccesing/__init__.py -> Preproccesing/dataset_loader.py -> Preproccesing/feature_extractor.py -> Preproccesing/audio_processor.py -> Preproccesing/__init__.py`
 
 ## Hyperedges (group relationships)
 - **Dual-Modal Acoustic Processing Flow** — preproccesing_readme_dmff_architecture, preproccesing_readme_recurrence_plot, preproccesing_readme_paa_dimension, preproccesing_readme_esc50_dataset [EXTRACTED 0.95]
 
-## Communities (55 total, 15 thin omitted)
+## Communities (60 total, 21 thin omitted)
 
 ### Community 0 - "Front-End UI & State Controller"
 Cohesion: 0.01
@@ -135,21 +139,21 @@ Nodes (6): BasicBlock, CNNGRU, get_model(), ResNet18_ESC50, SResNet, VGG16_ESC50
 Cohesion: 0.14
 Nodes (16): animateArchMetrics(), animateBenchmarkBars(), animateMetricValue(), closeAccountMenu(), closeAuthModal(), fitAccountMenuPopover(), initActiveView(), openAuthModal() (+8 more)
 
-### Community 7 - "numpy"
-Cohesion: 0.05
-Nodes (16): extract_mel_feature_vector(), cross_correlation_similarity(), extract_mel_sequence(), explore_audio(), get_hubert_embedding(), load_wav_fallback(), check_audio_durations(), get_audio_duration() (+8 more)
+### Community 7 - "soundfile"
+Cohesion: 0.14
+Nodes (5): explore_audio(), check_audio_durations(), get_audio_duration(), list_audio_files(), resample_file()
 
 ### Community 8 - "main.py"
 Cohesion: 0.06
-Nodes (30): add_history(), auth_me(), clear_history(), cloud_sync(), CloudSyncRequest, current_checkpoint_inventory(), get_history(), get_sample_for_category() (+22 more)
+Nodes (29): add_history(), auth_me(), clear_history(), cloud_sync(), CloudSyncRequest, current_checkpoint_inventory(), get_history(), get_sample_for_category() (+21 more)
 
 ### Community 9 - "SoundSense — Environmental Sound Classification Studio"
 Cohesion: 0.13
 Nodes (13): Deployed Model (AST-ESC50), Local diagnostics, SoundSense evaluation report, Status, API Endpoints, Deployed Model: AST-ESC50, Independently Measured Metrics (from evaluation harness), Key Features (+5 more)
 
 ### Community 11 - "Preproccesing/__init__.py"
-Cohesion: 0.20
-Nodes (6): evaluate(), _load_wav(), extract_all_features(), extract_log_mel_spectrogram(), extract_mfcc(), extract_threshold_free_recurrence_plot()
+Cohesion: 0.25
+Nodes (5): piecewise_aggregate_approximation(), extract_all_features(), extract_log_mel_spectrogram(), extract_mfcc(), extract_threshold_free_recurrence_plot()
 
 ### Community 12 - "SoundSense — Truthful High-Accuracy Recovery Plan"
 Cohesion: 0.06
@@ -168,12 +172,16 @@ Cohesion: 0.29
 Nodes (7): Mel Spectrogram Acoustic Heatmap, MFCC Feature Representation Plot, Dual-Modal Feature Fusion (DMFF), ESC-50 Acoustic Dataset, Piecewise Aggregate Approximation (PAA), Threshold-Free Recurrence Plot (RP), Dual-Modal Verification Diagnostic Plot
 
 ### Community 16 - "eval_ast.py"
-Cohesion: 0.17
-Nodes (6): _encode(), _eval_model(), run(), _summarize(), binary_ood_metrics(), classification_metrics()
+Cohesion: 0.14
+Nodes (8): check_format_parity(), evaluate_external(), evaluate_fold1(), get_git_commit(), wilson_interval(), run(), binary_ood_metrics(), classification_metrics()
 
 ### Community 17 - "renderTrainingChart"
 Cohesion: 0.67
 Nodes (3): drawCurve(), renderTrainingChart(), updateTrainingUI()
+
+### Community 18 - "Interactive Particle Visualizer"
+Cohesion: 0.38
+Nodes (3): debouncedResize(), NodeParticle, onResize()
 
 ### Community 19 - "train_cv.py"
 Cohesion: 0.06
@@ -192,8 +200,8 @@ Cohesion: 0.16
 Nodes (13): addTask(), attach(), burst(), clamp(), countUp(), el(), ensure(), frame() (+5 more)
 
 ### Community 23 - "json"
-Cohesion: 0.08
-Nodes (14): _assign_splits(), build(), _github_tree(), _request(), _safe_id(), _transcode(), _write_audio(), download_ast_weights() (+6 more)
+Cohesion: 0.06
+Nodes (21): _assign_splits(), build(), _github_tree(), _request(), _safe_id(), _transcode(), _write_audio(), build_report() (+13 more)
 
 ### Community 24 - "Vercel Edge Deployment Config"
 Cohesion: 0.50
@@ -215,25 +223,13 @@ Nodes (19): addFiles(), animate(), classifyOne(), csvCell(), downloadCsv(), esc(
 Cohesion: 0.40
 Nodes (5): drawFrame(), loop(), readLevel(), resize(), roundRectPath()
 
-### Community 35 - "json"
-Cohesion: 0.20
-Nodes (3): run_batch_preprocessing(), generate_5fold_splits(), run_tests()
-
 ### Community 36 - "run"
-Cohesion: 0.19
-Nodes (6): run(), AcousticClassifierNet, compute_signal_metrics(), extract_acoustic_feature_vector(), get_acoustic_classifier(), _mlp_probabilities()
-
-### Community 37 - "report.py"
-Cohesion: 0.35
-Nodes (6): build_report(), complete_external(), _read(), _write_markdown(), write_report(), A4. Update `eval/report.py`
-
-### Community 38 - "dataset_loader.py"
-Cohesion: 0.15
-Nodes (3): ESC50MultiModalDataset, get_dataloaders(), test_pytorch_dataloader()
+Cohesion: 0.23
+Nodes (5): AcousticClassifierNet, compute_signal_metrics(), extract_acoustic_feature_vector(), get_acoustic_classifier(), _mlp_probabilities()
 
 ### Community 39 - "audio_processor.py"
-Cohesion: 0.16
-Nodes (6): detect_active_segment(), load_and_resample(), peak_normalize(), piecewise_aggregate_approximation(), save_audio(), process_single_audio()
+Cohesion: 0.18
+Nodes (5): detect_active_segment(), load_and_resample(), peak_normalize(), save_audio(), process_single_audio()
 
 ### Community 40 - "loadTaxonomyCategory"
 Cohesion: 0.33
@@ -241,19 +237,15 @@ Nodes (5): encodeWAV(), generateSyntheticAudioBlob(), generateSyntheticAudioForC
 
 ### Community 41 - "run_acoustic_inference"
 Cohesion: 0.18
-Nodes (11): 10. Ordered execution checklist, A2. Add the AST engine to `Preproccesing/acoustic_inference.py`, _ast_probabilities(), _build_silence_result(), _build_tone_result(), _load_ast_engine(), load_audio_waveform(), load_model_checkpoint() (+3 more)
-
-### Community 42 - "evaluate_external"
-Cohesion: 0.24
-Nodes (5): check_format_parity(), evaluate_external(), evaluate_fold1(), get_git_commit(), wilson_interval()
+Nodes (10): 10. Ordered execution checklist, A2. Add the AST engine to `Preproccesing/acoustic_inference.py`, _ast_probabilities(), _build_silence_result(), _build_tone_result(), _load_ast_engine(), load_audio_waveform(), load_model_checkpoint() (+2 more)
 
 ### Community 43 - "load_model_checkpoint"
-Cohesion: 0.39
-Nodes (7): run_tests(), test_ast_checkpoint_available(), test_ast_real_audio_inference(), test_filename_invariance(), test_invalid_model_returns_400(), test_model_status_report(), test_other_checkpoints_trained_and_working()
+Cohesion: 0.24
+Nodes (9): get_engine_status(), model_status(), run_tests(), test_ast_checkpoint_available(), test_ast_real_audio_inference(), test_filename_invariance(), test_invalid_model_returns_400(), test_model_status_report() (+1 more)
 
 ### Community 44 - "eval_robustness.py"
-Cohesion: 0.43
-Nodes (4): run(), _snr_noise(), _variants(), _wav_bytes()
+Cohesion: 0.25
+Nodes (8): _encode(), _eval_model(), run(), _summarize(), run(), _snr_noise(), _variants(), _wav_bytes()
 
 ### Community 45 - "loadAnalyticsData"
 Cohesion: 0.50
@@ -267,10 +259,18 @@ Nodes (4): animateCounter(), step(), displayClassificationResults(), easeOutQuad
 Cohesion: 0.29
 Nodes (7): modelKey(), 4. Plan A — deploy AST as the production model, A0. Preserve the current working tree, A1. Add a reproducible AST weight bootstrap, A3. Add a clean AST evaluator, A5. Backend defaults and parity, A7. Verification tests
 
+### Community 55 - "verify_and_report.py"
+Cohesion: 0.20
+Nodes (3): generate_feature_visualization(), test_pytorch_dataloader(), verify_feature_integrity()
+
+### Community 56 - "benchmark_all_models_multiformat.py"
+Cohesion: 0.36
+Nodes (3): ensure_test_corpus(), run_full_evaluation(), simulate_microphone_capture()
+
 ## Knowledge Gaps
 - **14 isolated node(s):** `Piecewise Aggregate Approximation (PAA)`, `ESC-50 Acoustic Dataset`, `Mel Spectrogram Acoustic Heatmap`, `MFCC Feature Representation Plot`, `Dual-Modal Verification Diagnostic Plot` (+9 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 495 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **15 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **21 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
