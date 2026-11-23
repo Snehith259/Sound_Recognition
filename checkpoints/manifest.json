@@ -1,34 +1,5 @@
 {
-  "version": "2.0.0",
-  "status": "verified",
-  "models": {
-    "resnet18_v1": {
-      "filename": "esc50_resnet18_v1.pt",
-      "accuracy": 62.81,
-      "top5": 88.19,
-      "size_mb": 45.34,
-      "description": "Deep Residual Network with 18 layers (Log-Mel Spectrogram)"
-    },
-    "vgg16_v1": {
-      "filename": "esc50_vgg16_v1.pt",
-      "accuracy": 61.06,
-      "top5": 91.96,
-      "size_mb": 63.26,
-      "description": "Visual Geometry Group 16-layer Deep Convolutional Network"
-    },
-    "sresnet_v09": {
-      "filename": "esc50_sresnet_linear_v09.pt",
-      "accuracy": 35.68,
-      "top5": 76.13,
-      "size_mb": 1.72,
-      "description": "Linear spectral MFCC squeezed residual network"
-    },
-    "cnngru_v08": {
-      "filename": "esc50_cnngru_recurrent_v08.pt",
-      "accuracy": 64.07,
-      "top5": 91.21,
-      "size_mb": 2.11,
-      "description": "Nonlinear Log-Mel temporal recurrent model"
-    }
-  }
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-21T15:50:59.839438+00:00",
+  "models": {}
 }

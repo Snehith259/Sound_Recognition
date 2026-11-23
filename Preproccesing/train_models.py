@@ -1,10 +1,14 @@
 """
-SoundSense — Multi-Model ESC-50 Neural Training Pipeline
-Trains, evaluates, and exports real PyTorch checkpoints for all 4 neural architectures:
+SoundSense — Fold-1 ESC-50 Neural Training Diagnostic
+Trains and exports real PyTorch checkpoints for all 4 neural architectures:
 1. ResNet-18: Pretrained Deep Residual Network adapted for 1-channel Log-Mel spectrograms
 2. VGG-16: Pretrained Visual Geometry Group network with BatchNorm for Log-Mel spectrograms
-3. SResNet: Squeezed Residual Network optimized for MFCC representations
+3. SResNetFast: Compact convolutional MFCC classifier; it has no residual blocks
 4. CNN-GRU: Hybrid Convolutional Recurrent Network for Log-Mel temporal dynamics
+
+This legacy script uses only fold 1. Its metrics are diagnostic and are not CV
+evidence. Use eval/eval_esc50_cv.py only with an independently trained checkpoint
+for each official held-out fold before publishing model scores.
 
 Outputs:
 - checkpoints/esc50_resnet18_v1.pt
@@ -19,6 +23,7 @@ import os
 import sys
 import time
 import json
+import hashlib
 import argparse
 from pathlib import Path
 from typing import Dict, Any, Tuple, List
@@ -39,7 +44,6 @@ from Preproccesing.acoustic_inference import ESC50_CATEGORIES
 CHECKPOINTS_DIR = ROOT_DIR / "checkpoints"
 FEATURES_DIR = ROOT_DIR / "Preproccesing" / "processed" / "features"
 SPLITS_DIR = ROOT_DIR / "Preproccesing" / "splits"
-TORCH_CACHE_DIR = Path.home() / ".cache" / "torch" / "hub" / "checkpoints"
 
 
 # ══════════════════════════════════════════════════════════════
@@ -82,13 +86,10 @@ def extract_features_batched(backbone: nn.Module, X: torch.Tensor, batch_size: i
 
 class ResNet18Transfer(nn.Module):
     """End-to-end ResNet-18 adapted for 1-channel Log-Mel spectrograms."""
-    def __init__(self, num_classes: int = 50):
+    def __init__(self, num_classes: int = 50, pretrained: bool = True):
         super().__init__()
-        base = tv_models.resnet18(weights=None)
-        cached_weights = TORCH_CACHE_DIR / "resnet18-f37072fd.pth"
-        if cached_weights.exists():
-            sd = torch.load(cached_weights, map_location="cpu")
-            base.load_state_dict(sd)
+        weights = tv_models.ResNet18_Weights.IMAGENET1K_V1 if pretrained else None
+        base = tv_models.resnet18(weights=weights)
 
         # 1-channel conv1
         orig_conv = base.conv1.weight.data
@@ -118,13 +119,10 @@ class ResNet18Transfer(nn.Module):
 
 class VGG16Transfer(nn.Module):
     """End-to-end VGG-16 with BatchNorm adapted for 1-channel Log-Mel spectrograms."""
-    def __init__(self, num_classes: int = 50):
+    def __init__(self, num_classes: int = 50, pretrained: bool = True):
         super().__init__()
-        base = tv_models.vgg16_bn(weights=None)
-        cached_weights = TORCH_CACHE_DIR / "vgg16_bn-6c64b313.pth"
-        if cached_weights.exists():
-            sd = torch.load(cached_weights, map_location="cpu")
-            base.load_state_dict(sd)
+        weights = tv_models.VGG16_BN_Weights.IMAGENET1K_V1 if pretrained else None
+        base = tv_models.vgg16_bn(weights=weights)
 
         orig_conv = base.features[0].weight.data
         new_conv = orig_conv.mean(dim=1, keepdim=True)
@@ -151,7 +149,7 @@ class VGG16Transfer(nn.Module):
 
 
 class SResNetFast(nn.Module):
-    """Compact Squeezed Residual Network for MFCC linear spectral input (40, 216)."""
+    """Compact convolutional classifier for MFCC input (40, 216); it has no residual blocks."""
     def __init__(self, num_classes: int = 50):
         super().__init__()
         self.net = nn.Sequential(
@@ -331,7 +329,7 @@ def train_and_export_all():
         "num_classes": 50,
         "temperature": temp,
         "parameters": param_count,
-        "metrics": {**metrics, "latencyMs": lat_ms, "trainSeconds": elapsed},
+    "fold1_diagnostic_metrics": {**metrics, "latencyMs": lat_ms, "trainSeconds": elapsed},
         "state_dict": rn_model.state_dict()
     }, ckpt_path)
     print(f"  -> ResNet-18 done in {elapsed}s | Test Top-1: {metrics['top1']}% | Top-5: {metrics['top5']}% | Saved: {ckpt_path.name} ({ckpt_path.stat().st_size/1e6:.1f} MB)", flush=True)
@@ -392,7 +390,7 @@ def train_and_export_all():
         "num_classes": 50,
         "temperature": temp,
         "parameters": param_count,
-        "metrics": {**metrics, "latencyMs": lat_ms, "trainSeconds": elapsed},
+        "fold1_diagnostic_metrics": {**metrics, "latencyMs": lat_ms, "trainSeconds": elapsed},
         "state_dict": vgg_model.state_dict()
     }, ckpt_path)
     print(f"  -> VGG-16 done in {elapsed}s | Test Top-1: {metrics['top1']}% | Top-5: {metrics['top5']}% | Saved: {ckpt_path.name} ({ckpt_path.stat().st_size/1e6:.1f} MB)", flush=True)
@@ -447,7 +445,7 @@ def train_and_export_all():
         "num_classes": 50,
         "temperature": temp,
         "parameters": param_count,
-        "metrics": {**metrics, "latencyMs": lat_ms, "trainSeconds": elapsed},
+        "fold1_diagnostic_metrics": {**metrics, "latencyMs": lat_ms, "trainSeconds": elapsed},
         "state_dict": sr_model.state_dict()
     }, ckpt_path)
     print(f"  -> SResNet done in {elapsed}s | Test Top-1: {metrics['top1']}% | Top-5: {metrics['top5']}% | Saved: {ckpt_path.name} ({ckpt_path.stat().st_size/1e6:.1f} MB)", flush=True)
@@ -502,62 +500,46 @@ def train_and_export_all():
         "num_classes": 50,
         "temperature": temp,
         "parameters": param_count,
-        "metrics": {**metrics, "latencyMs": lat_ms, "trainSeconds": elapsed},
+        "fold1_diagnostic_metrics": {**metrics, "latencyMs": lat_ms, "trainSeconds": elapsed},
         "state_dict": cg_model.state_dict()
     }, ckpt_path)
     print(f"  -> CNN-GRU done in {elapsed}s | Test Top-1: {metrics['top1']}% | Top-5: {metrics['top5']}% | Saved: {ckpt_path.name} ({ckpt_path.stat().st_size/1e6:.1f} MB)", flush=True)
     results["cnngru"] = {**metrics, "latencyMs": lat_ms, "sizeMb": round(ckpt_path.stat().st_size/1e6, 2), "paramsM": round(param_count/1e6, 2)}
 
     # ══════════════════════════════════════════════════════════
-    # Write model_report.json & manifest.json
+    # Mark this as fold-1 diagnostic output; only eval_report.json feeds the UI.
     # ══════════════════════════════════════════════════════════
     report_path = CHECKPOINTS_DIR / "model_report.json"
     with open(report_path, "w", encoding="utf-8") as f:
         json.dump({
             "timestamp": time.time(),
+            "diagnosticOnly": True,
             "models": results,
-            "status": "complete"
+            "status": "fold1_diagnostic_not_cross_validation",
+            "note": "Run the official five-fold CV and external harnesses before publishing model scores.",
         }, f, indent=2)
-    print(f"\nWrote model performance report to: {report_path.name}", flush=True)
+    print(f"\nWrote fold-1 diagnostic report to: {report_path.name}", flush=True)
 
+    inventory = {}
+    for model_name, entry in {
+        "resnet18": ("esc50_resnet18_v1.pt", "resnet18"),
+        "vgg16": ("esc50_vgg16_v1.pt", "vgg16"),
+        "sresnet": ("esc50_sresnet_linear_v09.pt", "sresnet"),
+        "cnngru": ("esc50_cnngru_recurrent_v08.pt", "cnngru"),
+    }.items():
+        filename, _ = entry
+        path = CHECKPOINTS_DIR / filename
+        inventory[model_name] = {
+            "filename": filename,
+            "sizeBytes": path.stat().st_size,
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            "trainingEvidence": "fold1_diagnostic_only",
+        }
     manifest_path = CHECKPOINTS_DIR / "manifest.json"
     with open(manifest_path, "w", encoding="utf-8") as f:
-        json.dump({
-            "version": "2.0.0",
-            "status": "verified",
-            "models": {
-                "resnet18_v1": {
-                    "filename": "esc50_resnet18_v1.pt",
-                    "accuracy": results["resnet18"]["top1"],
-                    "top5": results["resnet18"]["top5"],
-                    "size_mb": results["resnet18"]["sizeMb"],
-                    "description": "Deep Residual Network with 18 layers (Log-Mel Spectrogram)"
-                },
-                "vgg16_v1": {
-                    "filename": "esc50_vgg16_v1.pt",
-                    "accuracy": results["vgg16"]["top1"],
-                    "top5": results["vgg16"]["top5"],
-                    "size_mb": results["vgg16"]["sizeMb"],
-                    "description": "Visual Geometry Group 16-layer Deep Convolutional Network"
-                },
-                "sresnet_v09": {
-                    "filename": "esc50_sresnet_linear_v09.pt",
-                    "accuracy": results["sresnet"]["top1"],
-                    "top5": results["sresnet"]["top5"],
-                    "size_mb": results["sresnet"]["sizeMb"],
-                    "description": "Linear spectral MFCC squeezed residual network"
-                },
-                "cnngru_v08": {
-                    "filename": "esc50_cnngru_recurrent_v08.pt",
-                    "accuracy": results["cnngru"]["top1"],
-                    "top5": results["cnngru"]["top5"],
-                    "size_mb": results["cnngru"]["sizeMb"],
-                    "description": "Nonlinear Log-Mel temporal recurrent model"
-                }
-            }
-        }, f, indent=2)
-    print(f"Updated manifest at: {manifest_path.name}", flush=True)
-    print(f"\n{'='*70}\n ALL 4 MODELS SUCCESSFULLY TRAINED, EVALUATED, AND EXPORTED!\n{'='*70}\n", flush=True)
+        json.dump({"schemaVersion": 1, "status": "checkpoint_inventory_only", "models": inventory}, f, indent=2)
+    print(f"Updated checkpoint inventory at: {manifest_path.name}", flush=True)
+    print("Four checkpoint files were exported. Run five-fold CV and external evaluations before publishing scores.", flush=True)
 
 
 if __name__ == "__main__":

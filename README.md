@@ -11,25 +11,25 @@ license: mit
 
 # SoundSense — Environmental Sound Classification Studio
 
-**SoundSense** is a real-time environmental sound recognition and audio classification platform trained on the **ESC-50** dataset (50 distinct sound categories across Animals, Natural Soundscapes, Human Sounds, Interior Audio, and Urban Environments).
+**SoundSense** is an environmental sound recognition demo built around the 50 classes in **ESC-50**. This checkout does not contain the four neural-network checkpoints used by the selectable ResNet-18, VGG-16, SResNet, and CNN-GRU options. Until trained checkpoints are supplied, those prediction requests return an explicit unavailable-model error; the app does not substitute the legacy MLP or invent a prediction.
 
 ## Key Features
 
-- **Pure Neural Acoustic Inference**: Zero filename guesswork. Analyzes real audio waveform, 128-band Log-Mel Spectrograms, and 40-coefficient MFCC spectral dynamics.
+- **Acoustic Inference**: Uses decoded audio only. A requested neural architecture requires its matching checkpoint.
 - **Deep Acoustic Models**:
-  - **SResNet**: Compact Squeezed Residual Network for high efficiency.
+  - **SResNet**: Compact convolutional classifier on MFCC features (the current implementation has no residual blocks).
   - **ResNet-18**: 18-layer Deep Residual Network on Log-Mel representations.
   - **VGG-16**: High-capacity Deep Convolutional Network.
   - **CNN-GRU**: Hybrid Convolutional Recurrent Network for temporal sound dynamics.
-- **Out-of-Distribution (OOD) Sound Detection**: Identifies silence, non-environmental sounds, and noise beyond the standard 50 categories.
+- **Rule-Based Sound Gates**: Detects digital silence, very quiet audio, and stable single-frequency tones. General OOD detection has not been evaluated.
 - **Interactive Studio HUD**: Real-time oscilloscope, frequency spectrum visualizer, 3D interactive controls, and confidence distribution charts.
 - **Full REST API**: Endpoints for audio classification (`/api/predict`), sample playback (`/api/sample/{id}`), system metrics (`/api/stats`), and health checks (`/api/health`).
 
 ## API Endpoints
 
 - `POST /api/predict` — Upload an audio file (`multipart/form-data`) and select a model (`resnet18`, `vgg16`, `sresnet`, `cnngru`).
-- `GET /api/sample/{category_id}` — Stream sample audio for any of the 50 ESC-50 categories (0–49).
-- `GET /api/stats` — Real-time telemetry, model benchmarks, and hardware statistics.
+- `GET /api/sample/{category_id}` — Stream a sample audio file when ESC-50 audio is installed locally.
+- `GET /api/stats` — Runtime telemetry, model availability, and evaluation metrics when present.
 - `GET /api/health` — Service health check.
 
 ## Architecture
@@ -40,13 +40,29 @@ license: mit
 
 ## Deployed Inference Engine
 
-`POST /api/predict` loads the architecture selected in the `model` form field and runs its matching
-checkpoint from `checkpoints/`. The ensemble option averages the available architecture probabilities.
-Inputs are decoded as mono audio, resampled to 22.05 kHz, aligned to five seconds, and peak-normalized
-to match the training pipeline. The response includes the actual checkpoint engine used.
+`POST /api/predict` loads only the architecture selected in the `model` field. The ensemble option
+requires all four architecture checkpoints. This checkout currently has no such checkpoints, so its
+accuracy, R², and external prediction quality are **not evaluated**. The older `acoustic_classifier.pt`
+file is retained for a standalone diagnostic and is never used by the app's model choices.
 
-The bundled validation report records top-1 accuracy between 35.68% (SResNet) and 64.07% (CNN-GRU)
-on its ESC-50 split. Softmax confidence is a model score, not a guarantee that a prediction is correct.
-If a selected checkpoint cannot be loaded, the API returns an inference error instead of silently
-substituting another model or generating a heuristic prediction. Set `SOUNDSENSE_TORCH_THREADS` to
-override the default single-thread CPU inference setting.
+Run `python -m eval.build_external_set` to prepare a grouped, source-separated external set,
+`python -m eval.eval_legacy_mlp_external` to inspect the legacy diagnostic model, and the
+`eval/eval_external.py` / `eval/eval_esc50_cv.py` harnesses after trained checkpoints are available.
+The external manifest keeps a final holdout separate from the dev set. See [eval/REPORT.md](eval/REPORT.md)
+for measured results and current checkpoint status. Softmax output is a model
+score, not a guarantee of correctness or a measured probability of correctness. The current rule
+gates do not provide a general OOD detector, and they report no classifier confidence. Set
+`SOUNDSENSE_TORCH_THREADS` to override the default single-thread CPU inference setting.
+
+## Training and verification
+
+The repository includes precomputed ESC-50 features and official five-fold split manifests. For a full run, use a Kaggle GPU session, turn Internet on so torchvision can fetch the official ImageNet weights for ResNet-18 and VGG-16, then run:
+
+```text
+python -m eval.train_cv --model all --device cuda --include-final --epochs 40
+python -m eval.eval_esc50_cv_features --model all --device cuda
+python -m eval.eval_external --split dev --models resnet18 vgg16 sresnet cnngru ensemble --formats wav mp3 webm
+python -m eval.report
+```
+
+The trainer writes one checkpoint per held-out fold under `checkpoints/cv/` and a final deployment checkpoint for each model under `checkpoints/`. It uses validation folds for early stopping and temperature scaling, plus feature-space SpecAugment; it does not train on the external audio. The external harness runs the production inference function on the downloaded clips and checks audio decoding across formats. Only after the dev results and thresholds are reviewed should the held-out set be run once with `--split final`.

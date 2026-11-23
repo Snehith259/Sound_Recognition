@@ -263,8 +263,8 @@
               <span class="hero-stat-lbl">Acoustic Resolution</span>
             </div>
             <div class="hero-stat">
-              <span class="hero-stat-val">&lt; 30 ms</span>
-              <span class="hero-stat-lbl">Inference Latency</span>
+              <span class="hero-stat-val">—</span>
+              <span class="hero-stat-lbl">Measured Latency</span>
             </div>
           </div>
         </div>
@@ -282,7 +282,7 @@
               <div class="sim-live-status-group">
                 <div class="sim-live-status" id="sim-live-status">
                   <span class="sim-pulse-dot" id="sim-status-dot"></span>
-                  <span id="sim-status-text">DSP Ready</span>
+                  <span id="sim-status-text">Synthetic preview</span>
                 </div>
                 <button type="button" class="sim-playpause-btn" id="sim-playpause-btn" aria-label="Pause simulation" title="Pause / Resume simulation">
                   <svg class="sim-pause-icon" id="sim-pause-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
@@ -328,10 +328,10 @@
               </div>
               <div class="sim-results-side">
                 <div class="sim-pred-badge-row">
-                  <span class="sim-domain-badge" id="sim-domain-badge">Domain: Animals</span>
-                  <span class="sim-conf-badge" id="sim-conf-badge">96.8% Confidence</span>
+                  <span class="sim-domain-badge" id="sim-domain-badge">Synthetic audio · Animals</span>
+                  <span class="sim-conf-badge" id="sim-conf-badge">No model score</span>
                 </div>
-                <h4 class="sim-pred-name" id="sim-pred-name">Dog Barking (Canis lupus)</h4>
+                <h4 class="sim-pred-name" id="sim-pred-name">Synthetic dog bark sample</h4>
                 <p class="sim-pred-desc" id="sim-pred-desc">Multi-harmonic acoustic formants with rapid periodic vocal tract modulations centered around 450 Hz &ndash; 1.8 kHz.</p>
                 <div class="sim-actions-row">
                   <button type="button" class="btn btn-primary btn-sm" id="sim-try-studio-btn">
@@ -365,7 +365,7 @@
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
               </div>
               <h3 class="pillar-title">Out-of-Distribution Safety</h3>
-              <p class="pillar-desc">Mahalanobis anomaly detection flags unknown sounds and noise with complete transparency to prevent hallucination.</p>
+              <p class="pillar-desc">Current signal gates and model uncertainty mark sounds that may fall outside the ESC-50 categories.</p>
             </div>
           </div>
 
@@ -374,7 +374,7 @@
             <div class="section-block-header">
               <span class="subhead-badge">Guided Workflow</span>
               <h3 class="section-block-title">How SoundSense Operates in 3 Steps</h3>
-              <p class="section-block-subtitle">From acoustic waveform capture to calibrated neural classification</p>
+              <p class="section-block-subtitle">From acoustic waveform capture to model classification and diagnostics</p>
             </div>
 
             <div class="workflow-steps-grid">
@@ -393,7 +393,7 @@
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                 </div>
                 <h4 class="step-card-title">Select Inference Engine</h4>
-                <p class="step-card-desc">Choose between high-performance neural architectures (SResNet, ResNet-18, VGG-16, CNN-GRU) and configure confidence thresholds.</p>
+                <p class="step-card-desc">Choose a neural architecture (SResNet, ResNet-18, VGG-16, or CNN-GRU). A trained checkpoint is required before it can classify audio.</p>
               </div>
 
               <div class="step-card">
@@ -402,7 +402,7 @@
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                 </div>
                 <h4 class="step-card-title">Inspect Diagnostics &amp; Metrics</h4>
-                <p class="step-card-desc">Receive instant Top-5 ranked classification probabilities with domain category tagging, confidence calibration, and OOD assessment.</p>
+                <p class="step-card-desc">Receive the model’s Top-5 scores, input diagnostics, and out-of-scope assessment.</p>
               </div>
             </div>
           </div>
@@ -518,16 +518,16 @@
 
             <div class="confidence-guide-strip">
               <div class="conf-strip-item conf-strip-green">
-                <span class="conf-strip-badge">🟢 85% &ndash; 100%</span>
-                <span class="conf-strip-desc">High Confidence &mdash; distinctive acoustic signature safely calibrated for downstream action.</span>
+                <span class="conf-strip-badge">🟢 High score</span>
+                <span class="conf-strip-desc">A model probability is not a correctness guarantee. Calibration has not been verified yet.</span>
               </div>
               <div class="conf-strip-item conf-strip-amber">
                 <span class="conf-strip-badge">🟡 50% &ndash; 84%</span>
-                <span class="conf-strip-desc">Moderate Confidence &mdash; recognized sound with ambient background noise or runner-up overlap.</span>
+                <span class="conf-strip-desc">A lower model probability can indicate ambiguity; review the ranked alternatives.</span>
               </div>
               <div class="conf-strip-item conf-strip-rose">
                 <span class="conf-strip-badge">🔴 &lt; 50% / OOD</span>
-                <span class="conf-strip-desc">Anomaly Alert &mdash; input audio diverges from ESC-50 classes and is flagged safely.</span>
+                <span class="conf-strip-desc">Low model probability or an out-of-scope rule; this result may need manual review.</span>
               </div>
             </div>
           </div>
@@ -547,7 +547,7 @@
           </div>
           <h1 class="banner-title"><span class="fx-word">Environmental</span> <span class="fx-word">Sound</span> <span class="fx-word gradient-text studio-title-highlight">Classification Studio</span></h1>
           <p class="banner-desc">
-            Benchmarking state-of-the-art acoustic architectures including <strong>ResNet-18</strong>, <strong>VGG-16</strong>, <strong>SResNet</strong>, and <strong>CNN-GRU</strong> for real-time sound recognition across 50 environmental classes.
+            SoundSense includes <strong>ResNet-18</strong>, <strong>VGG-16</strong>, <strong>SResNet</strong>, and <strong>CNN-GRU</strong>. Current evaluation results are shown only after the harness produces them.
           </p>
           <div class="banner-pills-row">
             <button type="button" class="bpill banner-overview-pill" id="hero-overview-btn" aria-label="Explore System Overview">
@@ -740,7 +740,7 @@
                 </div>
               </div>
               <h2 class="empty-head">Awaiting Audio Input</h2>
-              <p class="empty-sub">Choose a preset sound above, record with microphone, or drop an audio file to view sound category detection, confidence metrics, and spectral feature maps.</p>
+              <p class="empty-sub">Choose a preset sound above, record with microphone, or drop an audio file to view sound category detection, model scores, and spectral feature maps.</p>
               <div class="empty-shortcuts-hint">
                 <span class="esh-item"><kbd>R</kbd> Record mic</span>
                 <span class="esh-item"><kbd>Space</kbd> Play / Pause</span>
@@ -790,11 +790,11 @@
 
               <!-- Primary Highlight Prediction -->
               <div class="primary-prediction-card">
-                <div class="prediction-emoji" id="top-emoji" aria-hidden="true">🐕</div>
+                <div class="prediction-emoji" id="top-emoji" aria-hidden="true">🔊</div>
                 <div class="prediction-details">
                   <span class="pred-label">Identified Sound</span>
-                  <h3 class="pred-category" id="top-category">Dog Bark</h3>
-                  <div class="pred-group-pill" id="top-group">Animals &bull; ESC-50 Class #0</div>
+                  <h3 class="pred-category" id="top-category">No prediction yet</h3>
+                  <div class="pred-group-pill" id="top-group">Awaiting model result</div>
                 </div>
                 <div class="confidence-meter-box" id="top-conf-ring" title="Confidence Score">
                   <svg class="ring-svg" viewBox="0 0 80 80" aria-hidden="true">
@@ -802,8 +802,8 @@
                     <circle class="ring-fill" id="conf-fill-circle" cx="40" cy="40" r="32"/>
                   </svg>
                   <div class="ring-text">
-                    <span class="pct-num" id="conf-pct">96%</span>
-                    <span class="pct-lbl">CONF</span>
+                    <span class="pct-num" id="conf-pct">—</span>
+                    <span class="pct-lbl">SCORE</span>
                   </div>
                 </div>
               </div>
@@ -1066,7 +1066,7 @@
             <span class="nav-dev-tag unlocked" style="display: inline-block;">DEVELOPER MODE</span>
           </div>
           <h2 class="panel-heading">Neural Architecture &amp; <span class="gradient-text">Research Pipeline</span></h2>
-          <p class="panel-subtext">Comprehensive engineering methodology: from raw audio ingestion and multi-representation feature extraction to dual-modal neural architectures, SwiGLU gating, and empirical benchmarks on ESC-50.</p>
+          <p class="panel-subtext">Engineering methodology: raw audio ingestion, shared feature extraction, four classifier architectures, and evaluation reports on ESC-50.</p>
         </div>
 
         <!-- Phase 01: End-to-End Signal Ingestion & Dual-Modal Pipeline -->
@@ -1145,8 +1145,8 @@
               <span class="dt-lbl">Disjoint Stratified Splits</span>
             </div>
             <div class="dt-stat">
-              <span class="dt-val">100%</span>
-              <span class="dt-lbl">Tensor Validation Pass</span>
+              <span class="dt-val">Not run</span>
+              <span class="dt-lbl">Tensor Validation</span>
             </div>
           </div>
         </div>
@@ -1155,7 +1155,7 @@
         <div class="combined-subhead">
           <div class="subhead-title-wrap">
             <span class="subhead-badge">Phase 02</span>
-            <h3 class="subhead-title">Deep Learning Acoustic Architectures &amp; Empirical Benchmarks</h3>
+            <h3 class="subhead-title">Deep Learning Acoustic Architectures &amp; Evaluation Status</h3>
           </div>
           <p class="subhead-meta">Comparative evaluation of convolutional, recurrent, and residual representations on ESC-50</p>
         </div>
@@ -1170,11 +1170,11 @@
               <span class="arch-pill pill-purple">Residual Learning</span>
             </div>
             <h3 class="arch-name">ResNet-18 (Residual Network)</h3>
-            <p class="arch-desc">18-layer residual network with skip connections, fine-tuned on Log-Mel spectrograms for fast environmental sound classification.</p>
+            <p class="arch-desc">18-layer residual network with skip connections, configured for Log-Mel spectrogram input.</p>
             <div class="arch-metrics">
-              <div class="metric"><span class="m-val">89.4%</span><span class="m-lbl">ESC-50 Accuracy</span></div>
+              <div class="metric"><span class="m-val" data-model-key="resnet18">Not evaluated</span><span class="m-lbl">ESC-50 Accuracy</span></div>
               <div class="metric"><span class="m-val">Log-Mel</span><span class="m-lbl">Primary Input</span></div>
-              <div class="metric"><span class="m-val">11.7M</span><span class="m-lbl">Parameters</span></div>
+              <div class="metric"><span class="m-val">—</span><span class="m-lbl">Parameters</span></div>
             </div>
           </div>
 
@@ -1189,9 +1189,9 @@
             <h3 class="arch-name">VGG-16 (Visual Geometry Group)</h3>
             <p class="arch-desc">Classical 16-layer deep network using stacked 3&times;3 convolutions to capture hierarchical spectral patterns.</p>
             <div class="arch-metrics">
-              <div class="metric"><span class="m-val">86.2%</span><span class="m-lbl">ESC-50 Accuracy</span></div>
+              <div class="metric"><span class="m-val" data-model-key="vgg16">Not evaluated</span><span class="m-lbl">ESC-50 Accuracy</span></div>
               <div class="metric"><span class="m-val">Log-Mel</span><span class="m-lbl">Primary Input</span></div>
-              <div class="metric"><span class="m-val">138.4M</span><span class="m-lbl">Parameters</span></div>
+              <div class="metric"><span class="m-val">—</span><span class="m-lbl">Parameters</span></div>
             </div>
           </div>
 
@@ -1204,10 +1204,10 @@
               <span class="arch-pill pill-green">Specialized Baselines</span>
             </div>
             <h3 class="arch-name">SResNet &amp; CNN-GRU</h3>
-            <p class="arch-desc">SResNet uses squeezed residual blocks on MFCCs (95.1%), CNN-GRU adds bidirectional recurrent units for temporal modeling (93.4%).</p>
+            <p class="arch-desc">The current SResNet implementation is a compact MFCC convolutional network; CNN-GRU adds bidirectional recurrent units for temporal modeling.</p>
             <div class="arch-metrics">
-              <div class="metric"><span class="m-val">95.1%</span><span class="m-lbl">SResNet Acc</span></div>
-              <div class="metric"><span class="m-val">93.4%</span><span class="m-lbl">CNN-GRU Acc</span></div>
+              <div class="metric"><span class="m-val" data-model-key="sresnet">Not evaluated</span><span class="m-lbl">SResNet Accuracy</span></div>
+              <div class="metric"><span class="m-val" data-model-key="cnngru">Not evaluated</span><span class="m-lbl">CNN-GRU Accuracy</span></div>
               <div class="metric"><span class="m-val">MFCC/Mel</span><span class="m-lbl">Input Types</span></div>
             </div>
           </div>
@@ -1218,37 +1218,37 @@
           <div class="perf-chart-head">
             <div>
               <h4 class="table-caption">Accuracy Benchmark</h4>
-              <p class="perf-chart-sub">ESC-50 classification accuracy by architecture</p>
+              <p class="perf-chart-sub">ESC-50 cross-validation accuracy by architecture</p>
             </div>
-            <span class="perf-chip" id="perf-chip">SResNet &amp; ResNet-18 Benchmark</span>
+            <span class="perf-chip" id="perf-chip">Awaiting evaluation report</span>
           </div>
           <div class="perf-bars">
-            <div class="perf-row" data-value="95.1">
+            <div class="perf-row" data-value="0" data-model-key="sresnet">
               <span class="perf-name">SResNet</span>
-              <div class="perf-track"><span class="perf-fill" data-w="95.1"></span></div>
-              <span class="perf-pct">95.1%</span>
+              <div class="perf-track"><span class="perf-fill" data-w="0"></span></div>
+              <span class="perf-pct">Not evaluated</span>
             </div>
-            <div class="perf-row" data-value="93.4">
+            <div class="perf-row" data-value="0" data-model-key="cnngru">
               <span class="perf-name">CNN-GRU</span>
-              <div class="perf-track"><span class="perf-fill" data-w="93.4"></span></div>
-              <span class="perf-pct">93.4%</span>
+              <div class="perf-track"><span class="perf-fill" data-w="0"></span></div>
+              <span class="perf-pct">Not evaluated</span>
             </div>
-            <div class="perf-row" data-value="89.4">
+            <div class="perf-row" data-value="0" data-model-key="resnet18">
               <span class="perf-name">ResNet-18</span>
-              <div class="perf-track"><span class="perf-fill perf-fusion" data-w="89.4"></span></div>
-              <span class="perf-pct">89.4%</span>
+              <div class="perf-track"><span class="perf-fill perf-fusion" data-w="0"></span></div>
+              <span class="perf-pct">Not evaluated</span>
             </div>
-            <div class="perf-row" data-value="86.2">
+            <div class="perf-row" data-value="0" data-model-key="vgg16">
               <span class="perf-name">VGG-16</span>
-              <div class="perf-track"><span class="perf-fill" data-w="86.2"></span></div>
-              <span class="perf-pct">86.2%</span>
+              <div class="perf-track"><span class="perf-fill" data-w="0"></span></div>
+              <span class="perf-pct">Not evaluated</span>
             </div>
           </div>
         </div>
 
         <!-- Comparative Spec Table -->
         <div class="spec-table-box">
-          <h4 class="table-caption">Comparative Model Performance on ESC-50</h4>
+          <h4 class="table-caption">ESC-50 Evaluation Results</h4>
           <table class="spec-table">
             <thead>
               <tr>
@@ -1260,33 +1260,33 @@
               </tr>
             </thead>
             <tbody>
-              <tr class="highlight-row">
+              <tr class="highlight-row" data-model-key="resnet18">
                 <td><strong>ResNet-18</strong></td>
                 <td>Log-Mel Spectrogram</td>
-                <td>~11.7 M</td>
-                <td>8.2 ms</td>
-                <td><strong class="col-highlight">89.4%</strong></td>
+                <td data-model-metric="params">—</td>
+                <td data-model-metric="latency">—</td>
+                <td data-model-metric="accuracy"><strong class="col-highlight">Not evaluated</strong></td>
               </tr>
-              <tr>
+              <tr data-model-key="vgg16">
                 <td><strong>VGG-16</strong></td>
                 <td>Log-Mel Spectrogram</td>
-                <td>~138.4 M</td>
-                <td>14.5 ms</td>
-                <td>86.2%</td>
+                <td data-model-metric="params">—</td>
+                <td data-model-metric="latency">—</td>
+                <td data-model-metric="accuracy">Not evaluated</td>
               </tr>
-              <tr>
+              <tr data-model-key="sresnet">
                 <td>SResNet</td>
                 <td>Linear MFCC Filterbanks</td>
-                <td>~8.6 M</td>
-                <td>7.8 ms</td>
-                <td>95.1%</td>
+                <td data-model-metric="params">—</td>
+                <td data-model-metric="latency">—</td>
+                <td data-model-metric="accuracy">Not evaluated</td>
               </tr>
-              <tr>
+              <tr data-model-key="cnngru">
                 <td>CNN-GRU</td>
                 <td>Nonlinear Log-Mel Spectrograms</td>
-                <td>~5.6 M</td>
-                <td>9.2 ms</td>
-                <td>93.4%</td>
+                <td data-model-metric="params">—</td>
+                <td data-model-metric="latency">—</td>
+                <td data-model-metric="accuracy">Not evaluated</td>
               </tr>
             </tbody>
           </table>
@@ -1648,24 +1648,24 @@
                 <td><span class="method-badge post">POST</span></td>
                 <td><code>/api/predict</code></td>
                 <td>Audio classification &amp; OOD inference</td>
-                <td>multipart/form-data (file, model, threshold)</td>
+                <td>multipart/form-data (audio, model, threshold)</td>
               </tr>
               <tr>
                 <td><span class="method-badge post">POST</span></td>
                 <td><code>/api/train</code></td>
-                <td>Trigger PyTorch training run</td>
+                <td>Training runs offline; endpoint does not simulate metrics</td>
                 <td>JSON (model, epochs, lr, batch_size)</td>
               </tr>
               <tr>
                 <td><span class="method-badge get">GET</span></td>
                 <td><code>/api/train/{job_id}</code></td>
-                <td>Check real-time training telemetry</td>
+                <td>Check an offline training job if available</td>
                 <td>URL param (job_id)</td>
               </tr>
               <tr>
                 <td><span class="method-badge post">POST</span></td>
                 <td><code>/api/save-model</code></td>
-                <td>Save model checkpoint to disk</td>
+                <td>Checkpoint creation is handled by offline training</td>
                 <td>JSON (name, model_type, metrics)</td>
               </tr>
               <tr>

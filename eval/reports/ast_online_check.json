@@ -1,0 +1,250 @@
+[
+  {
+    "case": "Dog Barking",
+    "file": "audio_01.ogg",
+    "expected": "dog",
+    "predicted": "dog",
+    "confidence": 0.994140088558197,
+    "top5": [
+      [
+        "dog",
+        0.994140088558197
+      ],
+      [
+        "sneezing",
+        0.0007912958390079439
+      ],
+      [
+        "airplane",
+        0.0002572528610471636
+      ],
+      [
+        "glass_breaking",
+        0.00022930849809199572
+      ],
+      [
+        "fireworks",
+        0.0002138146519428119
+      ]
+    ],
+    "correct": true,
+    "ood": false
+  },
+  {
+    "case": "Cat Meowing",
+    "file": "audio_02.ogg",
+    "expected": "cat",
+    "predicted": "cat",
+    "confidence": 0.9923970103263855,
+    "top5": [
+      [
+        "cat",
+        0.9923970103263855
+      ],
+      [
+        "glass_breaking",
+        0.0009858165867626667
+      ],
+      [
+        "water_drops",
+        0.0004909028066322207
+      ],
+      [
+        "door_wood_creaks",
+        0.0004495344473980367
+      ],
+      [
+        "crow",
+        0.0004022482316941023
+      ]
+    ],
+    "correct": true,
+    "ood": false
+  },
+  {
+    "case": "Rooster Crowing",
+    "file": "audio_03.ogg",
+    "expected": "rooster",
+    "predicted": "rooster",
+    "confidence": 0.9857812523841858,
+    "top5": [
+      [
+        "rooster",
+        0.9857812523841858
+      ],
+      [
+        "hen",
+        0.009235601872205734
+      ],
+      [
+        "chainsaw",
+        0.000267089024418965
+      ],
+      [
+        "clapping",
+        0.0002490188926458359
+      ],
+      [
+        "water_drops",
+        0.00023387606779579073
+      ]
+    ],
+    "correct": true,
+    "ood": false
+  },
+  {
+    "case": "Thunderstorm",
+    "file": "audio_04.ogg",
+    "expected": "thunderstorm",
+    "predicted": "rain",
+    "confidence": 0.7290109793345133,
+    "top5": [
+      [
+        "rain",
+        0.7290109793345133
+      ],
+      [
+        "thunderstorm",
+        0.123787104152143
+      ],
+      [
+        "toilet_flush",
+        0.021313206292688847
+      ],
+      [
+        "sea_waves",
+        0.02056633324051897
+      ],
+      [
+        "crackling_fire",
+        0.016769220974917214
+      ]
+    ],
+    "correct": false,
+    "ood": false
+  },
+  {
+    "case": "Emergency Siren",
+    "file": "audio_05.ogg",
+    "expected": "siren",
+    "predicted": "clock_alarm",
+    "confidence": 0.12241402268409729,
+    "top5": [
+      [
+        "clock_alarm",
+        0.12241402268409729
+      ],
+      [
+        "keyboard_typing",
+        0.0978752002120018
+      ],
+      [
+        "fireworks",
+        0.0966901183128357
+      ],
+      [
+        "rain",
+        0.08160226792097092
+      ],
+      [
+        "car_horn",
+        0.06437031179666519
+      ]
+    ],
+    "correct": false,
+    "ood": false
+  },
+  {
+    "case": "Car Horn",
+    "file": "audio_07_car_horn.wav",
+    "expected": "car_horn",
+    "predicted": "siren",
+    "confidence": 0.5304951667785645,
+    "top5": [
+      [
+        "siren",
+        0.5304951667785645
+      ],
+      [
+        "car_horn",
+        0.1709546595811844
+      ],
+      [
+        "washing_machine",
+        0.06450269371271133
+      ],
+      [
+        "door_wood_creaks",
+        0.06112976744771004
+      ],
+      [
+        "keyboard_typing",
+        0.026902999728918076
+      ]
+    ],
+    "correct": false,
+    "ood": false
+  },
+  {
+    "case": "Human Spoken Speech",
+    "file": "audio_06_speech.wav",
+    "expected": null,
+    "predicted": "water_drops",
+    "confidence": 0.14757715165615082,
+    "top5": [
+      [
+        "water_drops",
+        0.14757715165615082
+      ],
+      [
+        "chirping_birds",
+        0.06437939405441284
+      ],
+      [
+        "coughing",
+        0.05213513970375061
+      ],
+      [
+        "sneezing",
+        0.05127624422311783
+      ],
+      [
+        "footsteps",
+        0.048293277621269226
+      ]
+    ],
+    "correct": false,
+    "ood": true
+  },
+  {
+    "case": "Pure Synthetic Sine Tone",
+    "file": "audio_08_sine_tone.wav",
+    "expected": null,
+    "predicted": "clock_alarm",
+    "confidence": 0.17518916726112366,
+    "top5": [
+      [
+        "clock_alarm",
+        0.17518916726112366
+      ],
+      [
+        "vacuum_cleaner",
+        0.1558557003736496
+      ],
+      [
+        "car_horn",
+        0.055420055985450745
+      ],
+      [
+        "mouse_click",
+        0.05351223051548004
+      ],
+      [
+        "can_opening",
+        0.051829900592565536
+      ]
+    ],
+    "correct": false,
+    "ood": true
+  }
+]

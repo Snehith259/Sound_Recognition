@@ -8,12 +8,9 @@
 
 import os
 import re
-import math
 import time
 import uuid
 import json
-import random
-import asyncio
 import threading
 from contextlib import asynccontextmanager
 from typing import List, Optional, Dict, Any
@@ -120,107 +117,9 @@ server_state = {
     "started_at": datetime.now(timezone.utc).isoformat(),
     "total_predictions": 0,
     "total_training_runs": 0,
-    "saved_checkpoints": [
-        {
-            "checkpointId": "ckpt_v1_resnet18",
-            "version": "v1.0.0",
-            "name": "ResNet-18",
-            "description": "Deep Residual Network with 18 layers (Log-Mel Spectrogram input)",
-            "modelType": "resnet18",
-            "accuracy": 62.81,
-            "top5": 88.19,
-            "params": "11.3M",
-            "savedAt": "2026-11-20T11:16:00Z",
-            "status": "active",
-            "fileSizeMB": 45.34,
-            "cloudSource": "checkpoints/esc50_resnet18_v1.pt",
-            "downloaded": True,
-        },
-        {
-            "checkpointId": "ckpt_v1_vgg16",
-            "version": "v1.1.0",
-            "name": "VGG-16",
-            "description": "Visual Geometry Group 16-layer Deep Convolutional Network",
-            "modelType": "vgg16",
-            "accuracy": 61.06,
-            "top5": 91.96,
-            "params": "15.8M",
-            "savedAt": "2026-11-20T11:38:00Z",
-            "status": "saved",
-            "fileSizeMB": 63.26,
-            "cloudSource": "checkpoints/esc50_vgg16_v1.pt",
-            "downloaded": True,
-        },
-        {
-            "checkpointId": "ckpt_v09_sresnet",
-            "version": "v0.9.0",
-            "name": "SResNet",
-            "description": "Linear spectral MFCC squeezed residual network",
-            "modelType": "sresnet",
-            "accuracy": 35.68,
-            "top5": 76.13,
-            "params": "0.43M",
-            "savedAt": "2026-11-20T11:58:00Z",
-            "status": "saved",
-            "fileSizeMB": 1.72,
-            "cloudSource": "checkpoints/esc50_sresnet_linear_v09.pt",
-            "downloaded": True,
-        },
-        {
-            "checkpointId": "ckpt_v08_cnngru",
-            "version": "v0.8.0",
-            "name": "CNN-GRU",
-            "description": "Nonlinear Log-Mel temporal recurrent model",
-            "modelType": "cnngru",
-            "accuracy": 64.07,
-            "top5": 91.21,
-            "params": "0.52M",
-            "savedAt": "2026-11-20T12:15:00Z",
-            "status": "saved",
-            "fileSizeMB": 2.11,
-            "cloudSource": "checkpoints/esc50_cnngru_recurrent_v08.pt",
-            "downloaded": True,
-        },
-    ],
+    "saved_checkpoints": [],
     "training_jobs": [],
-    "model_versions": [
-        {
-            "id": "v1.0.0",
-            "name": "ResNet-18",
-            "accuracy": 62.81,
-            "params": "11.3M",
-            "createdAt": "2026-11-20T11:16:00Z",
-            "status": "active",
-            "description": "Deep Residual Network with 18 layers (Log-Mel Spectrogram input)",
-        },
-        {
-            "id": "v1.1.0",
-            "name": "VGG-16",
-            "accuracy": 61.06,
-            "params": "15.8M",
-            "createdAt": "2026-11-20T11:38:00Z",
-            "status": "saved",
-            "description": "Visual Geometry Group 16-layer Deep Convolutional Network",
-        },
-        {
-            "id": "v0.9.0",
-            "name": "SResNet",
-            "accuracy": 35.68,
-            "params": "0.43M",
-            "createdAt": "2026-11-20T11:58:00Z",
-            "status": "saved",
-            "description": "Linear spectral MFCC squeezed residual network",
-        },
-        {
-            "id": "v0.8.0",
-            "name": "CNN-GRU",
-            "accuracy": 64.07,
-            "params": "0.52M",
-            "createdAt": "2026-11-20T12:15:00Z",
-            "status": "saved",
-            "description": "Nonlinear Log-Mel temporal recurrent model",
-        },
-    ],
+    "model_versions": [],
 }
 
 active_sessions: Dict[str, Dict[str, Any]] = {}
@@ -257,6 +156,27 @@ def get_uptime_seconds() -> int:
     started = datetime.fromisoformat(server_state["started_at"])
     return int((datetime.now(timezone.utc) - started).total_seconds())
 
+
+def load_evaluation_report() -> Dict[str, Any]:
+    """Read the sole supported source for published model metrics."""
+    report_path = BASE_DIR / "checkpoints" / "eval_report.json"
+    if not report_path.is_file():
+        return {}
+    try:
+        with report_path.open("r", encoding="utf-8") as stream:
+            data = json.load(stream)
+        return data if isinstance(data, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def current_checkpoint_inventory() -> Dict[str, Dict[str, Any]]:
+    try:
+        from Preproccesing.acoustic_inference import model_status
+        return model_status().get("checkpoints", {})
+    except Exception:
+        return {}
+
 def int32_hash(s: str) -> int:
     """Simulates the 32-bit signed integer hash behavior of JS string hashing."""
     h = 0
@@ -266,28 +186,6 @@ def int32_hash(s: str) -> int:
     if h >= 0x80000000:
         h -= 0x100000000
     return h
-
-# ── Background Task: Simulated Training Loop ─────────────────────
-async def simulate_training(job: dict, total_steps: int):
-    for step in range(1, total_steps + 1):
-        await asyncio.sleep(0.6)  # 600ms per epoch simulation
-        job["currentEpoch"] = step
-        job["progress"] = round((step / total_steps) * 100)
-
-        epoch_ratio = step / total_steps
-        train_loss = 2.5 * math.exp(-3.5 * epoch_ratio) + 0.08 + (random.random() - 0.5) * 0.03
-        val_loss = 2.5 * math.exp(-3.0 * epoch_ratio) + 0.12 + (random.random() - 0.5) * 0.05
-        train_acc = min(99.5, 50 + 48 * (1 - math.exp(-4 * epoch_ratio)) + (random.random() - 0.5) * 1.5)
-        val_acc = min(98.0, 48 + 46 * (1 - math.exp(-3.5 * epoch_ratio)) + (random.random() - 0.5) * 2.0)
-
-        job["metrics"]["trainLoss"].append(round(train_loss, 4))
-        job["metrics"]["valLoss"].append(round(val_loss, 4))
-        job["metrics"]["trainAcc"].append(round(train_acc, 2))
-        job["metrics"]["valAcc"].append(round(val_acc, 2))
-
-    job["status"] = "completed"
-    job["completedAt"] = datetime.now(timezone.utc).isoformat()
-    job["progress"] = 100
 
 # ══════════════════════════════════════════════════════════════════
 # ROUTE 0: GET /api/sample/{category_id} — Fetch Verified ESC-50 Audio
@@ -355,7 +253,12 @@ async def predict(
 
         # Real Acoustic Classification in-memory (Zero disk writes, prevents Live Server reload)
         from Preproccesing.acoustic_inference import run_acoustic_inference
-        result = await run_in_threadpool(run_acoustic_inference, content, model)
+        confidence_threshold = None if threshold is None else float(threshold)
+        if confidence_threshold is not None and confidence_threshold > 1.0:
+            confidence_threshold /= 100.0
+        if confidence_threshold is not None and not 0.0 <= confidence_threshold <= 1.0:
+            raise HTTPException(status_code=400, detail="Threshold must be between 0 and 1, or 0 and 100.")
+        result = await run_in_threadpool(run_acoustic_inference, content, model, confidence_threshold)
 
         server_state["total_predictions"] += 1
         history_id = f"hist_{stamp}_{uuid.uuid4().hex[:6]}"
@@ -373,7 +276,11 @@ async def predict(
                 "emoji": result["category"].get("emoji", "🔊"),
                 "group": result["category"].get("group", "Other"),
                 "confidence": result["confidence"],
-                "confidencePercent": f"{round(result['confidence'] * 100, 1)}%",
+                "confidencePercent": (
+                    f"{round(result['confidence'] * 100, 1)}%"
+                    if result.get("confidenceType") != "not_computed_rule_gate" and result["confidence"] is not None
+                    else None
+                ),
                 "isOutOfScope": result.get("isOutOfScope", False),
             },
             "predictions": result["predictions"],
@@ -392,17 +299,27 @@ async def predict(
             "fileName": file_name,
             "isOutOfScope": result.get("isOutOfScope", False),
             "confidence": result["confidence"],
+            "confidenceType": result.get("confidenceType"),
+            "classProbabilities": result.get("classProbabilities"),
+            "oodScore": result.get("oodScore"),
             "category": result["category"],
             "predictions": result["predictions"],
             "explanation": result.get("explanation"),
             "metrics": result.get("metrics"),
             "inferenceTime": result["inferenceTime"],
+            "windowCount": result.get("windowCount"),
+            "belowConfidenceThreshold": result.get("belowConfidenceThreshold", False),
+            "confidenceThreshold": result.get("confidenceThreshold"),
             "historyId": history_id,
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
     except HTTPException:
         raise
+    except FileNotFoundError as err:
+        return JSONResponse(status_code=503, content={"error": "Model unavailable", "details": str(err)})
+    except ValueError as err:
+        return JSONResponse(status_code=400, content={"error": "Invalid inference request", "details": str(err)})
     except Exception as err:
         return JSONResponse(
             status_code=500,
@@ -452,7 +369,10 @@ async def predict_batch(
                 })
                 continue
 
-            res = await run_in_threadpool(run_acoustic_inference, content, model)
+            confidence_threshold = None if threshold is None else float(threshold)
+            if confidence_threshold is not None and confidence_threshold > 1.0:
+                confidence_threshold /= 100.0
+            res = await run_in_threadpool(run_acoustic_inference, content, model, confidence_threshold)
             server_state["total_predictions"] += 1
             stamp = int(time.time() * 1000)
             history_id = f"hist_{stamp}_{uuid.uuid4().hex[:6]}"
@@ -469,7 +389,11 @@ async def predict_batch(
                     "emoji": res["category"].get("emoji", "🔊"),
                     "group": res["category"].get("group", "Other"),
                     "confidence": res["confidence"],
-                    "confidencePercent": f"{round(res['confidence'] * 100, 1)}%",
+                    "confidencePercent": (
+                        f"{round(res['confidence'] * 100, 1)}%"
+                        if res.get("confidenceType") != "not_computed_rule_gate" and res["confidence"] is not None
+                        else None
+                    ),
                     "isOutOfScope": res.get("isOutOfScope", False),
                 },
                 "predictions": res["predictions"],
@@ -513,48 +437,10 @@ async def predict_batch(
 # ══════════════════════════════════════════════════════════════════
 @app.post("/api/train")
 async def trigger_training(payload: TrainRequest, background_tasks: BackgroundTasks):
-    try:
-        job_id = f"train_{int(time.time() * 1000)}_{uuid.uuid4().hex[:6]}"
-
-        job = {
-            "jobId": job_id,
-            "modelType": payload.modelType,
-            "epochs": payload.epochs,
-            "batchSize": payload.batchSize,
-            "learningRate": payload.learningRate,
-            "folds": payload.folds,
-            "augmentation": payload.augmentation,
-            "description": payload.description,
-            "status": "running",
-            "progress": 0,
-            "currentEpoch": 0,
-            "startedAt": datetime.now(timezone.utc).isoformat(),
-            "completedAt": None,
-            "metrics": {
-                "trainLoss": [],
-                "valLoss": [],
-                "trainAcc": [],
-                "valAcc": [],
-            },
-        }
-
-        server_state["training_jobs"].append(job)
-        server_state["total_training_runs"] += 1
-
-        # Dispatch async training simulation loop
-        background_tasks.add_task(simulate_training, job, payload.epochs)
-
-        return {
-            "success": True,
-            "jobId": job_id,
-            "message": f'Training job "{job_id}" started with {payload.epochs} epochs on model "{payload.modelType}".',
-            "estimatedTime": f"{round(payload.epochs * 0.6)}s (simulated)",
-        }
-    except Exception as err:
-        return JSONResponse(
-            status_code=500,
-            content={"error": "Training initiation failed", "details": str(err)}
-        )
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Training runs offline with python -m eval.train_cv. This endpoint does not simulate training or metrics.",
+    )
 
 @app.get("/api/train/{job_id}")
 async def get_training_job(job_id: str):
@@ -585,74 +471,44 @@ async def list_training_jobs():
 # ══════════════════════════════════════════════════════════════════
 @app.post("/api/save-model")
 async def save_model(payload: SaveModelRequest):
-    try:
-        checkpoint_id = f"ckpt_{int(time.time() * 1000)}_{uuid.uuid4().hex[:4]}"
-        version = f"v{len(server_state['saved_checkpoints']) + 2}.0.0"
-
-        final_accuracy = payload.accuracy
-        if payload.fromJobId:
-            job = next((j for j in server_state["training_jobs"] if j["jobId"] == payload.fromJobId), None)
-            if job and job["status"] == "completed" and job["metrics"]["valAcc"]:
-                final_accuracy = job["metrics"]["valAcc"][-1]
-
-        param_map = {"resnet18": "11.7M", "vgg16": "138.4M", "sresnet": "8.6M", "cnngru": "5.6M"}
-        params = param_map.get(payload.modelType, "11.7M")
-        saved_at = datetime.now(timezone.utc).isoformat()
-
-        checkpoint = {
-            "checkpointId": checkpoint_id,
-            "version": version,
-            "name": payload.name,
-            "description": payload.description,
-            "modelType": payload.modelType,
-            "accuracy": final_accuracy if final_accuracy is not None else round(88 + random.random() * 6, 2),
-            "params": params,
-            "savedAt": saved_at,
-            "status": "saved",
-            "fileSizeMB": round(25 + random.random() * 40, 1),
-        }
-
-        server_state["saved_checkpoints"].append(checkpoint)
-        server_state["model_versions"].append({
-            "id": version,
-            "name": payload.name,
-            "accuracy": checkpoint["accuracy"],
-            "params": checkpoint["params"],
-            "createdAt": checkpoint["savedAt"],
-            "status": "saved",
-            "description": payload.description,
-        })
-
-        return {
-            "success": True,
-            "checkpoint": checkpoint,
-            "message": f'Model checkpoint "{payload.name}" saved as {version}.',
-        }
-    except Exception as err:
-        return JSONResponse(
-            status_code=500,
-            content={"error": "Checkpoint save failed", "details": str(err)}
-        )
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Checkpoints are created by the offline training pipeline. This endpoint does not invent or save metrics.",
+    )
 
 @app.get("/api/save-model")
 async def list_checkpoints():
+    inventory = current_checkpoint_inventory()
+    report_models = load_evaluation_report().get("models", {})
+    checkpoints = []
+    for model_name, info in inventory.items():
+        if not info.get("available"):
+            continue
+        metrics = report_models.get(model_name, {}).get("metrics", {})
+        checkpoints.append({
+            "checkpointId": info["filename"],
+            "name": model_name,
+            "modelType": model_name,
+            "filename": info["filename"],
+            "sha256": info.get("sha256"),
+            "fileSizeBytes": info.get("sizeBytes"),
+            "accuracy": metrics.get("top1") * 100 if metrics.get("top1") is not None else None,
+            "top5": metrics.get("top5") * 100 if metrics.get("top5") is not None else None,
+            "status": "available",
+        })
     return {
         "success": True,
-        "checkpoints": server_state["saved_checkpoints"],
-        "modelVersions": server_state["model_versions"],
+        "checkpoints": checkpoints,
+        "modelVersions": [],
     }
 
 @app.post("/api/model/cloud-sync")
 async def cloud_sync(payload: Optional[CloudSyncRequest] = None):
     repo = payload.repo if payload else "huggingface.co/soundsense/esc50-resnet18"
-    return {
-        "success": True,
-        "source": repo,
-        "message": f"Model weights verified and cached from Hugging Face Hub ({repo}).",
-        "cachedCheckpoints": len(server_state["saved_checkpoints"]),
-        "status": "synchronized",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    }
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail=f"No verified model repository is configured (requested source: {repo}).",
+    )
 
 # ══════════════════════════════════════════════════════════════════
 # ROUTE 4: GET /api/stats — System & Dataset Analytics
@@ -698,7 +554,7 @@ async def get_stats():
             "id": cat["id"],
             "name": cat["name"],
             "group": cat["group"],
-            "sampleCount": round(processed_audio_count / 50) or 40,
+            "sampleCount": round(processed_audio_count / 50),
         }
         for cat in ESC50_CATEGORIES
     ]
@@ -708,49 +564,31 @@ async def get_stats():
         {
             "group": g,
             "classCount": 10,
-            "totalSamples": round(processed_audio_count / 5) or 400,
+            "totalSamples": round(processed_audio_count / 5),
         }
         for g in groups
     ]
 
-    model_performance = [
-        {
-            "model": "CNN-GRU (v0.8)",
-            "accuracy": 64.07,
-            "top5Accuracy": 91.21,
-            "params": "0.52M",
-            "latency": 6.6,
-            "color": "#34d399",
-            "evaluatedOn": "ESC-50 Official Split (Fold 5)",
-        },
-        {
-            "model": "ResNet-18 (v1.0)",
-            "accuracy": 62.81,
-            "top5Accuracy": 88.19,
-            "params": "11.3M",
-            "latency": 67.3,
-            "color": "#38bdf8",
-            "evaluatedOn": "ESC-50 Official Split (Fold 5)",
-        },
-        {
-            "model": "VGG-16 (v1.1)",
-            "accuracy": 61.06,
-            "top5Accuracy": 91.96,
-            "params": "15.8M",
-            "latency": 26185.4,
-            "color": "#fbbf24",
-            "evaluatedOn": "ESC-50 Official Split (Fold 5)",
-        },
-        {
-            "model": "SResNet (v0.9)",
-            "accuracy": 35.68,
-            "top5Accuracy": 76.13,
-            "params": "0.43M",
-            "latency": 18.2,
-            "color": "#a855f7",
-            "evaluatedOn": "ESC-50 Official Split (Fold 5)",
-        },
-    ]
+    eval_report = load_evaluation_report()
+    colors = {"cnngru": "#34d399", "resnet18": "#38bdf8", "vgg16": "#fbbf24", "sresnet": "#a855f7", "ensemble": "#818cf8"}
+    display_names = {"cnngru": "CNN-GRU", "resnet18": "ResNet-18", "vgg16": "VGG-16", "sresnet": "SResNet", "ensemble": "Ensemble Fusion"}
+    model_performance = []
+    for model_name, model_result in eval_report.get("models", {}).items():
+        metrics = model_result.get("metrics", {})
+        if not metrics:
+            continue
+        model_performance.append({
+            "model": display_names.get(model_name, model_name),
+            "modelKey": model_name,
+            "accuracy": metrics.get("top1") * 100 if metrics.get("top1") is not None else None,
+            "top5Accuracy": metrics.get("top5") * 100 if metrics.get("top5") is not None else None,
+            "r2Score": metrics.get("r2Probability"),
+            "ece": metrics.get("ece"),
+            "externalAccuracy": model_result.get("external", {}).get("top1") * 100 if model_result.get("external", {}).get("top1") is not None else None,
+            "latency": metrics.get("latencyMs"),
+            "color": colors.get(model_name, "#94a3b8"),
+            "evaluatedOn": model_result.get("evaluation", eval_report.get("evaluation")),
+        })
 
     uptime = get_uptime_seconds()
     proc = psutil.Process(os.getpid())
@@ -771,8 +609,8 @@ async def get_stats():
                 "heapTotal": rss_mb,
             },
             "totalPredictions": server_state["total_predictions"],
-            "totalTrainingRuns": server_state["total_training_runs"],
-            "savedCheckpoints": len(server_state["saved_checkpoints"]),
+            "totalTrainingRuns": int(eval_report.get("trainingRuns", 0)),
+            "savedCheckpoints": sum(1 for item in current_checkpoint_inventory().values() if item.get("available")),
         },
         "dataset": {
             "name": "ESC-50",
@@ -795,7 +633,12 @@ async def get_stats():
         },
         "modelPerformance": model_performance,
         "preprocessingReport": preprocessing_report,
-        "modelVersions": server_state["model_versions"],
+        "modelVersions": [],
+        "evaluationReport": eval_report,
+        "modelAvailability": {
+            "availableModels": [name for name, item in current_checkpoint_inventory().items() if item.get("available")],
+            "missingModels": [name for name, item in current_checkpoint_inventory().items() if not item.get("available")],
+        },
     }
 
 # ══════════════════════════════════════════════════════════════════
@@ -918,12 +761,20 @@ async def health():
     except Exception as err:
         engine_status = {"state": "unavailable", "error": str(err)}
 
+    checkpoint_inventory = current_checkpoint_inventory()
+    missing_models = [
+        name for name, item in checkpoint_inventory.items()
+        if not item.get("available")
+    ]
+
     return {
-        "status": "healthy",
+        "status": "healthy" if not missing_models else "degraded",
         "service": "SoundSense Backend",
         "version": "1.0.0",
         "uptime": uptime,
         "engine": engine_status,
+        "models": checkpoint_inventory,
+        "missingModels": missing_models,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "endpoints": [
             {"method": "POST", "path": "/api/auth/login", "description": "Developer login"},

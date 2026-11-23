@@ -1,101 +1,79 @@
-"""
-SoundSense — Automated Model Weight & Checkpoint Cloud Retriever
-Downloads or verifies cached ESC-50 trained weights from Hugging Face Hub / Cloud Storage.
-"""
+"""Download a checkpoint only from an explicitly configured Hugging Face repo.
 
-import os
-import sys
-import json
+This helper does not keep a default repo URL or attach accuracy claims to a
+download. Metrics come from `python -m eval.report` after the evaluation scripts.
+"""
+from __future__ import annotations
+
 import hashlib
+import os
+import shutil
+import sys
 from pathlib import Path
+from typing import Any
 
 CHECKPOINTS_DIR = Path(__file__).resolve().parent.parent / "checkpoints"
-CACHE_MANIFEST = CHECKPOINTS_DIR / "manifest.json"
-
-DEFAULT_MODELS = {
-    "resnet18_v1": {
-        "repo_id": "soundsense/esc50-resnet18",
-        "filename": "esc50_resnet18_v1.pt",
-        "size_mb": 45.34,
-        "accuracy": 62.81,
-        "top5": 88.19,
-        "description": "Deep Residual Network with 18 layers (Log-Mel Spectrogram input)",
-    },
-    "vgg16_v1": {
-        "repo_id": "soundsense/esc50-vgg16",
-        "filename": "esc50_vgg16_v1.pt",
-        "size_mb": 63.26,
-        "accuracy": 61.06,
-        "top5": 91.96,
-        "description": "Visual Geometry Group 16-layer Deep Convolutional Network",
-    },
-    "sresnet_v09": {
-        "repo_id": "soundsense/esc50-sresnet",
-        "filename": "esc50_sresnet_linear_v09.pt",
-        "size_mb": 1.72,
-        "accuracy": 35.68,
-        "top5": 76.13,
-        "description": "Linear spectral MFCC squeezed residual network",
-    },
-    "cnngru_v08": {
-        "repo_id": "soundsense/esc50-cnngru",
-        "filename": "esc50_cnngru_recurrent_v08.pt",
-        "size_mb": 2.11,
-        "accuracy": 64.07,
-        "top5": 91.21,
-        "description": "Nonlinear Log-Mel temporal recurrent model",
-    },
+MODELS = {
+    "resnet18": ("esc50_resnet18_v1.pt", "SOUNDSENSE_HF_REPO_RESNET18"),
+    "vgg16": ("esc50_vgg16_v1.pt", "SOUNDSENSE_HF_REPO_VGG16"),
+    "sresnet": ("esc50_sresnet_linear_v09.pt", "SOUNDSENSE_HF_REPO_SRESNET"),
+    "cnngru": ("esc50_cnngru_recurrent_v08.pt", "SOUNDSENSE_HF_REPO_CNNGRU"),
 }
 
 
-def ensure_checkpoint_cache():
-    """Initializes checkpoints cache directory and manifest."""
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def retrieve_cloud_weights(model_key: str = "resnet18") -> dict[str, Any]:
+    """Fetch and validate the requested file, or explain why it was not fetched."""
+    if model_key not in MODELS:
+        raise ValueError(f"Unknown model key: {model_key}. Choose one of {', '.join(MODELS)}.")
+
+    filename, repo_env = MODELS[model_key]
     CHECKPOINTS_DIR.mkdir(parents=True, exist_ok=True)
-    if not CACHE_MANIFEST.exists():
-        manifest_data = {
-            "version": "1.0.0",
-            "hub": "https://huggingface.co",
-            "models": DEFAULT_MODELS,
-            "status": "cached",
-        }
-        with open(CACHE_MANIFEST, "w", encoding="utf-8") as f:
-            json.dump(manifest_data, f, indent=2)
-        print(f"[SoundSense] Checkpoint cache initialized at: {CHECKPOINTS_DIR}")
-    else:
-        print(f"[SoundSense] Checkpoint cache verified at: {CHECKPOINTS_DIR}")
+    target_path = CHECKPOINTS_DIR / filename
+    repo_id = os.environ.get(repo_env, "").strip()
 
+    if not target_path.is_file():
+        if not repo_id:
+            raise RuntimeError(
+                f"No checkpoint is available and {repo_env} is unset. "
+                "Set it to a Hugging Face repo that contains the trained checkpoint."
+            )
+        try:
+            from huggingface_hub import hf_hub_download
+        except ImportError as err:
+            raise RuntimeError("Install huggingface_hub before downloading checkpoints.") from err
+        downloaded = Path(hf_hub_download(repo_id=repo_id, filename=filename))
+        if not downloaded.is_file() or downloaded.stat().st_size == 0:
+            raise RuntimeError(f"The remote repository returned an empty or missing file: {filename}")
+        if downloaded.resolve() != target_path.resolve():
+            shutil.copy2(downloaded, target_path)
 
-def retrieve_cloud_weights(model_key="resnet18_v1"):
-    """
-    Downloads or verifies model weights from Hugging Face Hub.
-    Falls back cleanly to local cached manifest verification.
-    """
-    ensure_checkpoint_cache()
-    if model_key not in DEFAULT_MODELS:
-        print(f"[Error] Unknown model key: {model_key}. Available: {list(DEFAULT_MODELS.keys())}")
-        return False
+    # Check structural integrity; strict architecture loading remains the
+    # responsibility of load_model_checkpoint before inference.
+    import torch
+    checkpoint = torch.load(target_path, map_location="cpu", weights_only=False)
+    if not isinstance(checkpoint, dict) or not isinstance(checkpoint.get("state_dict"), dict):
+        raise RuntimeError(f"{filename} is not a trained SoundSense checkpoint with a state_dict.")
 
-    spec = DEFAULT_MODELS[model_key]
-    target_path = CHECKPOINTS_DIR / spec["filename"]
-
-    if target_path.exists():
-        print(f"[Cache Hit] Model checkpoint already present: {target_path} ({spec['size_mb']} MB)")
-        return True
-
-    print(f"[Cloud Retrieval] Fetching {spec['repo_id']}/{spec['filename']} ({spec['size_mb']} MB)...")
-    try:
-        from huggingface_hub import hf_hub_download
-        downloaded = hf_hub_download(repo_id=spec["repo_id"], filename=spec["filename"], local_dir=CHECKPOINTS_DIR)
-        print(f"[Success] Downloaded to {downloaded}")
-        return True
-    except ImportError:
-        print(f"[Warning] huggingface_hub not installed; please train models locally using Preproccesing/train_models.py")
-        return False
-    except Exception as e:
-        print(f"[Warning] Remote retrieval failed: {e}")
-        return False
+    result = {
+        "model": model_key,
+        "filename": filename,
+        "sizeBytes": target_path.stat().st_size,
+        "sha256": _sha256(target_path),
+        "available": True,
+    }
+    print(f"Verified {result['filename']} ({result['sizeBytes']} bytes, SHA-256 {result['sha256']})")
+    print("Run the ESC-50 CV and external evaluation scripts before publishing any model score.")
+    return result
 
 
 if __name__ == "__main__":
-    key = sys.argv[1] if len(sys.argv) > 1 else "resnet18_v1"
+    key = sys.argv[1] if len(sys.argv) > 1 else "resnet18"
     retrieve_cloud_weights(key)

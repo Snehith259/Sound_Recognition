@@ -1,20 +1,16 @@
-"""
-SoundSense — Real Acoustic Feature Extraction & Neural Audio Classification
-Implements genuine inference based strictly on audio content and spectral signatures.
-Zero filename-based guesswork. Supports Out-of-Distribution (OOD) sound detection.
+"""Audio decoding and inference for the SoundSense ESC-50 classifiers.
 
-Deployed engine: AST (Audio Spectrogram Transformer) fine-tuned on ESC-50
-(93.5% top-1 on the ESC-50 fold-1 test split). A lightweight local MLP
-checkpoint is kept as an offline fallback so the API still responds when the
-Hugging Face weights cannot be reached.
+Predictions require the requested model checkpoint. The bundled MLP is retained
+for offline research, but is never substituted for a missing UI model.
 """
 
 import io
+import hashlib
+import json
 import os
 import sys
 import re
 import time
-import threading
 from pathlib import Path
 from typing import Dict, Any, List, Tuple, Optional
 
@@ -22,6 +18,11 @@ from typing import Dict, Any, List, Tuple, Optional
 ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
+
+# Librosa uses Numba's on-disk cache for feature helpers. Put it in the existing
+# ignored checkpoint cache instead of relying on a protected site-packages/temp path.
+os.environ.setdefault("NUMBA_CACHE_DIR", str(ROOT_DIR / "checkpoints" / ".cache" / "numba"))
+Path(os.environ["NUMBA_CACHE_DIR"]).mkdir(parents=True, exist_ok=True)
 
 import numpy as np
 import soundfile as sf
@@ -91,8 +92,6 @@ ESC50_CATEGORIES = [
     {"id": 49, "name": "hand_saw", "emoji": "🪚", "group": "Urban"},
 ]
 
-CATEGORY_BY_NAME = {cat["name"].lower(): cat for cat in ESC50_CATEGORIES}
-
 OUT_OF_SCOPE_CATEGORY = {
     "id": -1,
     "name": "Not in ESC-50 Classes",
@@ -101,118 +100,18 @@ OUT_OF_SCOPE_CATEGORY = {
     "description": "Sound signature does not match any of the 50 standardized ESC-50 environmental categories."
 }
 
-# ── Deployed Pretrained ESC-50 Engine ───────────────────────────────
+# ── Architecture checkpoint inference ──────────────────────────────
 CHECKPOINTS_DIR = Path(__file__).resolve().parent.parent / "checkpoints"
-HF_CACHE_DIR = CHECKPOINTS_DIR / ".cache" / "huggingface"
-
-# AST fine-tuned on ESC-50 (canonical ESC-50 label order, 93.5% fold-1 test accuracy).
-HF_MODEL_ID = os.environ.get("SOUNDSENSE_HF_MODEL", "Adam-ousse/ast-esc50-finetuned-fold1")
-
-AST_SAMPLE_RATE = 16000
 ANALYSIS_WINDOW_SECONDS = 5.0
-MAX_ANALYSIS_WINDOWS = 4
-SILENCE_RMS_THRESHOLD = 0.005
-PURE_TONE_FLATNESS_THRESHOLD = 1e-5
-OOD_CONFIDENCE_THRESHOLD = float(os.environ.get("SOUNDSENSE_OOD_THRESHOLD", "0.30"))
+ANALYSIS_WINDOW_HOP_SECONDS = 2.5
+MAX_ANALYSIS_WINDOWS = 12
+SILENCE_DBFS_THRESHOLD = float(os.environ.get("SOUNDSENSE_SILENCE_DBFS", "-58"))
 
-_ENGINE_LOCK = threading.Lock()
-_ENGINE: Optional[Dict[str, Any]] = None
 _ENGINE_STATUS: Dict[str, Any] = {
     "state": "not_loaded",
     "modelId": "architecture-checkpoints",
     "error": None,
 }
-
-
-def _normalise_label(label: Any) -> str:
-    """Normalises model label names ('Sea Waves', 'sea-waves') to ESC-50 names."""
-    return re.sub(r"[^a-z0-9]+", "_", str(label).strip().lower()).strip("_")
-
-
-def _find_local_ast_snapshot() -> Optional[Path]:
-    """Finds locally cached AST model snapshot if present."""
-    model_name_dir = f"models--{HF_MODEL_ID.replace('/', '--')}"
-    for base in [HF_CACHE_DIR, HF_CACHE_DIR / "hub", CHECKPOINTS_DIR / ".cache" / "huggingface" / "hub"]:
-        snap_dir = base / model_name_dir / "snapshots"
-        if snap_dir.exists():
-            for snap in snap_dir.iterdir():
-                if snap.is_dir() and (snap / "model.safetensors").exists():
-                    return snap
-    return None
-
-
-def _load_ast_engine() -> Dict[str, Any]:
-    """Lazily loads and caches the pretrained AST ESC-50 classifier."""
-    global _ENGINE
-    if _ENGINE is not None:
-        return _ENGINE
-
-    with _ENGINE_LOCK:
-        if _ENGINE is not None:
-            return _ENGINE
-
-        _ENGINE_STATUS.update(state="loading", error=None)
-        try:
-            from transformers import AutoFeatureExtractor, AutoModelForAudioClassification
-
-            HF_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-            local_snap = _find_local_ast_snapshot()
-            if local_snap is not None:
-                feature_extractor = AutoFeatureExtractor.from_pretrained(str(local_snap), local_files_only=True)
-                model = AutoModelForAudioClassification.from_pretrained(str(local_snap), local_files_only=True)
-            else:
-                try:
-                    feature_extractor = AutoFeatureExtractor.from_pretrained(
-                        HF_MODEL_ID, cache_dir=str(HF_CACHE_DIR), local_files_only=True
-                    )
-                    model = AutoModelForAudioClassification.from_pretrained(
-                        HF_MODEL_ID, cache_dir=str(HF_CACHE_DIR), local_files_only=True
-                    )
-                except Exception:
-                    # Fast online attempt with strict socket timeout
-                    import socket
-                    orig_timeout = socket.getdefaulttimeout()
-                    try:
-                        socket.setdefaulttimeout(3.0)
-                        feature_extractor = AutoFeatureExtractor.from_pretrained(
-                            HF_MODEL_ID, cache_dir=str(HF_CACHE_DIR)
-                        )
-                        model = AutoModelForAudioClassification.from_pretrained(
-                            HF_MODEL_ID, cache_dir=str(HF_CACHE_DIR)
-                        )
-                    finally:
-                        socket.setdefaulttimeout(orig_timeout)
-            model.eval()
-
-            id2label = {int(k): str(v) for k, v in model.config.id2label.items()}
-            label_to_category: Dict[int, Dict[str, Any]] = {}
-            for out_idx, label in id2label.items():
-                category = CATEGORY_BY_NAME.get(_normalise_label(label))
-                if category is None and _normalise_label(label).startswith("label_"):
-                    # Some checkpoints keep generic LABEL_n names; ESC-50 order is canonical.
-                    if 0 <= out_idx < len(ESC50_CATEGORIES):
-                        category = ESC50_CATEGORIES[out_idx]
-                if category is not None:
-                    label_to_category[out_idx] = category
-
-            if not label_to_category:
-                raise RuntimeError(
-                    f"None of the model labels in '{HF_MODEL_ID}' map to ESC-50 classes."
-                )
-
-            _ENGINE = {
-                "feature_extractor": feature_extractor,
-                "model": model,
-                "label_to_category": label_to_category,
-                "sampling_rate": int(getattr(feature_extractor, "sampling_rate", AST_SAMPLE_RATE) or AST_SAMPLE_RATE),
-                "model_id": HF_MODEL_ID,
-            }
-            _ENGINE_STATUS.update(state="ready", error=None)
-        except Exception as err:
-            _ENGINE_STATUS.update(state="unavailable", error=str(err))
-            raise
-
-    return _ENGINE
 
 
 def warm_up_engine() -> bool:
@@ -234,10 +133,8 @@ def get_engine_status() -> Dict[str, Any]:
 
 
 def model_status() -> Dict[str, Any]:
-    """Returns comprehensive metadata, manifest info, and real metrics for all available models."""
-    import json
-    report_file = CHECKPOINTS_DIR / "model_report.json"
-    manifest_file = CHECKPOINTS_DIR / "manifest.json"
+    """Return current checkpoint inventory and only harness-generated metrics."""
+    report_file = CHECKPOINTS_DIR / "eval_report.json"
 
     report_data = {}
     if report_file.exists():
@@ -247,20 +144,38 @@ def model_status() -> Dict[str, Any]:
         except Exception:
             pass
 
-    manifest_data = {}
-    if manifest_file.exists():
-        try:
-            with open(manifest_file, "r", encoding="utf-8") as f:
-                manifest_data = json.load(f)
-        except Exception:
-            pass
+    expected = {
+        "resnet18": "esc50_resnet18_v1.pt",
+        "vgg16": "esc50_vgg16_v1.pt",
+        "sresnet": "esc50_sresnet_linear_v09.pt",
+        "cnngru": "esc50_cnngru_recurrent_v08.pt",
+    }
+    checkpoints = {}
+    for model_name, filename in expected.items():
+        path = CHECKPOINTS_DIR / filename
+        present = path.is_file()
+        digest = None
+        size_bytes = None
+        if present:
+            hasher = hashlib.sha256()
+            with path.open("rb") as stream:
+                for block in iter(lambda: stream.read(1024 * 1024), b""):
+                    hasher.update(block)
+            digest = hasher.hexdigest()
+            size_bytes = path.stat().st_size
+        checkpoints[model_name] = {
+            "filename": filename,
+            "available": present,
+            "sha256": digest,
+            "sizeBytes": size_bytes,
+        }
 
     return {
         "engineStatus": get_engine_status(),
         "report": report_data,
-        "manifest": manifest_data,
         "checkpointsDir": str(CHECKPOINTS_DIR),
-        "availableModels": ["resnet18", "vgg16", "sresnet", "cnngru", "ensemble"],
+        "checkpoints": checkpoints,
+        "availableModels": [name for name, item in checkpoints.items() if item["available"]],
     }
 
 
@@ -315,53 +230,58 @@ def get_acoustic_classifier() -> Dict[str, Any]:
 _MODEL_CACHE: Dict[str, Any] = {}
 
 def load_model_checkpoint(model_name: str) -> Optional[Dict[str, Any]]:
-    """Loads and caches a specific trained neural architecture checkpoint."""
+    """Load the exact requested architecture; never substitute another model."""
     global _MODEL_CACHE
-    norm = model_name.lower().replace("-", "").replace("_", "").replace("v1", "").replace("v09", "").replace("v08", "")
-
-    if norm in _MODEL_CACHE:
-        return _MODEL_CACHE[norm]
-
-    try:
-        from Preproccesing.train_models import ResNet18Transfer, VGG16Transfer, SResNetFast, CNNGRUFast
-        cfg = {
-            "resnet18": (ResNet18Transfer, "esc50_resnet18_v1.pt", "log_mel"),
-            "vgg16": (VGG16Transfer, "esc50_vgg16_v1.pt", "log_mel"),
-            "sresnet": (SResNetFast, "esc50_sresnet_linear_v09.pt", "mfcc"),
-            "cnngru": (CNNGRUFast, "esc50_cnngru_recurrent_v08.pt", "log_mel"),
-        }
-
-        matched_key = None
-        for k in cfg:
-            if k in norm:
-                matched_key = k
-                break
-        if not matched_key:
-            matched_key = "resnet18"
-
-        cls, filename, feat_type = cfg[matched_key]
-        ckpt_path = CHECKPOINTS_DIR / filename
-        if not ckpt_path.exists():
-            return None
-
-        model = cls(num_classes=50)
-        data = torch.load(ckpt_path, map_location="cpu", weights_only=False)
-        model.load_state_dict(data["state_dict"])
-        model.eval()
-
-        entry = {
-            "model": model,
-            "feat_type": feat_type,
-            "filename": filename,
-            "arch_key": matched_key,
-            "temperature": float(data.get("temperature", 1.0)),
-            "metrics": data.get("metrics", {}),
-        }
-        _MODEL_CACHE[norm] = entry
-        _MODEL_CACHE[matched_key] = entry
-        return entry
-    except Exception as e:
+    norm = re.sub(r"[^a-z0-9]", "", model_name.lower())
+    aliases = {
+        "resnet18": "resnet18", "vgg16": "vgg16", "sresnet": "sresnet",
+        "cnngru": "cnngru", "ensemble": "ensemble", "fusion": "ensemble",
+    }
+    matched_key = aliases.get(norm)
+    if matched_key is None:
+        raise ValueError(f"Unknown model '{model_name}'. Choose resnet18, vgg16, sresnet, cnngru, or ensemble.")
+    if matched_key == "ensemble":
         return None
+    if matched_key in _MODEL_CACHE:
+        return _MODEL_CACHE[matched_key]
+
+    files = {
+        "resnet18": ("esc50_resnet18_v1.pt", "log_mel"),
+        "vgg16": ("esc50_vgg16_v1.pt", "log_mel"),
+        "sresnet": ("esc50_sresnet_linear_v09.pt", "mfcc"),
+        "cnngru": ("esc50_cnngru_recurrent_v08.pt", "log_mel"),
+    }
+    filename, feat_type = files[matched_key]
+    ckpt_path = CHECKPOINTS_DIR / filename
+    if not ckpt_path.exists():
+        return None
+
+    from Preproccesing.train_models import ResNet18Transfer, VGG16Transfer, SResNetFast, CNNGRUFast
+    classes = {
+        "resnet18": ResNet18Transfer,
+        "vgg16": VGG16Transfer,
+        "sresnet": SResNetFast,
+        "cnngru": CNNGRUFast,
+    }
+    data = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+    if "state_dict" not in data:
+        raise RuntimeError(f"Checkpoint '{filename}' has no state_dict.")
+    if matched_key in {"resnet18", "vgg16"}:
+        model = classes[matched_key](num_classes=50, pretrained=False)
+    else:
+        model = classes[matched_key](num_classes=50)
+    model.load_state_dict(data["state_dict"], strict=True)
+    model.eval()
+    entry = {
+        "model": model,
+        "feat_type": feat_type,
+        "filename": filename,
+        "arch_key": matched_key,
+        "temperature": float(data.get("temperature", 1.0)),
+        "metrics": data.get("metrics", {}),
+    }
+    _MODEL_CACHE[matched_key] = entry
+    return entry
 
 
 def load_audio_waveform(
@@ -383,31 +303,18 @@ def load_audio_waveform(
             y, sr = sf.read(io.BytesIO(audio_input))
         except Exception:
             try:
-                import scipy.io.wavfile as wavfile
-                sr, y = wavfile.read(io.BytesIO(audio_input))
-                if y.dtype == np.int16:
-                    y = y.astype(np.float32) / 32768.0
-                elif y.dtype == np.int32:
-                    y = y.astype(np.float32) / 2147483648.0
+                import subprocess
+                cmd = ['ffmpeg', '-v', 'error', '-i', 'pipe:0', '-f', 'f32le', '-ar', str(target_sr), '-ac', '1', 'pipe:1']
+                proc = subprocess.run(cmd, input=bytes(audio_input), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10)
+                if proc.returncode != 0 or not proc.stdout:
+                    raise RuntimeError("ffmpeg pipe decode failed")
+                y = np.frombuffer(proc.stdout, dtype=np.float32)
+                sr = target_sr
             except Exception:
                 try:
-                    import subprocess
-                    cmd = ['ffmpeg', '-v', 'error', '-i', 'pipe:0', '-f', 'f32le', '-ar', str(target_sr), '-ac', '1', 'pipe:1']
-                    proc = subprocess.run(cmd, input=bytes(audio_input), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10)
-                    if proc.returncode == 0 and len(proc.stdout) > 0:
-                        y = np.frombuffer(proc.stdout, dtype=np.float32)
-                        sr = target_sr
-                    else:
-                        raise RuntimeError("ffmpeg pipe decode failed")
-                except Exception:
-                    try:
-                        y, sr = librosa.load(io.BytesIO(audio_input), sr=target_sr, mono=True)
-                    except Exception:
-                        # Raw PCM fallback
-                        try:
-                            y = np.frombuffer(audio_input, dtype=np.float32)
-                        except Exception:
-                            y = np.zeros(int(target_sr * (target_duration or 1.0)), dtype=np.float32)
+                    y, sr = librosa.load(io.BytesIO(audio_input), sr=target_sr, mono=True)
+                except Exception as err:
+                    raise ValueError("Audio could not be decoded as WAV, MP3, MPEG, or WebM.") from err
     else:
         # Load from file path
         try:
@@ -423,7 +330,10 @@ def load_audio_waveform(
                 else:
                     raise RuntimeError("ffmpeg file decode failed")
             except Exception:
-                y, sr = librosa.load(str(audio_input), sr=target_sr, mono=True)
+                try:
+                    y, sr = librosa.load(str(audio_input), sr=target_sr, mono=True)
+                except Exception as err:
+                    raise ValueError("Audio could not be decoded as WAV, MP3, MPEG, or WebM.") from err
 
     y = np.asarray(y, dtype=np.float32)
 
@@ -431,7 +341,7 @@ def load_audio_waveform(
     if y.ndim > 1:
         y = np.mean(y, axis=1)
 
-    # Resample if needed
+    # Resample if needed. Never pass a waveform to the model at a false sample rate.
     if sr != target_sr and y.size:
         try:
             import soxr
@@ -441,8 +351,8 @@ def load_audio_waveform(
             try:
                 y = librosa.resample(y, orig_sr=sr, target_sr=target_sr)
                 sr = target_sr
-            except Exception:
-                pass
+            except Exception as librosa_error:
+                raise ValueError(f"Audio resampling from {sr} Hz to {target_sr} Hz failed.") from librosa_error
 
     # Ensure valid numbers
     y = np.nan_to_num(y, nan=0.0, posinf=0.0, neginf=0.0)
@@ -454,11 +364,6 @@ def load_audio_waveform(
         elif y.size > target_samples:
             y = y[:target_samples]
 
-    # Peak normalization
-    max_val = float(np.max(np.abs(y))) if y.size else 0.0
-    if max_val > 1e-6:
-        y = y / max_val
-
     return y.astype(np.float32), sr
 
 
@@ -467,24 +372,49 @@ def compute_signal_metrics(y: np.ndarray, sr: int) -> Dict[str, float]:
     rms = float(np.sqrt(np.mean(y ** 2))) if y.size else 0.0
     zcr = 0.0
     flatness = 0.0
+    peak_ratio = 0.0
+    dominant_frequency_spread_hz = 0.0
+    dominant_frequency_median_hz = 0.0
     if y.size > 1024:
         try:
             # Pure NumPy Zero-Crossing Rate (fast & thread-safe)
             zcr = float(np.mean(np.abs(np.diff(np.sign(y))) > 0)) / 2.0
 
-            # Pure NumPy Spectral Flatness on window (avoids OpenMP locks)
+            # Windowed multi-frame measures distinguish tonal signals from noise.
             w_len = min(2048, y.size)
-            spec = np.abs(np.fft.rfft(y[:w_len])) ** 2 + 1e-12
-            geom_mean = float(np.exp(np.mean(np.log(spec))))
-            arith_mean = float(np.mean(spec))
-            flatness = float(geom_mean / (arith_mean + 1e-12))
+            hop = max(1, w_len // 2)
+            window = np.hanning(w_len)
+            flatnesses = []
+            peak_ratios = []
+            dominant_frequencies = []
+            for start in range(0, max(1, y.size - w_len + 1), hop):
+                frame = y[start:start + w_len]
+                if frame.size < w_len:
+                    frame = np.pad(frame, (0, w_len - frame.size))
+                spec = np.abs(np.fft.rfft(frame * window)) ** 2 + 1e-20
+                flatnesses.append(float(np.exp(np.mean(np.log(spec))) / (np.mean(spec) + 1e-20)))
+                peak_ratios.append(float(np.max(spec) / (np.sum(spec) + 1e-20)))
+                dominant_bin = int(np.argmax(spec))
+                dominant_frequencies.append(dominant_bin * sr / w_len)
+            flatness = float(np.median(flatnesses))
+            peak_ratio = float(np.median(peak_ratios))
+            dominant_frequency_median_hz = float(np.median(dominant_frequencies)) if dominant_frequencies else 0.0
+            if len(dominant_frequencies) >= 3:
+                dominant_frequency_spread_hz = float(
+                    np.percentile(dominant_frequencies, 90) - np.percentile(dominant_frequencies, 10)
+                )
         except Exception:
             pass
     return {
         "rms": round(rms, 4),
+        "dbfs": round(20.0 * np.log10(max(rms, 1e-12)), 2),
         "zcr": round(zcr, 4),
         "flatness": round(flatness, 6),
         "flatness_raw": flatness,
+        "spectral_peak_ratio": round(peak_ratio, 6),
+        "dominant_frequency_frame_count": len(dominant_frequencies) if y.size > 1024 else 0,
+        "dominant_frequency_spread_hz": round(dominant_frequency_spread_hz, 2),
+        "dominant_frequency_median_hz": round(dominant_frequency_median_hz, 2),
     }
 
 
@@ -539,47 +469,6 @@ def _mlp_probabilities(y: np.ndarray, sr: int) -> Tuple[np.ndarray, bool]:
     return probs, is_out_of_manifold
 
 
-def _ast_probabilities(y: np.ndarray, sr: int) -> np.ndarray:
-    """Runs the pretrained AST ESC-50 classifier over 5-second windows."""
-    engine = _load_ast_engine()
-    feature_extractor = engine["feature_extractor"]
-    model = engine["model"]
-    target_sr = engine["sampling_rate"]
-
-    if sr != target_sr and y.size:
-        try:
-            import soxr
-            y = soxr.resample(y, sr, target_sr)
-        except Exception:
-            try:
-                y = librosa.resample(y, orig_sr=sr, target_sr=target_sr)
-            except Exception:
-                pass
-
-    window = max(1, int(target_sr * ANALYSIS_WINDOW_SECONDS))
-    chunks = [y[i:i + window] for i in range(0, max(1, y.size), window)][:MAX_ANALYSIS_WINDOWS]
-    chunks = [chunk for chunk in chunks if chunk.size]
-    if not chunks:
-        chunks = [np.zeros(window, dtype=np.float32)]
-
-    accumulated = np.zeros(len(ESC50_CATEGORIES), dtype=np.float64)
-    for chunk in chunks:
-        inputs = feature_extractor(chunk, sampling_rate=target_sr, return_tensors="pt")
-        with torch.no_grad():
-            logits = model(**inputs).logits[0]
-        probs = torch.softmax(logits, dim=-1).cpu().numpy()
-
-        # Map the model's output indices onto canonical ESC-50 class ids.
-        mapped = np.zeros(len(ESC50_CATEGORIES), dtype=np.float64)
-        for out_idx, category in engine["label_to_category"].items():
-            if 0 <= out_idx < probs.shape[0]:
-                mapped[category["id"]] += float(probs[out_idx])
-        accumulated += mapped
-
-    accumulated /= len(chunks)
-    return accumulated.astype(np.float32)
-
-
 def _build_silence_result(metrics: Dict[str, float], model_name: str, started_at: float) -> Dict[str, Any]:
     return {
         "success": True,
@@ -591,23 +480,48 @@ def _build_silence_result(metrics: Dict[str, float], model_name: str, started_at
             "group": "Out of Domain",
             "description": "Acoustic signal energy is too low to extract valid environmental sound signatures."
         },
-        "explanation": "RMS energy is below acoustic detection threshold (ambient silence or muted mic).",
-        "confidence": 0.95,
+        "explanation": (
+            f"Rule-based silence gate: input level {metrics['dbfs']:.1f} dBFS is below "
+            f"the configured {SILENCE_DBFS_THRESHOLD:.1f} dBFS threshold. No classifier confidence was computed."
+        ),
+        "confidence": None,
+        "confidenceType": "not_computed_rule_gate",
+        "oodScore": 1.0,
         "predictions": [
-            {"category": OUT_OF_SCOPE_CATEGORY, "confidence": 0.95},
-            {"category": ESC50_CATEGORIES[16], "confidence": 0.02},  # wind
-            {"category": ESC50_CATEGORIES[23], "confidence": 0.01},  # breathing
-            {"category": ESC50_CATEGORIES[38], "confidence": 0.01},  # clock tick
-            {"category": ESC50_CATEGORIES[31], "confidence": 0.01},  # mouse click
+            {"category": OUT_OF_SCOPE_CATEGORY, "confidence": None},
         ],
-        "metrics": {"rms": metrics["rms"], "zcr": metrics["zcr"], "flatness": metrics["flatness"]},
+        "metrics": {k: metrics[k] for k in ("rms", "zcr", "flatness", "dbfs")},
         "inferenceTime": round((time.time() - started_at) * 1000, 1),
         "engine": "silence-gate",
         "requestedModel": model_name,
     }
 
 
-def run_acoustic_inference(audio_input: bytes | str | Path, model_name: str = "resnet18") -> Dict[str, Any]:
+def _build_tone_result(metrics: Dict[str, float], model_name: str, started_at: float) -> Dict[str, Any]:
+    return {
+        "success": True,
+        "isOutOfScope": True,
+        "category": OUT_OF_SCOPE_CATEGORY,
+        "explanation": (
+            "Rule-based tonality gate detected a stable narrow-band signal. "
+            "No classifier confidence was computed."
+        ),
+        "confidence": None,
+        "confidenceType": "not_computed_rule_gate",
+        "oodScore": 1.0,
+        "predictions": [{"category": OUT_OF_SCOPE_CATEGORY, "confidence": None}],
+        "metrics": {k: metrics[k] for k in ("rms", "zcr", "flatness", "dbfs", "spectral_peak_ratio", "dominant_frequency_frame_count", "dominant_frequency_spread_hz", "dominant_frequency_median_hz")},
+        "inferenceTime": round((time.time() - started_at) * 1000, 1),
+        "engine": "tonality-gate",
+        "requestedModel": model_name,
+    }
+
+
+def run_acoustic_inference(
+    audio_input: bytes | str | Path,
+    model_name: str = "resnet18",
+    confidence_threshold: Optional[float] = None,
+) -> Dict[str, Any]:
     """
     Executes true audio-based classification. Never reads or inspects the filename.
     Identifies sound solely through its acoustic fingerprint.
@@ -618,62 +532,66 @@ def run_acoustic_inference(audio_input: bytes | str | Path, model_name: str = "r
     """
     t_start = time.time()
 
-    # Match training: mono, 22.05 kHz, exactly five seconds, peak-normalized.
-    y, sr = load_audio_waveform(audio_input, target_sr=22050, target_duration=5.0)
+    # Measure the original decoded recording before padding or peak normalization.
+    y, sr = load_audio_waveform(audio_input, target_sr=22050, target_duration=None)
     metrics = compute_signal_metrics(y, sr)
 
-    # Silence / near-silent recording (< -46 dB)
-    if metrics["rms"] < SILENCE_RMS_THRESHOLD:
+    silence_rms_threshold = 10.0 ** (SILENCE_DBFS_THRESHOLD / 20.0)
+    if metrics["rms"] < silence_rms_threshold:
         return _build_silence_result(metrics, model_name, t_start)
+    if (
+        metrics["flatness_raw"] < 0.003
+        and metrics["spectral_peak_ratio"] > 0.25
+        and metrics["dominant_frequency_frame_count"] >= 3
+        and metrics["dominant_frequency_median_hz"] > 30.0
+        and metrics["dominant_frequency_spread_hz"] < 20.0
+    ):
+        return _build_tone_result(metrics, model_name, t_start)
 
     t_infer = time.time()
-    engine_error = None
-    is_multi_ensemble = any(w in model_name.lower() for w in ["ensemble", "auto", "fusion", "all"])
-    model_entry = None if is_multi_ensemble else load_model_checkpoint(model_name)
-    arch_probs = None
+    is_multi_ensemble = re.sub(r"[^a-z0-9]", "", model_name.lower()) in {"ensemble", "fusion"}
+    model_names = ["resnet18", "vgg16", "sresnet", "cnngru"] if is_multi_ensemble else [model_name]
+    entries = [load_model_checkpoint(name) for name in model_names]
+    missing = [name for name, entry in zip(model_names, entries) if entry is None]
+    if missing:
+        raise FileNotFoundError(f"No trained checkpoint is available for: {', '.join(missing)}.")
 
-    if is_multi_ensemble:
-        collected = []
-        for mk in ["resnet18", "vgg16", "sresnet", "cnngru"]:
-            entry = load_model_checkpoint(mk)
-            if entry is not None:
-                try:
-                    if entry["feat_type"] == "mfcc":
-                        from Preproccesing.feature_extractor import extract_mfcc
-                        feat = extract_mfcc(y, sr=sr)
-                    else:
-                        from Preproccesing.feature_extractor import extract_log_mel_spectrogram
-                        feat = extract_log_mel_spectrogram(y, sr=sr)
-                    tx = torch.from_numpy(feat).unsqueeze(0).unsqueeze(0).float()
-                    with torch.no_grad():
-                        l = entry["model"](tx)
-                        temp = max(0.5, float(entry.get("temperature", 1.0)))
-                        p = torch.softmax(l / temp, dim=1)[0].numpy()
-                        collected.append(p)
-                except Exception:
-                    pass
-        if not collected:
-            raise RuntimeError("No trained architecture checkpoints are available for ensemble inference.")
-        arch_probs = np.mean(collected, axis=0)
-        model_entry = {"arch_key": "ensemble"}
-
-    elif model_entry is None:
-        raise RuntimeError(f"No trained checkpoint is available for model '{model_name}'.")
+    window_samples = int(22050 * ANALYSIS_WINDOW_SECONDS)
+    hop_samples = int(22050 * ANALYSIS_WINDOW_HOP_SECONDS)
+    if y.size < window_samples:
+        windows = [np.pad(y, (0, window_samples - y.size))]
     else:
-        if model_entry["feat_type"] == "mfcc":
-            from Preproccesing.feature_extractor import extract_mfcc
-            feat = extract_mfcc(y, sr=sr)
-        else:
-            from Preproccesing.feature_extractor import extract_log_mel_spectrogram
-            feat = extract_log_mel_spectrogram(y, sr=sr)
+        starts = list(range(0, max(1, y.size - window_samples + 1), hop_samples))
+        final_start = y.size - window_samples
+        if starts[-1] != final_start:
+            starts.append(final_start)
+        if len(starts) > MAX_ANALYSIS_WINDOWS:
+            starts = starts[:MAX_ANALYSIS_WINDOWS - 1] + [final_start]
+        windows = [y[start:start + window_samples] for start in starts]
 
-        tx = torch.from_numpy(feat).unsqueeze(0).unsqueeze(0).float()
-        with torch.no_grad():
-            logits = model_entry["model"](tx)
-            temp = max(0.5, float(model_entry.get("temperature", 1.0)))
-            arch_probs = torch.softmax(logits / temp, dim=1)[0].numpy()
+    from Preproccesing.feature_extractor import extract_log_mel_spectrogram, extract_mfcc
+    per_model_log_probs = []
+    for entry in entries:
+        window_log_probs = []
+        for window in windows:
+            peak = float(np.max(np.abs(window))) if window.size else 0.0
+            model_window = window / peak if peak > 1e-8 else window
+            if entry["feat_type"] == "mfcc":
+                feat = extract_mfcc(model_window, sr=22050)
+            else:
+                feat = extract_log_mel_spectrogram(model_window, sr=22050)
+            tx = torch.from_numpy(feat).unsqueeze(0).unsqueeze(0).float()
+            with torch.no_grad():
+                logits = entry["model"](tx)
+            temperature = max(0.05, float(entry.get("temperature", 1.0)))
+            window_log_probs.append(torch.log_softmax(logits / temperature, dim=1)[0].numpy())
+        per_model_log_probs.append(np.mean(window_log_probs, axis=0))
 
-    probs = arch_probs
+    mean_log_probs = np.mean(per_model_log_probs, axis=0)
+    mean_log_probs -= np.max(mean_log_probs)
+    probs = np.exp(mean_log_probs)
+    probs /= np.sum(probs)
+    model_entry = {"arch_key": "ensemble" if is_multi_ensemble else entries[0]["arch_key"]}
     engine_name = f"{model_entry['arch_key']}-checkpoint"
 
     order = np.argsort(probs)[::-1]
@@ -685,9 +603,10 @@ def run_acoustic_inference(audio_input: bytes | str | Path, model_name: str = "r
         for idx in order[:5]
     ]
 
-    is_pure_tone = metrics["flatness_raw"] < PURE_TONE_FLATNESS_THRESHOLD
-    is_low_confidence = top_prob < OOD_CONFIDENCE_THRESHOLD
-    is_out_of_scope = is_pure_tone or is_low_confidence
+    # Low softmax alone has not been validated as an OOD detector here. Keep it
+    # as a class score and let the user's confidence threshold flag uncertainty.
+    is_out_of_scope = False
+    ood_score = float(1.0 - top_prob)
 
     elapsed_ms = round((time.time() - t_infer) * 1000, 1)
 
@@ -697,36 +616,19 @@ def run_acoustic_inference(audio_input: bytes | str | Path, model_name: str = "r
         "requestedModel": model_name,
         "metrics": {k: v for k, v in metrics.items() if k != "flatness_raw"},
         "inferenceTime": elapsed_ms,
+        "windowCount": len(windows),
+        "classProbabilities": [float(p) for p in probs],
+        "oodScore": round(max(0.0, min(1.0, ood_score)), 4),
+        "confidenceType": "temperature_scaled_softmax_score",
+        "belowConfidenceThreshold": (
+            top_prob < max(0.0, min(1.0, confidence_threshold))
+            if confidence_threshold is not None else False
+        ),
+        "confidenceThreshold": (
+            max(0.0, min(1.0, confidence_threshold))
+            if confidence_threshold is not None else None
+        ),
     }
-    if engine_error:
-        result["engineError"] = engine_error
-
-    if is_out_of_scope:
-        if is_pure_tone:
-            ood_conf = 0.98
-            ood_reason = (
-                "Synthetic pure-tone or narrow-band signal detected. Environmental sounds "
-                "exhibit natural multi-harmonic dispersion and broadband energy."
-            )
-        else:
-            ood_conf = 1.0 - top_prob
-            ood_reason = (
-                "Model confidence is too low to assign the sound to any of the 50 ESC-50 "
-                "environmental categories."
-            )
-        ood_conf = round(max(0.5, min(0.99, ood_conf)), 4)
-
-        result.update({
-            "isOutOfScope": True,
-            "category": OUT_OF_SCOPE_CATEGORY,
-            "explanation": ood_reason,
-            "confidence": ood_conf,
-            "predictions": [
-                {"category": OUT_OF_SCOPE_CATEGORY, "confidence": ood_conf},
-                *predictions[:4],
-            ],
-        })
-        return result
 
     result.update({
         "isOutOfScope": False,
@@ -744,13 +646,14 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         target_file = sys.argv[1]
         target_model = sys.argv[2] if len(sys.argv) > 2 else "resnet18"
+        target_threshold = float(sys.argv[3]) if len(sys.argv) > 3 and sys.argv[3] else None
         try:
             if target_file == "-":
                 content = sys.stdin.buffer.read()
             else:
                 with open(target_file, "rb") as f:
                     content = f.read()
-            out = run_acoustic_inference(content, target_model)
+            out = run_acoustic_inference(content, target_model, target_threshold)
             print(json.dumps(out))
         except Exception as e:
             print(json.dumps({"success": False, "error": str(e)}))

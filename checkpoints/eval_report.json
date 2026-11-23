@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-21T15:50:59.839438+00:00",
+  "source": "SoundSense evaluation harness",
+  "evaluation": "Metrics appear only after the corresponding harness run completes.",
+  "trainingRuns": 0,
+  "externalDevEvaluated": false,
+  "externalFinalEvaluated": false,
+  "models": {
+    "resnet18": {
+      "displayName": "ResNet-18",
+      "checkpoint": {
+        "filename": "esc50_resnet18_v1.pt",
+        "available": false,
+        "sha256": null,
+        "sizeBytes": null
+      },
+      "available": false,
+      "metrics": {},
+      "evaluation": null,
+      "external": {},
+      "availabilityReason": "Checkpoint file is absent."
+    },
+    "vgg16": {
+      "displayName": "VGG-16",
+      "checkpoint": {
+        "filename": "esc50_vgg16_v1.pt",
+        "available": false,
+        "sha256": null,
+        "sizeBytes": null
+      },
+      "available": false,
+      "metrics": {},
+      "evaluation": null,
+      "external": {},
+      "availabilityReason": "Checkpoint file is absent."
+    },
+    "sresnet": {
+      "displayName": "SResNet",
+      "checkpoint": {
+        "filename": "esc50_sresnet_linear_v09.pt",
+        "available": false,
+        "sha256": null,
+        "sizeBytes": null
+      },
+      "available": false,
+      "metrics": {},
+      "evaluation": null,
+      "external": {},
+      "availabilityReason": "Checkpoint file is absent."
+    },
+    "cnngru": {
+      "displayName": "CNN-GRU",
+      "checkpoint": {
+        "filename": "esc50_cnngru_recurrent_v08.pt",
+        "available": false,
+        "sha256": null,
+        "sizeBytes": null
+      },
+      "available": false,
+      "metrics": {},
+      "evaluation": null,
+      "external": {},
+      "availabilityReason": "Checkpoint file is absent."
+    },
+    "ensemble": {
+      "displayName": "Ensemble Fusion",
+      "checkpoint": {},
+      "available": false,
+      "metrics": {},
+      "evaluation": null,
+      "external": {},
+      "availabilityReason": "Requires all four selected architecture checkpoints."
+    }
+  }
+}

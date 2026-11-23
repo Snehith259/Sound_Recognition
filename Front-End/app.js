@@ -125,11 +125,11 @@ const CANONICAL_ESC50_FILES = {
 
 
 const MODEL_INFO = {
-  resnet18: { name: 'ResNet-18', short: 'ResNet-18', latency: 67.3, params: '11.3 M', accuracy: '62.8%' },
-  vgg16:    { name: 'VGG-16',    short: 'VGG-16',    latency: 120.0, params: '15.8 M', accuracy: '61.1%' },
-  sresnet:  { name: 'SResNet',   short: 'SResNet',   latency: 18.2, params: '0.43 M', accuracy: '35.7%' },
-  cnngru:   { name: 'CNN-GRU',   short: 'CNN-GRU',   latency: 6.6,  params: '0.52 M', accuracy: '64.1%' },
-  ensemble: { name: 'Ensemble Fusion', short: 'Ensemble', latency: null, params: '28.1 M', accuracy: 'Unbenchmarked' },
+  resnet18: { name: 'ResNet-18', short: 'ResNet-18', latency: null, params: '—', accuracy: 'Not evaluated' },
+  vgg16:    { name: 'VGG-16',    short: 'VGG-16',    latency: null, params: '—', accuracy: 'Not evaluated' },
+  sresnet:  { name: 'SResNet',   short: 'SResNet',   latency: null, params: '—', accuracy: 'Not evaluated' },
+  cnngru:   { name: 'CNN-GRU',   short: 'CNN-GRU',   latency: null, params: '—', accuracy: 'Not evaluated' },
+  ensemble: { name: 'Ensemble Fusion', short: 'Ensemble', latency: null, params: '—', accuracy: 'Not evaluated' },
 };
 
 
@@ -410,6 +410,7 @@ function switchView(viewName, updateHistory = true) {
   if (viewName === 'pipeline') {
     animateBenchmarkBars(true);
     animateArchMetrics();
+    loadAnalyticsData();
   } else if (viewName === 'training') {
     animateBenchmarkBars(false);
     loadTrainingData();
@@ -1914,6 +1915,7 @@ async function executeClassification() {
     let predictions = null;
     let inferenceSource = 'local';
     let serverLatency = null;
+    let backendErrorDetail = null;
 
     const apiBase = resolveApiBase();
     const candidateUrls = Array.from(new Set([
@@ -1944,19 +1946,36 @@ async function executeClassification() {
         if (res.ok) {
           const data = await res.json();
           if (data && data.success && Array.isArray(data.predictions)) {
-            predictions = data.predictions.map(p => ({
+            const classPredictions = data.predictions.map(p => ({
               category: {
                 ...p.category,
                 emoji: p.category.emoji || ESC50_CATEGORIES[p.category.id]?.emoji || '🔊',
               },
               confidence: p.confidence,
+              inferenceTime: data.inferenceTime,
               isOutOfScope: Boolean(p.isOutOfScope || (p.category && p.category.id === -1) || (data.isOutOfScope && p === data.predictions[0])),
               explanation: p.explanation || data.explanation,
             }));
+            predictions = data.isOutOfScope && data.category && data.category.id === -1
+              ? [{
+                  category: { ...data.category, emoji: data.category.emoji || '❓' },
+                  confidence: data.confidenceType === 'not_computed_rule_gate'
+                    ? null
+                    : (Number.isFinite(data.oodScore) ? data.oodScore : null),
+                  inferenceTime: data.inferenceTime,
+                  isOutOfScope: true,
+                  confidenceType: data.confidenceType || 'rule_gate',
+                  explanation: data.explanation,
+                }, ...classPredictions.filter(p => p.category.id >= 0)]
+              : classPredictions;
             inferenceSource = 'api';
             serverLatency = data.inferenceTime;
             break;
           }
+        } else if (res.status === 503) {
+          const errorBody = await res.json().catch(() => ({}));
+          backendErrorDetail = errorBody.details || errorBody.detail || errorBody.error || 'The selected model checkpoint is unavailable.';
+          break;
         }
       } catch (_netErr) {
         // Continue trying next candidate endpoint
@@ -1964,13 +1983,13 @@ async function executeClassification() {
     }
 
     if (!predictions || predictions.length === 0) {
-      throw new Error('The backend did not return model predictions. Check that the Python service and model checkpoints are available.');
+      throw new Error(backendErrorDetail || 'The backend did not return model predictions. Check that the selected model checkpoint is available.');
     }
     backendOnline = true;
 
     displayClassificationResults(predictions, modelKey);
     setStatus('Engine Ready · Backend Online', 'ready');
-    showToast('API Inference Complete', `Classified by backend (/api/predict) · ${serverLatency || modelSpec.latency}ms`, 'success', 3000);
+    showToast('API Inference Complete', `Classified by backend (/api/predict) · ${serverLatency != null ? `${serverLatency} ms` : 'latency not measured'}`, 'success', 3000);
   } catch (err) {
     resultLoading.hidden = true;
     resultEmpty.hidden = false;
@@ -2080,155 +2099,6 @@ function computeAcousticSpectrogram(audioBuffer) {
 }
 
 /* ── Deep Learning Prediction & Test-Case Engine ─────────────── */
-/* ── Out-of-Scope (Non-ESC-50) Category Definition ──────────── */
-const OUT_OF_SCOPE_CATEGORY = {
-  id: -1,
-  name: "Not in ESC-50 Classes",
-  emoji: "❓",
-  group: "Out of Domain",
-  description: "Acoustic fingerprint does not match any of the 50 standardized ESC-50 environmental categories."
-};
-
-/* ── Deep Acoustic Feature Extraction & Inference Engine ─────── */
-let cachedAcousticProfiles = null;
-
-// Asynchronously load detailed 64-band acoustic profiles from esc50_acoustic_profiles.json
-fetch('esc50_acoustic_profiles.json')
-  .then(res => res.ok ? res.json() : null)
-  .then(data => { if (data) cachedAcousticProfiles = data; })
-  .catch(() => {});
-
-function generateModelPredictions(modelKey, audioFile = currentAudioFile) {
-  // Client-side fallback engine for local offline evaluation.
-  // When backend server (FastAPI/Express) is available, executeClassification automatically calls /api/predict.
-  const spec = currentSpectrogramData;
-  const modelSpec = MODEL_INFO[modelKey] || MODEL_INFO.sresnet;
-
-  // 1. Check for silence or near-silent audio (< -48 dB / RMS < 0.005)
-  if (!spec || spec.rms < 0.005) {
-    return [
-      {
-        category: {
-          id: -1,
-          name: "Not in ESC-50 Classes (Silence / Low Energy)",
-          emoji: "🔇",
-          group: "Out of Domain",
-          description: "Acoustic signal energy is too low to extract valid environmental sound signatures."
-        },
-        confidence: 0.95,
-        isOutOfScope: true,
-        explanation: "Audio signal amplitude is below minimum acoustic detection threshold (silence or muted microphone)."
-      },
-      { category: ESC50_CATEGORIES[16], confidence: 0.02 },
-      { category: ESC50_CATEGORIES[23], confidence: 0.01 },
-      { category: ESC50_CATEGORIES[38], confidence: 0.01 },
-      { category: ESC50_CATEGORIES[31], confidence: 0.01 },
-    ];
-  }
-
-  // 2. Check for synthetic constant single-frequency tones (artificial test signal)
-  if (spec.flatness < 0.00005 && spec.rms > 0.02) {
-    return [
-      {
-        category: OUT_OF_SCOPE_CATEGORY,
-        confidence: 0.92,
-        isOutOfScope: true,
-        explanation: "Synthetic pure-tone or narrow-band signal detected. Environmental sounds exhibit natural multi-harmonic dispersion."
-      },
-      { category: ESC50_CATEGORIES[16], confidence: 0.03 },
-      { category: ESC50_CATEGORIES[42], confidence: 0.02 },
-      { category: ESC50_CATEGORIES[37], confidence: 0.02 },
-      { category: ESC50_CATEGORIES[38], confidence: 0.01 },
-    ];
-  }
-
-  // 3. For verified ESC-50 test presets loaded via Quick Test or Taxonomy Explorer:
-  if (currentPresetTarget !== null && typeof currentPresetTarget === 'number' && currentPresetTarget >= 0 && currentPresetTarget < 50) {
-    const targetCat = ESC50_CATEGORIES[currentPresetTarget];
-    const r1 = (currentPresetTarget + 1) % 50;
-    const r2 = (currentPresetTarget + 7) % 50;
-    const r3 = (currentPresetTarget + 14) % 50;
-    const r4 = (currentPresetTarget + 23) % 50;
-    return [
-      { category: targetCat, confidence: 0.972, isOutOfScope: false },
-      { category: ESC50_CATEGORIES[r1], confidence: 0.012, isOutOfScope: false },
-      { category: ESC50_CATEGORIES[r2], confidence: 0.007, isOutOfScope: false },
-      { category: ESC50_CATEGORIES[r3], confidence: 0.005, isOutOfScope: false },
-      { category: ESC50_CATEGORIES[r4], confidence: 0.004, isOutOfScope: false },
-    ];
-  }
-
-  // 4. For external audio files: compute 64-band Log-Mel profile similarity
-  const matrix = spec.matrix;
-  const numFrames = matrix.length;
-  const freq64 = new Float32Array(64);
-
-  for (let t = 0; t < numFrames; t++) {
-    for (let b = 0; b < 64; b++) {
-      const normDb = (matrix[t][b] + 80) / 80; // normalized [0.0, 1.0]
-      freq64[b] += normDb;
-    }
-  }
-
-  // Normalize frequency vector
-  let normSq = 0;
-  for (let b = 0; b < 64; b++) {
-    freq64[b] /= (numFrames || 1);
-    normSq += freq64[b] * freq64[b];
-  }
-  const norm = Math.sqrt(normSq) + 1e-8;
-  for (let b = 0; b < 64; b++) {
-    freq64[b] /= norm;
-  }
-
-  // Compute similarity against ESC-50 class centroids
-  const classScores = new Float32Array(50);
-  const profiles = cachedAcousticProfiles;
-
-  for (let i = 0; i < 50; i++) {
-    let sim = 0.5;
-    if (profiles && profiles[String(i)] && profiles[String(i)].freq64_norm) {
-      const ref = profiles[String(i)].freq64_norm;
-      for (let b = 0; b < 64; b++) {
-        sim += freq64[b] * ref[b];
-      }
-    } else {
-      sim = 0.4 + 0.3 * Math.cos(i * 3.7 + spec.zcr * 10);
-    }
-    classScores[i] = Math.max(0.01, sim);
-  }
-
-  // Range normalization for clean probability separation
-  let minScore = classScores[0];
-  let maxScore = classScores[0];
-  for (let i = 1; i < 50; i++) {
-    if (classScores[i] < minScore) minScore = classScores[i];
-    if (classScores[i] > maxScore) maxScore = classScores[i];
-  }
-  const scoreRange = maxScore - minScore + 1e-6;
-  const expScores = new Float32Array(50);
-  let expSum = 0;
-  for (let i = 0; i < 50; i++) {
-    const normVal = (classScores[i] - minScore) / scoreRange;
-    expScores[i] = Math.exp(normVal * 5.0);
-    expSum += expScores[i];
-  }
-  const probabilities = new Float32Array(50);
-  for (let i = 0; i < 50; i++) {
-    probabilities[i] = expScores[i] / (expSum || 1);
-  }
-
-  const sortedIndices = Array.from({ length: 50 }, (_, i) => i)
-    .sort((a, b) => probabilities[b] - probabilities[a]);
-
-  // Valid external environmental sound files are cleanly classified into the best matching category
-  return sortedIndices.slice(0, 5).map(id => ({
-    category: ESC50_CATEGORIES[id],
-    confidence: Math.round(probabilities[id] * 1000) / 1000,
-    isOutOfScope: false
-  }));
-}
-
 function displayClassificationResults(predictions, modelKey) {
   resultLoading.hidden = true;
   resultOutput.hidden = false;
@@ -2240,7 +2110,7 @@ function displayClassificationResults(predictions, modelKey) {
   // Confidence Threshold Evaluation
   const thresholdSlider = document.getElementById('threshold-slider');
   const thresholdVal = thresholdSlider ? (parseFloat(thresholdSlider.value) / 100) : 0.5;
-  const isBelowThreshold = winner.confidence < thresholdVal;
+  const isBelowThreshold = Number.isFinite(winner.confidence) && winner.confidence < thresholdVal;
   const showAnomaly = isOOD || isBelowThreshold;
 
   currentResult = {
@@ -2272,7 +2142,7 @@ function displayClassificationResults(predictions, modelKey) {
       oosBanner.style.display = 'flex';
       if (oosDesc) {
         if (isBelowThreshold && !isOOD) {
-          oosDesc.textContent = `Confidence score (${(winner.confidence * 100).toFixed(1)}%) is below your chosen threshold (${(thresholdVal * 100).toFixed(0)}%). Check the runner-up distributions or lower the threshold.`;
+          oosDesc.textContent = `Model probability (${(winner.confidence * 100).toFixed(1)}%) is below your chosen threshold (${(thresholdVal * 100).toFixed(0)}%). Review the runner-up scores or lower the threshold.`;
         } else {
           oosDesc.textContent = winner.explanation || 'The acoustic characteristics (frequency envelope, harmonics, and temporal dynamics) do not match any of the 50 standardized environmental categories in ESC-50.';
         }
@@ -2294,23 +2164,41 @@ function displayClassificationResults(predictions, modelKey) {
   }
 
   // Animate circular confidence ring
-  const finalPct = Math.round(winner.confidence * 100);
+  const hasDisplayedConfidence = Number.isFinite(winner.confidence);
+  const finalPct = hasDisplayedConfidence ? Math.round(winner.confidence * 100) : null;
   const circumference = 201.06; // 2 * PI * 32
   confFillCircle.style.strokeDashoffset = circumference;
 
-  setTimeout(() => {
-    confFillCircle.style.strokeDashoffset = circumference * (1 - winner.confidence);
-    animateCounter(confPct, 0, finalPct, 750);
-  }, 80);
+  if (hasDisplayedConfidence) {
+    setTimeout(() => {
+      confFillCircle.style.strokeDashoffset = circumference * (1 - winner.confidence);
+      animateCounter(confPct, 0, finalPct, 750);
+    }, 80);
+  } else if (confPct) {
+    confPct.textContent = '—';
+  }
+  const confidenceRing = document.getElementById('top-conf-ring');
+  if (confidenceRing) {
+    const confidenceLabel = confidenceRing.querySelector('.pct-lbl');
+    if (confidenceLabel) confidenceLabel.textContent = isOOD
+      ? (winner.confidenceType === 'not_computed_rule_gate' ? 'GATE' : 'OOD')
+      : 'PROB';
+    confidenceRing.title = isOOD
+      ? (winner.confidenceType === 'not_computed_rule_gate' ? 'Rule-based out-of-scope decision; classifier confidence was not computed' : 'Out-of-scope score; it is not a class probability')
+      : 'Model class probability; calibration status is shown in the evaluation report';
+  }
 
   // Inference telemetry
   if (statLatencyEl) {
-    statLatencyEl.textContent = `${modelSpec.latency.toFixed(1)} ms`;
+    const measuredLatency = Number.isFinite(winner.inferenceTime) ? winner.inferenceTime : modelSpec.latency;
+    statLatencyEl.textContent = Number.isFinite(measuredLatency) ? `${measuredLatency.toFixed(1)} ms` : '—';
     if (statLatencyBar) {
       statLatencyBar.style.width = '0%';
-      setTimeout(() => {
-        statLatencyBar.style.width = `${Math.min(100, (modelSpec.latency / 20) * 100)}%`;
-      }, 100);
+      if (Number.isFinite(measuredLatency)) {
+        setTimeout(() => {
+          statLatencyBar.style.width = `${Math.min(100, (measuredLatency / 20) * 100)}%`;
+        }, 100);
+      }
     }
   }
 
@@ -2327,16 +2215,17 @@ function displayClassificationResults(predictions, modelKey) {
     const row = document.createElement('li');
     const isWinner = idx === 0;
     row.className = `top5-row ${isWinner ? 'is-winner' : ''}`;
-    const pctVal = Math.round(p.confidence * 100);
+    const hasConfidence = Number.isFinite(p.confidence);
+    const pctVal = hasConfidence ? Math.round(p.confidence * 100) : null;
     const subtitle = isOOD && idx > 0 ? ' <span style="font-size:0.73rem; opacity:0.65;">(tentative reference)</span>' : '';
 
     row.innerHTML = `
       <span class="top5-rank">#${idx + 1}</span>
       <span class="top5-name">${p.category.emoji || '🔊'} ${p.category.name.replace(/_/g, ' ')}${subtitle}</span>
       <div class="top5-bar-track">
-        <div class="top5-bar-fill" style="width: 0%" data-pct="${pctVal}%"></div>
+        <div class="top5-bar-fill" style="width: 0%" data-pct="${pctVal ?? 0}%"></div>
       </div>
-      <span class="top5-pct">${pctVal}%</span>`;
+      <span class="top5-pct">${pctVal == null ? '—' : `${pctVal}%`}</span>`;
     top5List.appendChild(row);
   });
 
@@ -3225,7 +3114,8 @@ function buildReportText(result) {
     'Top predictions:'
   ];
   result.predictions.forEach((p, i) => {
-    lines.push(`${i + 1}. ${p.category.name.replace(/_/g, ' ')} — ${(p.confidence * 100).toFixed(1)}% (${p.category.group}, ESC-50 #${p.category.id})`);
+    const score = Number.isFinite(p.confidence) ? `${(p.confidence * 100).toFixed(1)}%` : 'classifier confidence not computed';
+    lines.push(`${i + 1}. ${p.category.name.replace(/_/g, ' ')} — ${score} (${p.category.group}, ESC-50 #${p.category.id})`);
   });
   if (currentSpectrogramData) {
     lines.push('');
@@ -3742,8 +3632,9 @@ async function checkBackendStatus() {
       clearTimeout(t);
       if (res.ok) {
         const data = await res.json().catch(() => null);
-        if (data && data.status === 'healthy') {
+        if (data && ['healthy', 'degraded'].includes(data.status)) {
           backendOnline = true;
+          window.soundSenseHealth = data;
           break;
         }
       }
@@ -3752,18 +3643,19 @@ async function checkBackendStatus() {
 
   if (backendOnline) {
     if (trainingApiStatus) {
-      trainingApiStatus.textContent = 'API Connected (Port 3001)';
-      trainingApiStatus.style.color = 'var(--emerald)';
+    const missingCount = Array.isArray(window.soundSenseHealth?.missingModels) ? window.soundSenseHealth.missingModels.length : 0;
+    trainingApiStatus.textContent = missingCount ? `API Connected · ${missingCount} model(s) unavailable` : 'API Connected (Port 3001)';
+    trainingApiStatus.style.color = missingCount ? 'var(--amber, #f59e0b)' : 'var(--emerald)';
     }
     setStatus('Engine Ready · Backend Online', 'ready');
     return true;
   }
 
   if (trainingApiStatus) {
-    trainingApiStatus.textContent = 'Backend Offline · Local Simulation';
+    trainingApiStatus.textContent = 'Backend Offline · Predictions unavailable';
     trainingApiStatus.style.color = 'var(--amber, #f59e0b)';
   }
-  setStatus('Backend Offline · Local Estimates', 'warn');
+  setStatus('Backend Offline · Predictions unavailable', 'warn');
   return false;
 }
 
@@ -3781,64 +3673,6 @@ async function refreshCheckpoints() {
       }
     }
   } catch (_) {}
-
-  // Fallback default checkpoints if offline
-  if (checkpoints.length === 0) {
-    checkpoints = [
-      {
-        checkpointId: 'ckpt_v1_resnet18',
-        version: 'v1.0.0',
-        name: 'ResNet-18',
-        description: 'Deep Residual Network with 18 layers (Log-Mel Spectrogram input)',
-        modelType: 'resnet18',
-        accuracy: 62.81,
-        top5: 88.19,
-        params: '11.3M',
-        savedAt: '2026-11-20T11:16:00Z',
-        status: 'active',
-        fileSizeMB: 45.34,
-      },
-      {
-        checkpointId: 'ckpt_v1_vgg16',
-        version: 'v1.1.0',
-        name: 'VGG-16',
-        description: 'Visual Geometry Group 16-layer Deep Convolutional Network',
-        modelType: 'vgg16',
-        accuracy: 61.06,
-        top5: 91.96,
-        params: '15.8M',
-        savedAt: '2026-11-20T11:38:00Z',
-        status: 'saved',
-        fileSizeMB: 63.26,
-      },
-      {
-        checkpointId: 'ckpt_v09_sresnet',
-        version: 'v0.9.0',
-        name: 'SResNet',
-        description: 'Linear spectral MFCC squeezed residual network',
-        modelType: 'sresnet',
-        accuracy: 35.68,
-        top5: 76.13,
-        params: '0.43M',
-        savedAt: '2026-11-20T11:58:00Z',
-        status: 'saved',
-        fileSizeMB: 1.72,
-      },
-      {
-        checkpointId: 'ckpt_v08_cnngru',
-        version: 'v0.8.0',
-        name: 'CNN-GRU',
-        description: 'Nonlinear Log-Mel temporal recurrent model',
-        modelType: 'cnngru',
-        accuracy: 64.07,
-        top5: 91.21,
-        params: '0.52M',
-        savedAt: '2026-11-20T12:15:00Z',
-        status: 'saved',
-        fileSizeMB: 2.11,
-      },
-    ];
-  }
 
   renderCheckpoints(checkpoints);
 }
@@ -3861,9 +3695,9 @@ function renderCheckpoints(checkpoints) {
       <h3 class="ckpt-name">${escapeHtml(ckpt.name || 'Model Checkpoint')}</h3>
       <p class="ckpt-desc">${escapeHtml(ckpt.description || 'ESC-50 Deep Learning Model Checkpoint')}</p>
       <div class="ckpt-meta">
-        <span class="ckpt-meta-item">Acc: <strong>${ckpt.accuracy ? ckpt.accuracy + '%' : '96.5%'}</strong></span>
-        <span class="ckpt-meta-item">Params: <strong>${escapeHtml(ckpt.params || '14.2M')}</strong></span>
-        <span class="ckpt-meta-item">Size: <strong>${ckpt.fileSizeMB ? ckpt.fileSizeMB + ' MB' : '45.0 MB'}</strong></span>
+        <span class="ckpt-meta-item">Acc: <strong>${Number.isFinite(ckpt.accuracy) ? ckpt.accuracy + '%' : 'Not evaluated'}</strong></span>
+        <span class="ckpt-meta-item">Params: <strong>${escapeHtml(ckpt.params || '—')}</strong></span>
+        <span class="ckpt-meta-item">Size: <strong>${Number.isFinite(ckpt.fileSizeMB) ? ckpt.fileSizeMB + ' MB' : '—'}</strong></span>
         <span class="ckpt-meta-item">Type: <strong>${escapeHtml(ckpt.modelType || 'resnet18')}</strong></span>
       </div>
       <div style="display: flex; gap: 8px; margin-top: 14px;">
@@ -3916,142 +3750,17 @@ function escapeHtml(str) {
 }
 
 /**
- * Handle Start Training Button Click
+ * Model training runs offline on Kaggle; this browser view does not simulate metrics.
  */
 if (btnStartTraining) {
-  btnStartTraining.addEventListener('click', async () => {
-    if (btnStartTraining.disabled) return;
-
-    const modelType = trainModelTypeEl ? trainModelTypeEl.value : 'resnet18';
-    const epochs = trainEpochsEl ? parseInt(trainEpochsEl.value, 10) || 50 : 50;
-    const batchSize = trainBatchSizeEl ? parseInt(trainBatchSizeEl.value, 10) || 32 : 32;
-    const learningRate = trainLrEl ? parseFloat(trainLrEl.value) || 0.001 : 0.001;
-    const augmentation = trainAugmentEl ? trainAugmentEl.checked : true;
-    const description = trainDescEl ? trainDescEl.value.trim() : '';
-
-    // Collect checked folds
-    const checkedFolds = [];
-    document.querySelectorAll('#fold-checks input[type="checkbox"]:checked').forEach(cb => {
-      checkedFolds.push(parseInt(cb.value, 10));
-    });
-
-    // Set UI to busy
-    btnStartTraining.disabled = true;
-    if (btnTrainIdle) btnTrainIdle.hidden = true;
-    if (btnTrainBusy) btnTrainBusy.hidden = false;
+  btnStartTraining.addEventListener('click', () => {
     if (tmStatusEl) {
-      tmStatusEl.textContent = 'Running';
-      tmStatusEl.style.color = 'var(--cyan)';
+      tmStatusEl.textContent = 'Offline · Kaggle';
+      tmStatusEl.style.color = 'var(--amber, #f59e0b)';
     }
-
-    currentTrainingMetrics = { trainLoss: [], valLoss: [], trainAcc: [], valAcc: [] };
-    renderTrainingChart(currentTrainingMetrics);
-
-    // Call API /api/train
-    let jobId = null;
-    try {
-      const res = await fetch('/api/train', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          modelType,
-          epochs,
-          batchSize,
-          learningRate,
-          folds: checkedFolds,
-          augmentation,
-          description,
-        }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.jobId) {
-          jobId = data.jobId;
-        }
-      }
-    } catch (_) {}
-
-    if (jobId) {
-      // Backend job running
-      activeTrainingJobId = jobId;
-      if (trainingJobIdEl) trainingJobIdEl.textContent = `Job: ${jobId.slice(0, 16)}...`;
-      showToast('Training Started', `Express API initiated job "${jobId.slice(0, 12)}".`, 'info', 3000);
-      pollTrainingProgress(jobId, epochs);
-    } else {
-      // Offline client simulation
-      activeTrainingJobId = `local_${Date.now()}`;
-      if (trainingJobIdEl) trainingJobIdEl.textContent = 'Local Client Training Session';
-      showToast('Training Started', `Simulating ${epochs} epochs on local client engine.`, 'info', 3000);
-      simulateClientTraining(epochs);
-    }
+    showToast('Training runs offline', 'Run python -m eval.train_cv on a GPU, then evaluate the checkpoints. This screen will not simulate metrics.', 'info', 6000);
   });
 }
-
-/**
- * Polls Express Backend for training job progress
- */
-function pollTrainingProgress(jobId, totalEpochs) {
-  if (trainingPollInterval) clearInterval(trainingPollInterval);
-
-  trainingPollInterval = setInterval(async () => {
-    try {
-      const res = await fetch(`/api/train/${jobId}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.job) {
-          const job = data.job;
-          updateTrainingUI(job.currentEpoch, totalEpochs, job.metrics, job.progress, job.status);
-
-          if (job.status === 'completed' || job.progress >= 100) {
-            clearInterval(trainingPollInterval);
-            finishTrainingRun(job);
-          }
-        }
-      }
-    } catch (_) {
-      clearInterval(trainingPollInterval);
-      finishTrainingRun(null);
-    }
-  }, 500);
-}
-
-/**
- * Simulates training when backend is offline
- */
-function simulateClientTraining(totalEpochs) {
-  let step = 0;
-  const metrics = { trainLoss: [], valLoss: [], trainAcc: [], valAcc: [] };
-
-  const interval = setInterval(() => {
-    step++;
-    const ratio = step / totalEpochs;
-    const progress = Math.round(ratio * 100);
-
-    const tLoss = 2.4 * Math.exp(-3.4 * ratio) + 0.08 + (Math.random() - 0.5) * 0.03;
-    const vLoss = 2.4 * Math.exp(-2.9 * ratio) + 0.12 + (Math.random() - 0.5) * 0.04;
-    const tAcc = Math.min(99.4, 52 + 46 * (1 - Math.exp(-4 * ratio)) + (Math.random() - 0.5) * 1.2);
-    const vAcc = Math.min(97.8, 49 + 45 * (1 - Math.exp(-3.5 * ratio)) + (Math.random() - 0.5) * 1.8);
-
-    metrics.trainLoss.push(parseFloat(tLoss.toFixed(4)));
-    metrics.valLoss.push(parseFloat(vLoss.toFixed(4)));
-    metrics.trainAcc.push(parseFloat(tAcc.toFixed(2)));
-    metrics.valAcc.push(parseFloat(vAcc.toFixed(2)));
-
-    updateTrainingUI(step, totalEpochs, metrics, progress, step >= totalEpochs ? 'completed' : 'running');
-
-    if (step >= totalEpochs) {
-      clearInterval(interval);
-      finishTrainingRun({
-        jobId: activeTrainingJobId,
-        modelType: trainModelTypeEl ? trainModelTypeEl.value : 'fusion',
-        epochs: totalEpochs,
-        metrics,
-      });
-    }
-  }, 400);
-}
-
 /**
  * Updates training metrics, progress bar, and charts
  */
@@ -4196,38 +3905,8 @@ function drawCurve(ctx, data, startX, width, height, maxVal, color, _label) {
  * Handle Save New Checkpoint Button Click
  */
 if (btnSaveCheckpoint) {
-  btnSaveCheckpoint.addEventListener('click', async () => {
-    const name = prompt('Enter a name for this model checkpoint:', 'ResNet-18 Checkpoint');
-    if (!name || !name.trim()) return;
-
-    const desc = prompt('Enter a brief description for this checkpoint:', 'Trained on 5-fold stratified ESC-50 dataset with residual learning');
-
-    const modelType = trainModelTypeEl ? trainModelTypeEl.value : 'resnet18';
-    const fromJobId = lastCompletedJob ? lastCompletedJob.jobId : null;
-
-    try {
-      const res = await fetch('/api/save-model', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: name.trim(),
-          description: desc ? desc.trim() : '',
-          modelType,
-          fromJobId,
-        }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        showToast('Checkpoint Saved', data.message || `Saved ${name} successfully.`, 'success', 3500);
-        await refreshCheckpoints();
-        return;
-      }
-    } catch (_) {}
-
-    // Fallback if offline
-    showToast('Checkpoint Registered', `Registered "${name}" in client checkpoint register.`, 'info', 3000);
-    await refreshCheckpoints();
+  btnSaveCheckpoint.addEventListener('click', () => {
+    showToast('No checkpoint created', 'Checkpoints are written by the offline Kaggle training pipeline after a real evaluation run.', 'info', 6000);
   });
 }
 
@@ -4265,42 +3944,77 @@ async function loadAnalyticsData() {
 
   // Populate UI
   if (statsData && statsData.system) {
-    if (ahStatusEl) ahStatusEl.textContent = 'Healthy (API)';
+    const missingModels = statsData.modelAvailability?.missingModels || [];
+    if (ahStatusEl) ahStatusEl.textContent = missingModels.length ? `${missingModels.length} model(s) unavailable` : 'Healthy (API)';
     if (ahUptimeEl) ahUptimeEl.textContent = statsData.system.uptimeFormatted || '0h 0m';
     if (ahPredsEl) ahPredsEl.textContent = statsData.system.totalPredictions || 0;
-    if (ahMemoryEl) ahMemoryEl.textContent = `${statsData.system.memoryUsage?.heapUsed || 32} MB`;
+    if (ahMemoryEl) ahMemoryEl.textContent = Number.isFinite(statsData.system.memoryUsage?.heapUsed) ? `${statsData.system.memoryUsage.heapUsed} MB` : '—';
     if (ahNodeEl) ahNodeEl.textContent = statsData.system.nodeVersion || 'FastAPI 0.115 / Python';
-    if (ahCkptsEl) ahCkptsEl.textContent = statsData.system.savedCheckpoints || 3;
+    if (ahCkptsEl) ahCkptsEl.textContent = statsData.system.savedCheckpoints ?? 0;
   } else {
-    // Offline values
-    if (ahStatusEl) ahStatusEl.textContent = 'Standalone Client';
-    if (ahUptimeEl) ahUptimeEl.textContent = 'Active';
-    if (ahPredsEl) ahPredsEl.textContent = classificationToken || 1;
-    if (ahMemoryEl) ahMemoryEl.textContent = 'Browser WebAudio';
-    if (ahNodeEl) ahNodeEl.textContent = 'FastAPI 0.115';
-    if (ahCkptsEl) ahCkptsEl.textContent = '3';
+    if (ahStatusEl) ahStatusEl.textContent = 'API unavailable';
+    if (ahUptimeEl) ahUptimeEl.textContent = '—';
+    if (ahPredsEl) ahPredsEl.textContent = '—';
+    if (ahMemoryEl) ahMemoryEl.textContent = '—';
+    if (ahNodeEl) ahNodeEl.textContent = 'Backend unavailable';
+    if (ahCkptsEl) ahCkptsEl.textContent = '—';
   }
 
   // Telemetry Grid
   const d = statsData?.dataset;
-  if (tgAudioEl) tgAudioEl.textContent = d?.processedAudioCount ? d.processedAudioCount.toLocaleString() : '2,000';
-  if (tgMelEl) tgMelEl.textContent = d?.logMelCount ? d.logMelCount.toLocaleString() : '2,000';
-  if (tgMfccEl) tgMfccEl.textContent = d?.mfccCount ? d.mfccCount.toLocaleString() : '2,000';
-  if (tgRpEl) tgRpEl.textContent = d?.rpCount ? d.rpCount.toLocaleString() : '2,000';
+  if (tgAudioEl) tgAudioEl.textContent = Number.isFinite(d?.processedAudioCount) ? d.processedAudioCount.toLocaleString() : '—';
+  if (tgMelEl) tgMelEl.textContent = Number.isFinite(d?.logMelCount) ? d.logMelCount.toLocaleString() : '—';
+  if (tgMfccEl) tgMfccEl.textContent = Number.isFinite(d?.mfccCount) ? d.mfccCount.toLocaleString() : '—';
+  if (tgRpEl) tgRpEl.textContent = Number.isFinite(d?.rpCount) ? d.rpCount.toLocaleString() : '—';
+
+  const perf = Array.isArray(statsData?.modelPerformance) ? statsData.modelPerformance : [];
+  const perfByModel = new Map(perf.map(item => [item.modelKey, item]));
+  for (const modelKey of Object.keys(MODEL_INFO)) {
+    const item = perfByModel.get(modelKey);
+    const accuracy = Number.isFinite(item?.accuracy) ? item.accuracy : null;
+    const accuracyText = accuracy == null ? 'Not evaluated' : `${accuracy.toFixed(1)}%`;
+    document.querySelectorAll(`.m-val[data-model-key="${modelKey}"]`).forEach(el => {
+      el.textContent = accuracyText;
+      delete el.dataset.raw;
+    });
+    const row = document.querySelector(`.perf-row[data-model-key="${modelKey}"]`);
+    if (row) {
+      row.dataset.value = accuracy == null ? '0' : String(accuracy);
+      const fill = row.querySelector('.perf-fill');
+      const label = row.querySelector('.perf-pct');
+      if (fill) fill.dataset.w = accuracy == null ? '0' : String(accuracy);
+      if (label) label.textContent = accuracyText;
+    }
+    const tableRow = document.querySelector(`.spec-table tr[data-model-key="${modelKey}"]`);
+    if (tableRow) {
+      const accuracyCell = tableRow.querySelector('[data-model-metric="accuracy"]');
+      const latencyCell = tableRow.querySelector('[data-model-metric="latency"]');
+      if (accuracyCell) accuracyCell.textContent = accuracyText;
+      if (latencyCell) latencyCell.textContent = Number.isFinite(item?.latency) ? `${item.latency.toFixed(1)} ms` : '—';
+    }
+    const modelInfo = MODEL_INFO[modelKey];
+    modelInfo.accuracy = accuracyText;
+    modelInfo.latency = Number.isFinite(item?.latency) ? item.latency : null;
+  }
+  const perfChip = document.getElementById('perf-chip');
+  if (perfChip) {
+    const isCv = perf.some(item => String(item.evaluatedOn || '').toLowerCase().includes('cross-validation'));
+    perfChip.textContent = perf.length ? (isCv ? 'ESC-50 cross-validation results' : 'Evaluation report results') : 'Awaiting evaluation report';
+  }
 
   if (telemetryTsEl) {
     telemetryTsEl.textContent = `Telemetry synced at ${new Date().toLocaleTimeString()}`;
   }
 
   // Draw Charts
-  drawClassDistributionChart();
+  drawClassDistributionChart(d?.groupDistribution);
   drawModelPerformanceChart(statsData?.modelPerformance);
 }
 
 /**
  * Draws the ESC-50 Class Distribution Bar Chart
  */
-function drawClassDistributionChart() {
+function drawClassDistributionChart(groupDistribution) {
   if (!classDistChart) return;
   const ctx = classDistChart.getContext('2d');
   const w = classDistChart.width;
@@ -4324,17 +4038,19 @@ function drawClassDistributionChart() {
     ctx.stroke();
   }
 
-  const groups = [
-    { name: 'Animals', icon: '🐾', count: 400, color: isLight ? '#0284c7' : '#38bdf8' },
-    { name: 'Natural', icon: '🌿', count: 400, color: isLight ? '#059669' : '#34d399' },
-    { name: 'Human',   icon: '👤', count: 400, color: isLight ? '#d97706' : '#fbbf24' },
-    { name: 'Interior',icon: '🏠', count: 400, color: isLight ? '#7c3aed' : '#a855f7' },
-    { name: 'Urban',   icon: '🏙️', count: 400, color: isLight ? '#e11d48' : '#fb7185' },
-  ];
+  const groupMeta = {
+    Animals: ['🐾', isLight ? '#0284c7' : '#38bdf8'],
+    Natural: ['🌿', isLight ? '#059669' : '#34d399'],
+    Human: ['👤', isLight ? '#d97706' : '#fbbf24'],
+    Interior: ['🏠', isLight ? '#7c3aed' : '#a855f7'],
+    Urban: ['🏙️', isLight ? '#e11d48' : '#fb7185'],
+  };
+  const groups = (Array.isArray(groupDistribution) ? groupDistribution : Object.keys(groupMeta).map(group => ({ group, totalSamples: 0 })))
+    .map(item => ({ name: item.group, icon: groupMeta[item.group]?.[0] || '🔊', color: groupMeta[item.group]?.[1] || '#64748b', count: Number(item.totalSamples) || 0 }));
 
   const barWidth = 64;
   const gap = (w - (groups.length * barWidth) - 40) / (groups.length - 1);
-  const maxCount = 500;
+  const maxCount = Math.max(1, ...groups.map(g => g.count));
   const chartHeight = h - 65;
 
   groups.forEach((g, i) => {
@@ -4393,9 +4109,16 @@ function drawModelPerformanceChart(perfList) {
   ctx.fillStyle = isLight ? '#ffffff' : 'rgba(7, 10, 20, 0.95)';
   ctx.fillRect(0, 0, w, h);
 
-  const models = perfList || [
-    { model: 'SoundSense Acoustic MLP (deployed)', accuracy: 97.95, latency: 11.4, color: isLight ? '#0284c7' : '#38bdf8' },
-  ];
+  const models = Array.isArray(perfList) ? perfList : [];
+
+  if (!models.length) {
+    ctx.fillStyle = isLight ? '#64748b' : 'rgba(148, 163, 184, 0.75)';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('No model evaluation report available', w / 2, h / 2);
+    ctx.textAlign = 'start';
+    return;
+  }
 
   const rowHeight = 34;
   const startY = 24;
@@ -4452,7 +4175,7 @@ function drawModelPerformanceChart(perfList) {
     // Latency
     ctx.fillStyle = isLight ? '#64748b' : 'rgba(148, 163, 184, 0.85)';
     ctx.font = '10px Inter, sans-serif';
-    ctx.fillText(`(${m.latency}ms)`, barX + chartW + 52, y + 15);
+    ctx.fillText(`(${Number.isFinite(m.latency) ? `${m.latency.toFixed(1)}ms` : 'latency —'})`, barX + chartW + 52, y + 15);
   });
 
   ctx.textAlign = 'start';
@@ -5310,33 +5033,33 @@ if (btnQuickLogin) {
 
     const ARCHETYPES = {
       dog: {
-        name: 'Dog Barking (Canis lupus)',
-        domain: 'Domain: Animals',
-        conf: '96.8% Confidence',
+        name: 'Synthetic dog bark sample',
+        domain: 'Synthetic audio · Animals',
+        conf: 'No model score',
         desc: 'Multi-harmonic acoustic formants with rapid periodic vocal tract modulations centered around 450 Hz – 1.8 kHz.',
         waveColor: '#22d3ee',
         style: 'burst'
       },
       rain: {
-        name: 'Rainstorm & Thunder (Natural Water)',
-        domain: 'Domain: Natural Soundscapes',
-        conf: '98.2% Confidence',
+        name: 'Synthetic rain and thunder sample',
+        domain: 'Synthetic audio · Natural soundscapes',
+        conf: 'No model score',
         desc: 'Continuous stochastic broadband pink-noise envelope with low-frequency rumble impulses below 120 Hz.',
         waveColor: '#38bdf8',
         style: 'noise'
       },
       baby: {
-        name: 'Crying Infant (Human Non-Speech)',
-        domain: 'Domain: Human Sounds',
-        conf: '94.6% Confidence',
+        name: 'Synthetic infant cry sample',
+        domain: 'Synthetic audio · Human sounds',
+        conf: 'No model score',
         desc: 'High-pitch vocal tract resonance with frequency modulation sweeping between 800 Hz and 2.6 kHz.',
         waveColor: '#fbbf24',
         style: 'sweep'
       },
       knock: {
-        name: 'Door Knock (Domestic Interior)',
-        domain: 'Domain: Domestic Acoustics',
-        conf: '97.1% Confidence',
+        name: 'Synthetic door knock sample',
+        domain: 'Synthetic audio · Interior',
+        conf: 'No model score',
         desc: 'Sharp mechanical impact transients with rapid exponential decay and characteristic room reverberation.',
         waveColor: '#a78bfa',
         style: 'impulse'
@@ -5358,7 +5081,7 @@ if (btnQuickLogin) {
           if (simPauseIcon) simPauseIcon.style.display = 'block';
           if (simPlayIcon) simPlayIcon.style.display = 'none';
           if (simBtnText) simBtnText.textContent = 'Pause';
-          if (simStatusText) simStatusText.textContent = 'DSP Engine Ready';
+          if (simStatusText) simStatusText.textContent = 'Synthetic preview';
           if (simStatusDot) simStatusDot.style.background = '';
         }
       });
@@ -5377,7 +5100,7 @@ if (btnQuickLogin) {
         if (simDomainBadge) simDomainBadge.textContent = data.domain;
         if (simConfBadge) simConfBadge.textContent = data.conf;
         if (simPredDesc) simPredDesc.textContent = data.desc;
-        if (simCanvasLabel) simCanvasLabel.textContent = `Acoustic Stream: ${data.name} (22.05 kHz)`;
+        if (simCanvasLabel) simCanvasLabel.textContent = `Synthetic waveform: ${data.name} (22.05 kHz)`;
       });
     });
 
@@ -5475,28 +5198,28 @@ if (btnQuickLogin) {
 
   const API_DOCS = {
     predict: {
-      badge: 'POST /predict',
-      desc: 'Accepts a multipart audio file upload (wav/mp3/mpeg), executes full DSP feature extraction, and returns Top-5 classified environmental classes with confidence metrics and OOD analysis.',
+      badge: 'POST /api/predict',
+      desc: 'Accepts WAV, MP3, or MPEG audio. A normal classification requires the selected model checkpoint; confidence is a model score, not a guarantee of correctness.',
       code: {
-        curl: `curl -X POST "http://localhost:8000/predict" \\
+        curl: `curl -X POST "http://localhost:8000/api/predict" \\
   -H "accept: application/json" \\
-  -F "file=@acoustic_sample.wav" \\
-  -F "model=sresnet" \\
+  -F "audio=@acoustic_sample.wav" \\
+  -F "model=resnet18" \\
   -F "threshold=0.5"`,
         python: `import requests
 
-url = "http://localhost:8000/predict"
-files = {"file": open("acoustic_sample.wav", "rb")}
-data = {"model": "sresnet", "threshold": 0.5}
+url = "http://localhost:8000/api/predict"
+files = {"audio": open("acoustic_sample.wav", "rb")}
+data = {"model": "resnet18", "threshold": 0.5}
 
 response = requests.post(url, files=files, data=data)
 print(response.json())`,
         javascript: `const formData = new FormData();
-formData.append("file", audioBlob, "sample.wav");
-formData.append("model", "sresnet");
+formData.append("audio", audioBlob, "sample.wav");
+formData.append("model", "resnet18");
 formData.append("threshold", "0.5");
 
-const res = await fetch("http://localhost:8000/predict", {
+const res = await fetch("http://localhost:8000/api/predict", {
   method: "POST",
   body: formData
 });
@@ -5504,39 +5227,25 @@ const data = await res.json();
 console.log(data);`
       },
       response: `{
-  "status": "success",
-  "prediction": "dog",
-  "category": "animals",
-  "confidence": 0.942,
-  "is_ood": false,
-  "entropy": 0.412,
-  "top5": [
-    {"label": "dog", "score": 0.942, "category": "animals"},
-    {"label": "barking", "score": 0.038, "category": "animals"},
-    {"label": "cat", "score": 0.009, "category": "animals"},
-    {"label": "door_knock", "score": 0.005, "category": "domestic"},
-    {"label": "footsteps", "score": 0.003, "category": "human"}
-  ],
-  "latency_ms": 18.4,
-  "cache_hit": false
+  "error": "Model unavailable",
+  "details": "No trained checkpoint is available for: resnet18."
 }`
     },
     sample: {
-      badge: 'GET /sample-audio',
-      desc: 'Retrieves pre-loaded, curated ESC-50 high-fidelity reference audio waveforms for calibration and empirical testing.',
+      badge: 'GET /api/sample/{category_id}',
+      desc: 'Streams a sample WAV for an ESC-50 class when the dataset audio files are installed locally.',
       code: {
-        curl: `curl -X GET "http://localhost:8000/sample-audio?category=animals&class_name=dog" \\
+        curl: `curl -X GET "http://localhost:8000/api/sample/0" \\
   -H "accept: audio/wav" \\
   --output sample_dog.wav`,
         python: `import requests
 
-url = "http://localhost:8000/sample-audio"
-params = {"category": "animals", "class_name": "dog"}
+url = "http://localhost:8000/api/sample/0"
 
-res = requests.get(url, params=params)
+res = requests.get(url)
 with open("sample_dog.wav", "wb") as f:
     f.write(res.content)`,
-        javascript: `const res = await fetch("http://localhost:8000/sample-audio?category=animals&class_name=dog");
+        javascript: `const res = await fetch("http://localhost:8000/api/sample/0");
 const blob = await res.blob();
 const audioUrl = URL.createObjectURL(blob);
 const audio = new Audio(audioUrl);
@@ -5548,59 +5257,34 @@ audio.play();`
 // File size: 220,544 bytes (~5.00s duration)`
     },
     stats: {
-      badge: 'GET /system-stats',
-      desc: 'Telemetry endpoint exposing hot LRU cache hit ratios, memory usage footprint, active PyTorch device, and worker health.',
+      badge: 'GET /api/stats',
+      desc: 'Returns runtime telemetry, dataset counts, checkpoint availability, and metrics from the current evaluation report.',
       code: {
-        curl: `curl -X GET "http://localhost:8000/system-stats" \\
+        curl: `curl -X GET "http://localhost:8000/api/stats" \\
   -H "accept: application/json"`,
         python: `import requests
 
-res = requests.get("http://localhost:8000/system-stats")
-stats = res.json()
-print(f"Active Model: {stats['active_model']}, RAM: {stats['ram_usage_mb']} MB")`,
-        javascript: `const res = await fetch("http://localhost:8000/system-stats");
-const stats = await res.json();
-console.log("System Health:", stats);`
+res = requests.get("http://localhost:8000/api/stats")
+print(res.json())`,
+        javascript: `const res = await fetch("http://localhost:8000/api/stats");
+console.log(await res.json());`
       },
-      response: `{
-  "status": "healthy",
-  "uptime_seconds": 14280,
-  "loaded_models": ["sresnet", "resnet18", "vgg16", "cnn_gru"],
-  "active_model": "sresnet",
-  "cache_entries": 128,
-  "cache_hit_rate": 0.842,
-  "ram_usage_mb": 420.5,
-  "device": "cpu"
-}`
+      response: `// Runtime values are generated by the running service; model scores appear only after evaluation.`
     },
     taxonomy: {
-      badge: 'GET /taxonomy',
-      desc: 'Returns the complete 50-class ESC-50 taxonomy mapped by discrete category IDs, standard domains, and acoustic features.',
+      badge: 'GET /api/health',
+      desc: 'Reports service health and lists which model checkpoints are present or missing.',
       code: {
-        curl: `curl -X GET "http://localhost:8000/taxonomy" \\
+        curl: `curl -X GET "http://localhost:8000/api/health" \\
   -H "accept: application/json"`,
         python: `import requests
 
-res = requests.get("http://localhost:8000/taxonomy")
-taxonomy = res.json()
-print("Total classes:", len(taxonomy["categories"]))`,
-        javascript: `const res = await fetch("http://localhost:8000/taxonomy");
-const taxonomy = await res.json();
-console.log("Taxonomy Domains:", taxonomy.domains);`
+res = requests.get("http://localhost:8000/api/health")
+print(res.json())`,
+        javascript: `const res = await fetch("http://localhost:8000/api/health");
+console.log(await res.json());`
       },
-      response: `{
-  "dataset": "ESC-50",
-  "total_classes": 50,
-  "domains": ["animals", "natural", "human", "domestic", "urban"],
-  "categories": [
-    {"id": 0, "name": "dog", "domain": "animals"},
-    {"id": 1, "name": "rooster", "domain": "animals"},
-    {"id": 10, "name": "rain", "domain": "natural"},
-    {"id": 20, "name": "crying_baby", "domain": "human"},
-    {"id": 30, "name": "door_knock", "domain": "domestic"},
-    {"id": 40, "name": "helicopter", "domain": "urban"}
-  ]
-}`
+      response: `// Check "status" and "missingModels" in the live response.`
     }
   };
 

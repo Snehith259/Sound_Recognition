@@ -11,6 +11,7 @@ const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const { spawnSync } = require('child_process');
 
 const app = express();
@@ -71,114 +72,63 @@ const upload = multer({
   },
 });
 
-/* ── In-memory state (simulating model/training management) ── */
+/* ── Runtime counters only; checkpoints and scores are read from disk ── */
 const serverState = {
   startedAt: new Date().toISOString(),
   totalPredictions: 0,
-  totalTrainingRuns: 0,
-  savedCheckpoints: [
-    {
-      checkpointId: 'ckpt_v1_resnet18',
-      version: 'v1.0.0',
-      name: 'ResNet-18',
-      description: 'Deep Residual Network with 18 layers (Log-Mel Spectrogram input)',
-      modelType: 'resnet18',
-      accuracy: 62.81,
-      top5: 88.19,
-      params: '11.3M',
-      savedAt: '2026-11-20T11:16:00Z',
-      status: 'active',
-      fileSizeMB: 45.34,
-      cloudSource: 'checkpoints/esc50_resnet18_v1.pt',
-      downloaded: true,
-    },
-    {
-      checkpointId: 'ckpt_v1_vgg16',
-      version: 'v1.1.0',
-      name: 'VGG-16',
-      description: 'Visual Geometry Group 16-layer Deep Convolutional Network',
-      modelType: 'vgg16',
-      accuracy: 61.06,
-      top5: 91.96,
-      params: '15.8M',
-      savedAt: '2026-11-20T11:38:00Z',
-      status: 'saved',
-      fileSizeMB: 63.26,
-      cloudSource: 'checkpoints/esc50_vgg16_v1.pt',
-      downloaded: true,
-    },
-    {
-      checkpointId: 'ckpt_v09_sresnet',
-      version: 'v0.9.0',
-      name: 'SResNet',
-      description: 'Linear spectral MFCC squeezed residual network',
-      modelType: 'sresnet',
-      accuracy: 35.68,
-      top5: 76.13,
-      params: '0.43M',
-      savedAt: '2026-11-20T11:58:00Z',
-      status: 'saved',
-      fileSizeMB: 1.72,
-      cloudSource: 'checkpoints/esc50_sresnet_linear_v09.pt',
-      downloaded: true,
-    },
-    {
-      checkpointId: 'ckpt_v08_cnngru',
-      version: 'v0.8.0',
-      name: 'CNN-GRU',
-      description: 'Nonlinear Log-Mel temporal recurrent model',
-      modelType: 'cnngru',
-      accuracy: 64.07,
-      top5: 91.21,
-      params: '0.52M',
-      savedAt: '2026-11-20T12:15:00Z',
-      status: 'saved',
-      fileSizeMB: 2.11,
-      cloudSource: 'checkpoints/esc50_cnngru_recurrent_v08.pt',
-      downloaded: true,
-    },
-  ],
   trainingJobs: [],
-  modelVersions: [
-    {
-      id: 'v1.0.0',
-      name: 'ResNet-18',
-      accuracy: 62.81,
-      params: '11.3M',
-      createdAt: '2026-11-20T11:16:00Z',
-      status: 'active',
-      description: 'Deep Residual Network with 18 layers (Log-Mel Spectrogram input)',
-    },
-    {
-      id: 'v1.1.0',
-      name: 'VGG-16',
-      accuracy: 61.06,
-      params: '15.8M',
-      createdAt: '2026-11-20T11:38:00Z',
-      status: 'saved',
-      description: 'Visual Geometry Group 16-layer Deep Convolutional Network',
-    },
-    {
-      id: 'v0.9.0',
-      name: 'SResNet',
-      accuracy: 35.68,
-      params: '0.43M',
-      createdAt: '2026-11-20T11:58:00Z',
-      status: 'saved',
-      description: 'Linear spectral MFCC squeezed residual network',
-    },
-    {
-      id: 'v0.8.0',
-      name: 'CNN-GRU',
-      accuracy: 64.07,
-      params: '0.52M',
-      createdAt: '2026-11-20T12:15:00Z',
-      status: 'saved',
-      description: 'Nonlinear Log-Mel temporal recurrent model',
-    },
-  ],
 };
 
+const checkpointFiles = {
+  resnet18: 'esc50_resnet18_v1.pt',
+  vgg16: 'esc50_vgg16_v1.pt',
+  sresnet: 'esc50_sresnet_linear_v09.pt',
+  cnngru: 'esc50_cnngru_recurrent_v08.pt',
+};
+
+function readEvalReport() {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(__dirname, 'checkpoints', 'eval_report.json'), 'utf8'));
+  } catch (_) {
+    return {};
+  }
+}
+
+function getCheckpointInventory() {
+  const inventory = {};
+  for (const [model, filename] of Object.entries(checkpointFiles)) {
+    const fullPath = path.join(__dirname, 'checkpoints', filename);
+    const available = fs.existsSync(fullPath);
+    inventory[model] = {
+      filename,
+      available,
+      sha256: available ? crypto.createHash('sha256').update(fs.readFileSync(fullPath)).digest('hex') : null,
+      sizeBytes: available ? fs.statSync(fullPath).size : null,
+    };
+  }
+  return inventory;
+}
+
+function getModelPerformance(report) {
+  const displayNames = { resnet18: 'ResNet-18', vgg16: 'VGG-16', sresnet: 'SResNet', cnngru: 'CNN-GRU', ensemble: 'Ensemble Fusion' };
+  const colors = { resnet18: '#38bdf8', vgg16: '#fbbf24', sresnet: '#a855f7', cnngru: '#34d399', ensemble: '#818cf8' };
+  return Object.entries(report.models || {}).flatMap(([key, item]) => {
+    const metrics = item.metrics || {};
+    if (metrics.top1 == null) return [];
+    return [{
+      model: item.displayName || displayNames[key] || key,
+      modelKey: key,
+      accuracy: metrics.top1 * 100,
+      top5Accuracy: metrics.top5 == null ? null : metrics.top5 * 100,
+      r2Score: metrics.r2Probability ?? null,
+      ece: metrics.ece ?? null,
+      externalAccuracy: item.external?.top1 == null ? null : item.external.top1 * 100,
+      latency: metrics.latencyMs ?? null,
+      color: colors[key] || '#94a3b8',
+      evaluatedOn: item.evaluation || null,
+    }];
+  });
+}
 /* ESC-50 category metadata */
 const ESC50_CATEGORIES = [
   { id: 0, name: 'dog', group: 'Animals' }, { id: 1, name: 'rooster', group: 'Animals' },
@@ -213,14 +163,6 @@ const ESC50_CATEGORIES = [
    Analyzes audio waveform and spectral characteristics.
    Never relies on filename. Supports Out-of-Scope sound detection.
    ══════════════════════════════════════════════════════════════ */
-let esc50AcousticProfiles = null;
-try {
-  const profilePath = path.join(__dirname, 'Front-End', 'esc50_acoustic_profiles.json');
-  if (fs.existsSync(profilePath)) {
-    esc50AcousticProfiles = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
-  }
-} catch (_) {}
-
 const userHistory = [];
 
 app.post('/api/predict', upload.single('audio'), (req, res) => {
@@ -230,6 +172,8 @@ app.post('/api/predict', upload.single('audio'), (req, res) => {
     }
 
     const modelKey = req.body.model || 'resnet18';
+    const thresholdRaw = Number(req.body.threshold);
+    const threshold = Number.isFinite(thresholdRaw) ? (thresholdRaw > 1 ? thresholdRaw / 100 : thresholdRaw) : null;
     const fileName = req.file.originalname || `upload_${Date.now()}.wav`;
     const audioBuffer = req.file.buffer;
 
@@ -237,7 +181,7 @@ app.post('/api/predict', upload.single('audio'), (req, res) => {
     try {
       const pyScript = path.join(__dirname, 'Preproccesing', 'acoustic_inference.py');
       if (fs.existsSync(pyScript)) {
-        const pyProc = spawnSync('python', [pyScript, '-', modelKey], {
+        const pyProc = spawnSync('python', [pyScript, '-', modelKey, threshold == null ? '' : String(threshold)], {
           input: audioBuffer,
           encoding: 'utf8',
           timeout: 30000,
@@ -260,12 +204,14 @@ app.post('/api/predict', upload.single('audio'), (req, res) => {
                 emoji: result.category?.emoji || '🔊',
                 group: result.category?.group || 'Other',
                 confidence: result.confidence,
-                confidencePercent: `${Math.round(result.confidence * 100)}%`,
+                confidencePercent: result.confidenceType === 'not_computed_rule_gate' || result.confidence == null
+                  ? null
+                  : `${Math.round(result.confidence * 100)}%`,
                 isOutOfScope: result.isOutOfScope,
               },
               predictions: result.predictions,
               inferenceSource: 'api',
-              latencyMs: result.inferenceTime || 8.2,
+                latencyMs: result.inferenceTime ?? null,
               timestamp: new Date().toISOString(),
             };
             userHistory.unshift(historyEntry);
@@ -277,12 +223,17 @@ app.post('/api/predict', upload.single('audio'), (req, res) => {
               engine: result.engine,
               fileName,
               isOutOfScope: result.isOutOfScope,
+              confidenceType: result.confidenceType,
+              classProbabilities: result.classProbabilities,
+              oodScore: result.oodScore,
               category: result.category,
               predictions: result.predictions,
+              confidence: result.confidence,
               explanation: result.explanation,
               metrics: result.metrics,
-              metrics: result.metrics,
-              inferenceTime: result.inferenceTime || 8.2,
+              inferenceTime: result.inferenceTime ?? null,
+              belowConfidenceThreshold: result.belowConfidenceThreshold ?? false,
+              confidenceThreshold: result.confidenceThreshold ?? null,
               historyId,
               timestamp: new Date().toISOString(),
             });
@@ -317,6 +268,8 @@ app.post('/api/predict/batch', upload.array('audio', 100), (req, res) => {
     }
 
     const modelKey = req.body.model || 'resnet18';
+    const thresholdRaw = Number(req.body.threshold);
+    const threshold = Number.isFinite(thresholdRaw) ? (thresholdRaw > 1 ? thresholdRaw / 100 : thresholdRaw) : null;
     const pyScript = path.join(__dirname, 'Preproccesing', 'acoustic_inference.py');
 
     if (!fs.existsSync(pyScript)) {
@@ -330,7 +283,7 @@ app.post('/api/predict/batch', upload.array('audio', 100), (req, res) => {
     for (const f of files) {
       const fileName = f.originalname || `upload_${Date.now()}.wav`;
       try {
-        const pyProc = spawnSync('python', [pyScript, '-', modelKey], {
+        const pyProc = spawnSync('python', [pyScript, '-', modelKey, threshold == null ? '' : String(threshold)], {
           input: f.buffer,
           encoding: 'utf8',
           timeout: 30000,
@@ -354,12 +307,14 @@ app.post('/api/predict/batch', upload.array('audio', 100), (req, res) => {
                 emoji: result.category?.emoji || '🔊',
                 group: result.category?.group || 'Other',
                 confidence: result.confidence,
-                confidencePercent: `${Math.round(result.confidence * 100)}%`,
+                confidencePercent: result.confidenceType === 'not_computed_rule_gate' || result.confidence == null
+                  ? null
+                  : `${Math.round(result.confidence * 100)}%`,
                 isOutOfScope: result.isOutOfScope,
               },
               predictions: result.predictions,
               inferenceSource: 'api_batch',
-              latencyMs: result.inferenceTime || 8.2,
+              latencyMs: result.inferenceTime ?? null,
               timestamp: new Date().toISOString(),
             };
             userHistory.unshift(historyEntry);
@@ -369,10 +324,13 @@ app.post('/api/predict/batch', upload.array('audio', 100), (req, res) => {
               fileName,
               success: true,
               isOutOfScope: result.isOutOfScope,
+              confidenceType: result.confidenceType,
+              classProbabilities: result.classProbabilities,
+              oodScore: result.oodScore,
               category: result.category,
               confidence: result.confidence,
               predictions: result.predictions,
-              inferenceTime: result.inferenceTime || 8.2,
+              inferenceTime: result.inferenceTime ?? null,
             });
             continue;
           }
@@ -398,87 +356,14 @@ app.post('/api/predict/batch', upload.array('audio', 100), (req, res) => {
 });
 
 /* ══════════════════════════════════════════════════════════════
-   ROUTE 2: POST /api/train — Trigger Model Training Run
-   Accepts JSON body with training configuration.
+   ROUTE 2: POST /api/train — Training is run offline on Kaggle
    ══════════════════════════════════════════════════════════════ */
-app.post('/api/train', (req, res) => {
-  try {
-    const {
-      modelType = 'resnet18',
-      epochs = 50,
-      batchSize = 32,
-      learningRate = 0.001,
-      folds = [1, 2, 3, 4, 5],
-      augmentation = true,
-      description = '',
-    } = req.body;
-
-    const jobId = `train_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-
-    const job = {
-      jobId,
-      modelType,
-      epochs: parseInt(epochs),
-      batchSize: parseInt(batchSize),
-      learningRate: parseFloat(learningRate),
-      folds,
-      augmentation,
-      description,
-      status: 'running',
-      progress: 0,
-      currentEpoch: 0,
-      startedAt: new Date().toISOString(),
-      completedAt: null,
-      metrics: {
-        trainLoss: [],
-        valLoss: [],
-        trainAcc: [],
-        valAcc: [],
-      },
-    };
-
-    serverState.trainingJobs.push(job);
-    serverState.totalTrainingRuns++;
-
-    // Simulate training progress over time
-    const totalSteps = parseInt(epochs);
-    let step = 0;
-    const progressInterval = setInterval(() => {
-      step++;
-      job.currentEpoch = step;
-      job.progress = Math.round((step / totalSteps) * 100);
-
-      // Simulate realistic training curves
-      const epochRatio = step / totalSteps;
-      const trainLoss = 2.5 * Math.exp(-3.5 * epochRatio) + 0.08 + (Math.random() - 0.5) * 0.03;
-      const valLoss = 2.5 * Math.exp(-3.0 * epochRatio) + 0.12 + (Math.random() - 0.5) * 0.05;
-      const trainAcc = Math.min(99.5, 50 + 48 * (1 - Math.exp(-4 * epochRatio)) + (Math.random() - 0.5) * 1.5);
-      const valAcc = Math.min(98.0, 48 + 46 * (1 - Math.exp(-3.5 * epochRatio)) + (Math.random() - 0.5) * 2.0);
-
-      job.metrics.trainLoss.push(parseFloat(trainLoss.toFixed(4)));
-      job.metrics.valLoss.push(parseFloat(valLoss.toFixed(4)));
-      job.metrics.trainAcc.push(parseFloat(trainAcc.toFixed(2)));
-      job.metrics.valAcc.push(parseFloat(valAcc.toFixed(2)));
-
-      if (step >= totalSteps) {
-        clearInterval(progressInterval);
-        job.status = 'completed';
-        job.completedAt = new Date().toISOString();
-        job.progress = 100;
-      }
-    }, 600); // Each "epoch" takes 600ms for demo
-
-    res.json({
-      success: true,
-      jobId,
-      message: `Training job "${jobId}" started with ${epochs} epochs on model "${modelType}".`,
-      estimatedTime: `${Math.round(epochs * 0.6)}s (simulated)`,
-    });
-  } catch (err) {
-    res.status(500).json({ error: 'Training initiation failed', details: err.message });
-  }
+app.post('/api/train', (_req, res) => {
+  res.status(501).json({
+    success: false,
+    error: 'Training runs offline with python -m eval.train_cv. This endpoint does not simulate training or metrics.',
+  });
 });
-
 /* GET /api/train/:jobId — Check training job status */
 app.get('/api/train/:jobId', (req, res) => {
   const job = serverState.trainingJobs.find(j => j.jobId === req.params.jobId);
@@ -505,84 +390,42 @@ app.get('/api/train', (_req, res) => {
   });
 });
 
-/* ══════════════════════════════════════════════════════════════
-   ROUTE 3: POST /api/save-model — Save Model Checkpoint
-   ══════════════════════════════════════════════════════════════ */
-app.post('/api/save-model', (req, res) => {
-  try {
-    const {
-      name = 'Untitled Checkpoint',
-      description = '',
-      modelType = 'resnet18',
-      accuracy = null,
-      fromJobId = null,
-    } = req.body;
-
-    const checkpointId = `ckpt_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-    const version = `v${serverState.savedCheckpoints.length + 2}.0.0`;
-
-    // If linked to a completed job, pull final metrics
-    let finalAccuracy = accuracy;
-    if (fromJobId) {
-      const job = serverState.trainingJobs.find(j => j.jobId === fromJobId);
-      if (job && job.status === 'completed' && job.metrics.valAcc.length > 0) {
-        finalAccuracy = job.metrics.valAcc[job.metrics.valAcc.length - 1];
-      }
-    }
-
-    const checkpoint = {
-      checkpointId,
-      version,
-      name,
-      description,
-      modelType,
-      accuracy: finalAccuracy || parseFloat((88 + Math.random() * 6).toFixed(2)),
-      params: { resnet18: '11.7M', vgg16: '138.4M', sresnet: '8.6M', cnngru: '5.6M' }[modelType] || '11.7M',
-      savedAt: new Date().toISOString(),
-      status: 'saved',
-      fileSizeMB: parseFloat((25 + Math.random() * 40).toFixed(1)),
-    };
-
-    serverState.savedCheckpoints.push(checkpoint);
-    serverState.modelVersions.push({
-      id: version,
-      name,
-      accuracy: checkpoint.accuracy,
-      params: checkpoint.params,
-      createdAt: checkpoint.savedAt,
-      status: 'saved',
-      description,
-    });
-
-    res.json({
-      success: true,
-      checkpoint,
-      message: `Model checkpoint "${name}" saved as ${version}.`,
-    });
-  } catch (err) {
-    res.status(500).json({ error: 'Checkpoint save failed', details: err.message });
-  }
+app.post('/api/save-model', (_req, res) => {
+  res.status(501).json({
+    success: false,
+    error: 'Checkpoints are created by the offline training pipeline. This endpoint does not invent or save metrics.',
+  });
 });
-
 /* GET /api/save-model — List all saved checkpoints */
 app.get('/api/save-model', (_req, res) => {
+  const inventory = getCheckpointInventory();
+  const metrics = readEvalReport().models || {};
+  const checkpoints = Object.entries(inventory)
+    .filter(([, item]) => item.available)
+    .map(([modelType, item]) => ({
+      checkpointId: item.filename,
+      name: modelType,
+      modelType,
+      filename: item.filename,
+      sha256: item.sha256,
+      fileSizeBytes: item.sizeBytes,
+      accuracy: metrics[modelType]?.metrics?.top1 == null ? null : metrics[modelType].metrics.top1 * 100,
+      top5: metrics[modelType]?.metrics?.top5 == null ? null : metrics[modelType].metrics.top5 * 100,
+      status: 'available',
+    }));
   res.json({
     success: true,
-    checkpoints: serverState.savedCheckpoints,
-    modelVersions: serverState.modelVersions,
+    checkpoints,
+    modelVersions: [],
   });
 });
 
 /* POST /api/model/cloud-sync — Sync / download weights from Hugging Face Hub */
 app.post('/api/model/cloud-sync', (req, res) => {
   const { repo = 'huggingface.co/soundsense/esc50-resnet18' } = req.body || {};
-  res.json({
-    success: true,
-    source: repo,
-    message: `Model weights verified and cached from Hugging Face Hub (${repo}).`,
-    cachedCheckpoints: serverState.savedCheckpoints.length,
-    status: 'synchronized',
-    timestamp: new Date().toISOString(),
+  res.status(501).json({
+    success: false,
+    error: `No verified model repository is configured (requested source: ${repo}).`,
   });
 });
 
@@ -630,7 +473,7 @@ app.get('/api/stats', (_req, res) => {
     id: cat.id,
     name: cat.name,
     group: cat.group,
-    sampleCount: Math.round(processedAudioCount / 50) || 40,
+    sampleCount: Math.round(processedAudioCount / 50),
   }));
 
   // Per-group distribution
@@ -638,16 +481,12 @@ app.get('/api/stats', (_req, res) => {
   const groupDistribution = groups.map(g => ({
     group: g,
     classCount: 10,
-    totalSamples: Math.round(processedAudioCount / 5) || 400,
+    totalSamples: Math.round(processedAudioCount / 5),
   }));
 
-  // Model performance data
-  const modelPerformance = [
-    { model: 'CNN-GRU (v0.8)', accuracy: 64.07, top5Accuracy: 91.21, params: '0.52M', latency: 6.6, color: '#34d399', evaluatedOn: 'ESC-50 Official Split (Fold 5)' },
-    { model: 'ResNet-18 (v1.0)', accuracy: 62.81, top5Accuracy: 88.19, params: '11.3M', latency: 67.3, color: '#38bdf8', evaluatedOn: 'ESC-50 Official Split (Fold 5)' },
-    { model: 'VGG-16 (v1.1)', accuracy: 61.06, top5Accuracy: 91.96, params: '15.8M', latency: 26185.4, color: '#fbbf24', evaluatedOn: 'ESC-50 Official Split (Fold 5)' },
-    { model: 'SResNet (v0.9)', accuracy: 35.68, top5Accuracy: 76.13, params: '0.43M', latency: 18.2, color: '#a855f7', evaluatedOn: 'ESC-50 Official Split (Fold 5)' },
-  ];
+  const evaluationReport = readEvalReport();
+  const inventory = getCheckpointInventory();
+  const modelPerformance = getModelPerformance(evaluationReport);
 
   const uptime = Math.round((Date.now() - new Date(serverState.startedAt).getTime()) / 1000);
 
@@ -665,8 +504,8 @@ app.get('/api/stats', (_req, res) => {
         heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
       },
       totalPredictions: serverState.totalPredictions,
-      totalTrainingRuns: serverState.totalTrainingRuns,
-      savedCheckpoints: serverState.savedCheckpoints.length,
+      totalTrainingRuns: Number(evaluationReport.trainingRuns) || 0,
+      savedCheckpoints: Object.values(inventory).filter(item => item.available).length,
     },
     dataset: {
       name: 'ESC-50',
@@ -689,7 +528,12 @@ app.get('/api/stats', (_req, res) => {
     },
     modelPerformance,
     preprocessingReport,
-    modelVersions: serverState.modelVersions,
+    modelVersions: [],
+    evaluationReport,
+    modelAvailability: {
+      availableModels: Object.entries(inventory).filter(([, item]) => item.available).map(([key]) => key),
+      missingModels: Object.entries(inventory).filter(([, item]) => !item.available).map(([key]) => key),
+    },
   });
 });
 
@@ -771,11 +615,16 @@ app.post('/api/auth/logout', (req, res) => {
    ══════════════════════════════════════════════════════════════ */
 app.get('/api/health', (_req, res) => {
   const uptime = Math.round((Date.now() - new Date(serverState.startedAt).getTime()) / 1000);
+  const inventory = getCheckpointInventory();
+  const models = Object.entries(inventory).filter(([, item]) => item.available).map(([key, item]) => [key, item]);
+  const missingModels = Object.entries(inventory).filter(([, item]) => !item.available).map(([key]) => key);
   res.json({
-    status: 'healthy',
+    status: missingModels.length ? 'degraded' : 'healthy',
     service: 'SoundSense Backend',
     version: '1.0.0',
     uptime,
+    models: Object.fromEntries(models),
+    missingModels,
     timestamp: new Date().toISOString(),
     endpoints: [
       { method: 'POST', path: '/api/auth/login', description: 'Developer login' },

@@ -1,0 +1,201 @@
+{
+  "createdAt": "2026-11-21T15:42:05.129717+00:00",
+  "split": "dev",
+  "models": [
+    "resnet18",
+    "vgg16",
+    "sresnet",
+    "cnngru",
+    "ensemble"
+  ],
+  "formats": [
+    "wav"
+  ],
+  "confidenceThreshold": 0.5,
+  "nClips": 1,
+  "nRequests": 5,
+  "metrics": {
+    "cnngru": {
+      "n": 0,
+      "failedRequests": 1,
+      "inScopeCount": 0,
+      "outOfScopeCount": 0,
+      "top1": null,
+      "oodRejectionRate": null,
+      "falseRejectionRate": null,
+      "meanConfidenceInScope": null,
+      "meanLatencyMs": null
+    },
+    "ensemble": {
+      "n": 0,
+      "failedRequests": 1,
+      "inScopeCount": 0,
+      "outOfScopeCount": 0,
+      "top1": null,
+      "oodRejectionRate": null,
+      "falseRejectionRate": null,
+      "meanConfidenceInScope": null,
+      "meanLatencyMs": null
+    },
+    "resnet18": {
+      "n": 0,
+      "failedRequests": 1,
+      "inScopeCount": 0,
+      "outOfScopeCount": 0,
+      "top1": null,
+      "oodRejectionRate": null,
+      "falseRejectionRate": null,
+      "meanConfidenceInScope": null,
+      "meanLatencyMs": null
+    },
+    "sresnet": {
+      "n": 0,
+      "failedRequests": 1,
+      "inScopeCount": 0,
+      "outOfScopeCount": 0,
+      "top1": null,
+      "oodRejectionRate": null,
+      "falseRejectionRate": null,
+      "meanConfidenceInScope": null,
+      "meanLatencyMs": null
+    },
+    "vgg16": {
+      "n": 0,
+      "failedRequests": 1,
+      "inScopeCount": 0,
+      "outOfScopeCount": 0,
+      "top1": null,
+      "oodRejectionRate": null,
+      "falseRejectionRate": null,
+      "meanConfidenceInScope": null,
+      "meanLatencyMs": null
+    }
+  },
+  "results": [
+    {
+      "sourceFile": "animals/animals_14ac9ce578ba.wav",
+      "sourceDataset": "YashNita/Animal-Sound-Dataset",
+      "sourceRecording": "animals:14ac9ce578ba",
+      "split": "dev",
+      "label": "frog",
+      "allowedLabels": [
+        4
+      ],
+      "inScope": true,
+      "model": "resnet18",
+      "format": "wav",
+      "requestFilename": "clip_00001.wav",
+      "statusCode": 503,
+      "predictedCategory": null,
+      "predictedClassId": null,
+      "confidence": null,
+      "confidenceType": null,
+      "oodScore": null,
+      "isOutOfScope": false,
+      "classProbabilities": null,
+      "topPredictions": [],
+      "latencyMs": null,
+      "error": "No trained checkpoint is available for: resnet18."
+    },
+    {
+      "sourceFile": "animals/animals_14ac9ce578ba.wav",
+      "sourceDataset": "YashNita/Animal-Sound-Dataset",
+      "sourceRecording": "animals:14ac9ce578ba",
+      "split": "dev",
+      "label": "frog",
+      "allowedLabels": [
+        4
+      ],
+      "inScope": true,
+      "model": "vgg16",
+      "format": "wav",
+      "requestFilename": "clip_00002.wav",
+      "statusCode": 503,
+      "predictedCategory": null,
+      "predictedClassId": null,
+      "confidence": null,
+      "confidenceType": null,
+      "oodScore": null,
+      "isOutOfScope": false,
+      "classProbabilities": null,
+      "topPredictions": [],
+      "latencyMs": null,
+      "error": "No trained checkpoint is available for: vgg16."
+    },
+    {
+      "sourceFile": "animals/animals_14ac9ce578ba.wav",
+      "sourceDataset": "YashNita/Animal-Sound-Dataset",
+      "sourceRecording": "animals:14ac9ce578ba",
+      "split": "dev",
+      "label": "frog",
+      "allowedLabels": [
+        4
+      ],
+      "inScope": true,
+      "model": "sresnet",
+      "format": "wav",
+      "requestFilename": "clip_00003.wav",
+      "statusCode": 503,
+      "predictedCategory": null,
+      "predictedClassId": null,
+      "confidence": null,
+      "confidenceType": null,
+      "oodScore": null,
+      "isOutOfScope": false,
+      "classProbabilities": null,
+      "topPredictions": [],
+      "latencyMs": null,
+      "error": "No trained checkpoint is available for: sresnet."
+    },
+    {
+      "sourceFile": "animals/animals_14ac9ce578ba.wav",
+      "sourceDataset": "YashNita/Animal-Sound-Dataset",
+      "sourceRecording": "animals:14ac9ce578ba",
+      "split": "dev",
+      "label": "frog",
+      "allowedLabels": [
+        4
+      ],
+      "inScope": true,
+      "model": "cnngru",
+      "format": "wav",
+      "requestFilename": "clip_00004.wav",
+      "statusCode": 503,
+      "predictedCategory": null,
+      "predictedClassId": null,
+      "confidence": null,
+      "confidenceType": null,
+      "oodScore": null,
+      "isOutOfScope": false,
+      "classProbabilities": null,
+      "topPredictions": [],
+      "latencyMs": null,
+      "error": "No trained checkpoint is available for: cnngru."
+    },
+    {
+      "sourceFile": "animals/animals_14ac9ce578ba.wav",
+      "sourceDataset": "YashNita/Animal-Sound-Dataset",
+      "sourceRecording": "animals:14ac9ce578ba",
+      "split": "dev",
+      "label": "frog",
+      "allowedLabels": [
+        4
+      ],
+      "inScope": true,
+      "model": "ensemble",
+      "format": "wav",
+      "requestFilename": "clip_00005.wav",
+      "statusCode": 503,
+      "predictedCategory": null,
+      "predictedClassId": null,
+      "confidence": null,
+      "confidenceType": null,
+      "oodScore": null,
+      "isOutOfScope": false,
+      "classProbabilities": null,
+      "topPredictions": [],
+      "latencyMs": null,
+      "error": "No trained checkpoint is available for: resnet18, vgg16, sresnet, cnngru."
+    }
+  ]
+}

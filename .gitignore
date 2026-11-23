@@ -1,5 +1,6 @@
 # Datasets & hands-on (Preserved)
 ESC-50/
+eval/external/
 
 # Python caches and bytecode
 __pycache__/

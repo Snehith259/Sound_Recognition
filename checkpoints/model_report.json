@@ -1,38 +1,5 @@
 {
-  "timestamp": 1795157104.4675338,
-  "models": {
-    "resnet18": {
-      "top1": 62.81,
-      "top5": 88.19,
-      "macroF1": 62.6,
-      "latencyMs": 67.26,
-      "sizeMb": 45.34,
-      "paramsM": 11.31
-    },
-    "vgg16": {
-      "top1": 61.06,
-      "top5": 91.96,
-      "macroF1": 60.39,
-      "latencyMs": 26185.44,
-      "sizeMb": 63.26,
-      "paramsM": 15.8
-    },
-    "sresnet": {
-      "top1": 35.68,
-      "top5": 76.13,
-      "macroF1": 32.88,
-      "latencyMs": 18.2,
-      "sizeMb": 1.72,
-      "paramsM": 0.43
-    },
-    "cnngru": {
-      "top1": 64.07,
-      "top5": 91.21,
-      "macroF1": 63.23,
-      "latencyMs": 6.6,
-      "sizeMb": 2.11,
-      "paramsM": 0.52
-    }
-  },
-  "status": "complete"
+  "status": "deprecated",
+  "note": "Superseded by eval_report.json. The old single-fold values are not valid current metrics.",
+  "generatedAt": "2026-11-21T15:50:59.839438+00:00"
 }
