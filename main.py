@@ -221,7 +221,7 @@ async def get_sample_for_category(category_id: int):
 @app.post("/api/predict")
 async def predict(
     audio: UploadFile = File(...),
-    model: str = Form("resnet18"),
+    model: str = Form("ast"),
     threshold: Optional[float] = Form(None),
 ):
     disallowed_exts = {".ogg", ".flac", ".m4a", ".aac"}
@@ -332,7 +332,7 @@ async def predict(
 @app.post("/api/predict/batch")
 async def predict_batch(
     audio: List[UploadFile] = File(...),
-    model: str = Form("resnet18"),
+    model: str = Form("ast"),
     threshold: Optional[float] = Form(None),
 ):
     if not audio:
@@ -570,8 +570,8 @@ async def get_stats():
     ]
 
     eval_report = load_evaluation_report()
-    colors = {"cnngru": "#34d399", "resnet18": "#38bdf8", "vgg16": "#fbbf24", "sresnet": "#a855f7", "ensemble": "#818cf8"}
-    display_names = {"cnngru": "CNN-GRU", "resnet18": "ResNet-18", "vgg16": "VGG-16", "sresnet": "SResNet", "ensemble": "Ensemble Fusion"}
+    colors = {"ast": "#6366f1", "cnngru": "#34d399", "resnet18": "#38bdf8", "vgg16": "#fbbf24", "sresnet": "#a855f7", "ensemble": "#818cf8"}
+    display_names = {"ast": "AST-ESC50", "cnngru": "CNN-GRU", "resnet18": "ResNet-18", "vgg16": "VGG-16", "sresnet": "SResNet", "ensemble": "Ensemble Fusion"}
     model_performance = []
     for model_name, model_result in eval_report.get("models", {}).items():
         metrics = model_result.get("metrics", {})

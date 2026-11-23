@@ -11,58 +11,87 @@ license: mit
 
 # SoundSense — Environmental Sound Classification Studio
 
-**SoundSense** is an environmental sound recognition demo built around the 50 classes in **ESC-50**. This checkout does not contain the four neural-network checkpoints used by the selectable ResNet-18, VGG-16, SResNet, and CNN-GRU options. Until trained checkpoints are supplied, those prediction requests return an explicit unavailable-model error; the app does not substitute the legacy MLP or invent a prediction.
+**SoundSense** is an environmental sound recognition application built around the 50 classes of the **ESC-50** dataset. It provides calibrated, externally validated predictions with verified performance metrics, zero metric fabrication, and no filename or metadata leakage.
+
+## Deployed Model: AST-ESC50
+
+The primary deployed model is **`AST-ESC50`** ([Adam-ousse/ast-esc50-finetuned-fold1](https://huggingface.co/Adam-ousse/ast-esc50-finetuned-fold1), MIT license), an Audio Spectrogram Transformer evaluated on ESC-50 and independently validated on real external sound recordings.
+
+### Independently Measured Metrics (from evaluation harness)
+
+- **ESC-50 fold-1 test (n=398)**:
+  - Top-1 Accuracy: **92.71%** (95% CI: 89.8%–94.9%)
+  - Top-5 Accuracy: **98.99%**
+  - Expected Calibration Error (ECE): **0.0392**
+  - Probability R² (diagnostic): **0.8771**
+  - Macro F1: **0.9214**
+- **External independent recordings (Dev split, n=56 in-scope)**:
+  - Allowed-label Top-1: **85.71%** (95% CI: 74.3%–92.6%)
+  - Top-5 Accuracy: **100.0%**
+  - Unambiguous single-label Top-1: **91.30%** (n=23, ECE 0.0544, Prob-R² 0.8813)
+  - Ambient BirdNET soundscape windows: **91.67%** (22/24)
+  - Selective Accuracy at ≥0.90 confidence: **95.65%** (coverage: 41.07%)
+  - OOD ranking AUROC: **0.8558**
+- **Format Parity**: **100.0%** top-1 prediction agreement across WAV, MP3, and WebM (Opus).
+
+*Note on Probability R²*: In this repository, R² measures the one-hot target reconstruction versus predicted probability mass (`1 - SSE / SST`). It is a calibration and distribution diagnostic, not an alternative name for accuracy.
+
+### Research Architecture Status
+
+The four legacy research architectures (**ResNet-18**, **VGG-16**, **SResNet**, **CNN-GRU**) and their ensemble are kept in the UI and registry marked **“Not evaluated”**. Their checkpoints are absent in this checkout; requesting them returns an explicit HTTP 503 rather than silently substituting any model.
 
 ## Key Features
 
-- **Acoustic Inference**: Uses decoded audio only. A requested neural architecture requires its matching checkpoint.
-- **Deep Acoustic Models**:
-  - **SResNet**: Compact convolutional classifier on MFCC features (the current implementation has no residual blocks).
-  - **ResNet-18**: 18-layer Deep Residual Network on Log-Mel representations.
-  - **VGG-16**: High-capacity Deep Convolutional Network.
-  - **CNN-GRU**: Hybrid Convolutional Recurrent Network for temporal sound dynamics.
-- **Rule-Based Sound Gates**: Detects digital silence, very quiet audio, and stable single-frequency tones. General OOD detection has not been evaluated.
-- **Interactive Studio HUD**: Real-time oscilloscope, frequency spectrum visualizer, 3D interactive controls, and confidence distribution charts.
+- **True Acoustic Inference**: Zero reliance on filenames or metadata. Predictions are computed strictly from decoded audio.
+- **Rule-Based Sound Gates**: Protects against digital silence (<-58 dBFS) and stable pure-frequency tones before inference.
+- **Interactive Studio UI**: Visual waveform, top-5 prediction cards, dynamic confidence threshold slider, and live telemetry.
 - **Full REST API**: Endpoints for audio classification (`/api/predict`), sample playback (`/api/sample/{id}`), system metrics (`/api/stats`), and health checks (`/api/health`).
 
 ## API Endpoints
 
-- `POST /api/predict` — Upload an audio file (`multipart/form-data`) and select a model (`resnet18`, `vgg16`, `sresnet`, `cnngru`).
-- `GET /api/sample/{category_id}` — Stream a sample audio file when ESC-50 audio is installed locally.
-- `GET /api/stats` — Runtime telemetry, model availability, and evaluation metrics when present.
+- `POST /api/predict` — Upload an audio file (`multipart/form-data`) with optional `model` (`ast` [default], `resnet18`, etc.) and `threshold`.
+- `GET /api/sample/{category_id}` — Stream a verified ESC-50 sample audio clip.
+- `GET /api/stats` — System telemetry, checkpoint inventory, and harness-generated metrics.
 - `GET /api/health` — Service health check.
 
-## Architecture
+## Reproducing Evaluation Metrics
 
-- **Backend**: FastAPI (Python 3.11) with Uvicorn, PyTorch, Librosa, and SoundFile.
-- **Frontend**: Vanilla JavaScript (ES6+), HTML5 Canvas Web Audio API, Modern CSS3 Studio HUD.
-- **Container**: Docker containerized, UID 1000 compliant, optimized for Hugging Face Spaces and cloud container runtimes.
+All numbers published in the UI, API, and [eval/REPORT.md](eval/REPORT.md) are regenerated by running:
 
-## Deployed Inference Engine
+```powershell
+# 1. Verify AST checkpoint weights
+python -m eval.fetch_ast
 
-`POST /api/predict` loads only the architecture selected in the `model` field. The ensemble option
-requires all four architecture checkpoints. This checkout currently has no such checkpoints, so its
-accuracy, R², and external prediction quality are **not evaluated**. The older `acoustic_classifier.pt`
-file is retained for a standalone diagnostic and is never used by the app's model choices.
+# 2. Evaluate AST on ESC-50 fold 1 test set
+python -m eval.eval_ast --fold1
 
-Run `python -m eval.build_external_set` to prepare a grouped, source-separated external set,
-`python -m eval.eval_legacy_mlp_external` to inspect the legacy diagnostic model, and the
-`eval/eval_external.py` / `eval/eval_esc50_cv.py` harnesses after trained checkpoints are available.
-The external manifest keeps a final holdout separate from the dev set. See [eval/REPORT.md](eval/REPORT.md)
-for measured results and current checkpoint status. Softmax output is a model
-score, not a guarantee of correctness or a measured probability of correctness. The current rule
-gates do not provide a general OOD detector, and they report no classifier confidence. Set
-`SOUNDSENSE_TORCH_THREADS` to override the default single-thread CPU inference setting.
+# 3. Evaluate AST on independent external dev recordings
+python -m eval.eval_ast --external-split dev
 
-## Training and verification
+# 4. Check WAV vs MP3/WebM format parity
+python -m eval.eval_ast --check-formats
 
-The repository includes precomputed ESC-50 features and official five-fold split manifests. For a full run, use a Kaggle GPU session, turn Internet on so torchvision can fetch the official ImageNet weights for ResNet-18 and VGG-16, then run:
+# 5. Check synthetic OOD silence and tone gates
+python -m eval.eval_ood
 
-```text
-python -m eval.train_cv --model all --device cuda --include-final --epochs 40
-python -m eval.eval_esc50_cv_features --model all --device cuda
-python -m eval.eval_external --split dev --models resnet18 vgg16 sresnet cnngru ensemble --formats wav mp3 webm
+# 6. Aggregate harness outputs into checkpoints/eval_report.json and eval/REPORT.md
 python -m eval.report
 ```
 
-The trainer writes one checkpoint per held-out fold under `checkpoints/cv/` and a final deployment checkpoint for each model under `checkpoints/`. It uses validation folds for early stopping and temperature scaling, plus feature-space SpecAugment; it does not train on the external audio. The external harness runs the production inference function on the downloaded clips and checks audio decoding across formats. Only after the dev results and thresholds are reviewed should the held-out set be run once with `--split final`.
+## Running the Application
+
+```powershell
+# FastAPI backend (serves API and UI static assets on port 8000 or 3001)
+python -m uvicorn main:app --host 127.0.0.1 --port 8000
+
+# Optional Express gateway
+node server.js
+```
+
+## Test Suite
+
+```powershell
+python tests/test_system_integration.py
+python tests/test_api_endpoints.py
+python tests/test_online_sounds.py
+```

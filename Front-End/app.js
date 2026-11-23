@@ -9,64 +9,64 @@
 /* ── Verified ESC-50 Dataset Taxonomy (0–49) ─────────────────── */
 const ESC50_CATEGORIES = [
   // Animals (0-9)
-  { id: 0,  name: 'dog',               group: 'Animals',  emoji: '🐕' },
-  { id: 1,  name: 'rooster',           group: 'Animals',  emoji: '🐓' },
-  { id: 2,  name: 'pig',               group: 'Animals',  emoji: '🐷' },
-  { id: 3,  name: 'cow',               group: 'Animals',  emoji: '🐄' },
-  { id: 4,  name: 'frog',              group: 'Animals',  emoji: '🐸' },
-  { id: 5,  name: 'cat',               group: 'Animals',  emoji: '🐱' },
-  { id: 6,  name: 'hen',               group: 'Animals',  emoji: '🐔' },
-  { id: 7,  name: 'insects',           group: 'Animals',  emoji: '🦗' },
-  { id: 8,  name: 'sheep',             group: 'Animals',  emoji: '🐑' },
-  { id: 9,  name: 'crow',              group: 'Animals',  emoji: '🦅' },
+  { id: 0, name: 'dog', group: 'Animals', emoji: '🐕' },
+  { id: 1, name: 'rooster', group: 'Animals', emoji: '🐓' },
+  { id: 2, name: 'pig', group: 'Animals', emoji: '🐷' },
+  { id: 3, name: 'cow', group: 'Animals', emoji: '🐄' },
+  { id: 4, name: 'frog', group: 'Animals', emoji: '🐸' },
+  { id: 5, name: 'cat', group: 'Animals', emoji: '🐱' },
+  { id: 6, name: 'hen', group: 'Animals', emoji: '🐔' },
+  { id: 7, name: 'insects', group: 'Animals', emoji: '🦗' },
+  { id: 8, name: 'sheep', group: 'Animals', emoji: '🐑' },
+  { id: 9, name: 'crow', group: 'Animals', emoji: '🦅' },
 
   // Natural Soundscapes & Water (10-19)
-  { id: 10, name: 'rain',              group: 'Natural',  emoji: '🌧️' },
-  { id: 11, name: 'sea_waves',         group: 'Natural',  emoji: '🌊' },
-  { id: 12, name: 'crackling_fire',    group: 'Natural',  emoji: '🔥' },
-  { id: 13, name: 'crickets',          group: 'Natural',  emoji: '🦟' },
-  { id: 14, name: 'chirping_birds',    group: 'Natural',  emoji: '🐦' },
-  { id: 15, name: 'water_drops',       group: 'Natural',  emoji: '💧' },
-  { id: 16, name: 'wind',              group: 'Natural',  emoji: '🌬️' },
-  { id: 17, name: 'pouring_water',     group: 'Natural',  emoji: '🚿' },
-  { id: 18, name: 'toilet_flush',      group: 'Natural',  emoji: '🚽' },
-  { id: 19, name: 'thunderstorm',      group: 'Natural',  emoji: '⛈️' },
+  { id: 10, name: 'rain', group: 'Natural', emoji: '🌧️' },
+  { id: 11, name: 'sea_waves', group: 'Natural', emoji: '🌊' },
+  { id: 12, name: 'crackling_fire', group: 'Natural', emoji: '🔥' },
+  { id: 13, name: 'crickets', group: 'Natural', emoji: '🦟' },
+  { id: 14, name: 'chirping_birds', group: 'Natural', emoji: '🐦' },
+  { id: 15, name: 'water_drops', group: 'Natural', emoji: '💧' },
+  { id: 16, name: 'wind', group: 'Natural', emoji: '🌬️' },
+  { id: 17, name: 'pouring_water', group: 'Natural', emoji: '🚿' },
+  { id: 18, name: 'toilet_flush', group: 'Natural', emoji: '🚽' },
+  { id: 19, name: 'thunderstorm', group: 'Natural', emoji: '⛈️' },
 
   // Human Non-Speech (20-29)
-  { id: 20, name: 'crying_baby',       group: 'Human',    emoji: '👶' },
-  { id: 21, name: 'sneezing',          group: 'Human',    emoji: '🤧' },
-  { id: 22, name: 'clapping',          group: 'Human',    emoji: '👏' },
-  { id: 23, name: 'breathing',         group: 'Human',    emoji: '😮‍💨' },
-  { id: 24, name: 'coughing',          group: 'Human',    emoji: '😷' },
-  { id: 25, name: 'footsteps',         group: 'Human',    emoji: '👣' },
-  { id: 26, name: 'laughing',          group: 'Human',    emoji: '😄' },
-  { id: 27, name: 'brushing_teeth',    group: 'Human',    emoji: '🪥' },
-  { id: 28, name: 'snoring',           group: 'Human',    emoji: '😴' },
-  { id: 29, name: 'drinking_sipping',  group: 'Human',    emoji: '🍹' },
+  { id: 20, name: 'crying_baby', group: 'Human', emoji: '👶' },
+  { id: 21, name: 'sneezing', group: 'Human', emoji: '🤧' },
+  { id: 22, name: 'clapping', group: 'Human', emoji: '👏' },
+  { id: 23, name: 'breathing', group: 'Human', emoji: '😮‍💨' },
+  { id: 24, name: 'coughing', group: 'Human', emoji: '😷' },
+  { id: 25, name: 'footsteps', group: 'Human', emoji: '👣' },
+  { id: 26, name: 'laughing', group: 'Human', emoji: '😄' },
+  { id: 27, name: 'brushing_teeth', group: 'Human', emoji: '🪥' },
+  { id: 28, name: 'snoring', group: 'Human', emoji: '😴' },
+  { id: 29, name: 'drinking_sipping', group: 'Human', emoji: '🍹' },
 
   // Interior / Domestic (30-39)
-  { id: 30, name: 'door_wood_knock',   group: 'Interior', emoji: '🚪' },
-  { id: 31, name: 'mouse_click',       group: 'Interior', emoji: '🖱️' },
-  { id: 32, name: 'keyboard_typing',   group: 'Interior', emoji: '⌨️' },
-  { id: 33, name: 'door_wood_creaks',  group: 'Interior', emoji: '🔊' },
-  { id: 34, name: 'can_opening',       group: 'Interior', emoji: '🥫' },
-  { id: 35, name: 'washing_machine',   group: 'Interior', emoji: '🫧' },
-  { id: 36, name: 'vacuum_cleaner',    group: 'Interior', emoji: '🧹' },
-  { id: 37, name: 'clock_alarm',       group: 'Interior', emoji: '⏰' },
-  { id: 38, name: 'clock_tick',        group: 'Interior', emoji: '🕐' },
-  { id: 39, name: 'glass_breaking',    group: 'Interior', emoji: '🪟' },
+  { id: 30, name: 'door_wood_knock', group: 'Interior', emoji: '🚪' },
+  { id: 31, name: 'mouse_click', group: 'Interior', emoji: '🖱️' },
+  { id: 32, name: 'keyboard_typing', group: 'Interior', emoji: '⌨️' },
+  { id: 33, name: 'door_wood_creaks', group: 'Interior', emoji: '🔊' },
+  { id: 34, name: 'can_opening', group: 'Interior', emoji: '🥫' },
+  { id: 35, name: 'washing_machine', group: 'Interior', emoji: '🫧' },
+  { id: 36, name: 'vacuum_cleaner', group: 'Interior', emoji: '🧹' },
+  { id: 37, name: 'clock_alarm', group: 'Interior', emoji: '⏰' },
+  { id: 38, name: 'clock_tick', group: 'Interior', emoji: '🕐' },
+  { id: 39, name: 'glass_breaking', group: 'Interior', emoji: '🪟' },
 
   // Exterior / Urban Noise (40-49)
-  { id: 40, name: 'helicopter',        group: 'Urban',    emoji: '🚁' },
-  { id: 41, name: 'chainsaw',          group: 'Urban',    emoji: '🪚' },
-  { id: 42, name: 'siren',             group: 'Urban',    emoji: '🚨' },
-  { id: 43, name: 'car_horn',          group: 'Urban',    emoji: '📯' },
-  { id: 44, name: 'engine',            group: 'Urban',    emoji: '🔩' },
-  { id: 45, name: 'train',             group: 'Urban',    emoji: '🚂' },
-  { id: 46, name: 'church_bells',      group: 'Urban',    emoji: '🔔' },
-  { id: 47, name: 'airplane',          group: 'Urban',    emoji: '✈️' },
-  { id: 48, name: 'fireworks',         group: 'Urban',    emoji: '🎆' },
-  { id: 49, name: 'hand_saw',          group: 'Urban',    emoji: '🔧' },
+  { id: 40, name: 'helicopter', group: 'Urban', emoji: '🚁' },
+  { id: 41, name: 'chainsaw', group: 'Urban', emoji: '🪚' },
+  { id: 42, name: 'siren', group: 'Urban', emoji: '🚨' },
+  { id: 43, name: 'car_horn', group: 'Urban', emoji: '📯' },
+  { id: 44, name: 'engine', group: 'Urban', emoji: '🔩' },
+  { id: 45, name: 'train', group: 'Urban', emoji: '🚂' },
+  { id: 46, name: 'church_bells', group: 'Urban', emoji: '🔔' },
+  { id: 47, name: 'airplane', group: 'Urban', emoji: '✈️' },
+  { id: 48, name: 'fireworks', group: 'Urban', emoji: '🎆' },
+  { id: 49, name: 'hand_saw', group: 'Urban', emoji: '🔧' },
 ];
 
 /* ── Canonical ESC-50 Dataset WAV Filenames (0–49) ────────────── */
@@ -125,10 +125,11 @@ const CANONICAL_ESC50_FILES = {
 
 
 const MODEL_INFO = {
+  ast: { name: 'AST-ESC50', short: 'AST-ESC50', latency: null, params: '~87M', accuracy: 'Not evaluated' },
   resnet18: { name: 'ResNet-18', short: 'ResNet-18', latency: null, params: '—', accuracy: 'Not evaluated' },
-  vgg16:    { name: 'VGG-16',    short: 'VGG-16',    latency: null, params: '—', accuracy: 'Not evaluated' },
-  sresnet:  { name: 'SResNet',   short: 'SResNet',   latency: null, params: '—', accuracy: 'Not evaluated' },
-  cnngru:   { name: 'CNN-GRU',   short: 'CNN-GRU',   latency: null, params: '—', accuracy: 'Not evaluated' },
+  vgg16: { name: 'VGG-16', short: 'VGG-16', latency: null, params: '—', accuracy: 'Not evaluated' },
+  sresnet: { name: 'SResNet', short: 'SResNet', latency: null, params: '—', accuracy: 'Not evaluated' },
+  cnngru: { name: 'CNN-GRU', short: 'CNN-GRU', latency: null, params: '—', accuracy: 'Not evaluated' },
   ensemble: { name: 'Ensemble Fusion', short: 'Ensemble', latency: null, params: '—', accuracy: 'Not evaluated' },
 };
 
@@ -210,10 +211,11 @@ let timerInterval = null;
 let audioContext = null;
 let isClassifying = false;
 let currentResult = null;
-let currentModelKey = 'sresnet';
+let currentModelKey = 'ast';
 let decodePromise = Promise.resolve();
 let classificationToken = 0;
 let backendOnline = false;
+let _lastPerfList = [];
 
 /* Resolves the FastAPI/Express backend base URL regardless of how the
    frontend is served (Live Server, file://, or the backend itself). */
@@ -225,118 +227,118 @@ function resolveApiBase() {
 }
 
 /* ── DOM Elements ─────────────────────────────────────────────── */
-const viewNav          = document.getElementById('view-nav');
-const navGlider        = document.getElementById('nav-glider');
-const viewNavPrev      = document.getElementById('view-nav-prev');
-const viewNavNext      = document.getElementById('view-nav-next');
-const viewTabs         = document.querySelectorAll('.view-tab');
-const viewPanels       = document.querySelectorAll('.view-panel');
+const viewNav = document.getElementById('view-nav');
+const navGlider = document.getElementById('nav-glider');
+const viewNavPrev = document.getElementById('view-nav-prev');
+const viewNavNext = document.getElementById('view-nav-next');
+const viewTabs = document.querySelectorAll('.view-tab');
+const viewPanels = document.querySelectorAll('.view-panel');
 
-const modelSelect      = document.getElementById('model-select');
-const uploadZone       = document.getElementById('upload-zone');
-const audioInput       = document.getElementById('audio-input');
-const uploadIdle       = document.getElementById('upload-idle');
-const uploadReady      = document.getElementById('upload-ready');
-const fileNameEl       = document.getElementById('file-name');
-const fileSizeEl       = document.getElementById('file-size');
-const fileRemoveBtn    = document.getElementById('file-remove');
-const presetsRow       = document.getElementById('presets-row');
+const modelSelect = document.getElementById('model-select');
+const uploadZone = document.getElementById('upload-zone');
+const audioInput = document.getElementById('audio-input');
+const uploadIdle = document.getElementById('upload-idle');
+const uploadReady = document.getElementById('upload-ready');
+const fileNameEl = document.getElementById('file-name');
+const fileSizeEl = document.getElementById('file-size');
+const fileRemoveBtn = document.getElementById('file-remove');
+const presetsRow = document.getElementById('presets-row');
 
-const playBtn          = document.getElementById('play-btn');
-const playIcon         = document.getElementById('play-icon');
-const pauseIcon        = document.getElementById('pause-icon');
-const waveCanvas       = document.getElementById('wave-canvas');
-const playerTrack      = document.getElementById('player-track');
-const playerPlayhead   = document.getElementById('player-playhead');
-const timeDisplay      = document.getElementById('time-display');
-const durDisplay       = document.getElementById('dur-display');
-const classifyBtn      = document.getElementById('classify-btn');
+const playBtn = document.getElementById('play-btn');
+const playIcon = document.getElementById('play-icon');
+const pauseIcon = document.getElementById('pause-icon');
+const waveCanvas = document.getElementById('wave-canvas');
+const playerTrack = document.getElementById('player-track');
+const playerPlayhead = document.getElementById('player-playhead');
+const timeDisplay = document.getElementById('time-display');
+const durDisplay = document.getElementById('dur-display');
+const classifyBtn = document.getElementById('classify-btn');
 const btnClassifyInner = document.getElementById('btn-classify-inner');
-const btnLoading       = document.getElementById('btn-loading');
+const btnLoading = document.getElementById('btn-loading');
 
-const resultEmpty      = document.getElementById('result-empty');
-const resultLoading    = document.getElementById('result-loading');
-const resultOutput     = document.getElementById('result-output');
+const resultEmpty = document.getElementById('result-empty');
+const resultLoading = document.getElementById('result-loading');
+const resultOutput = document.getElementById('result-output');
 const loadingModelName = document.getElementById('loading-model-name');
 const resultModelBadge = document.getElementById('result-model-badge');
-const resultRetryBtn   = document.getElementById('result-retry');
-const resultCopyBtn    = document.getElementById('result-copy');
+const resultRetryBtn = document.getElementById('result-retry');
+const resultCopyBtn = document.getElementById('result-copy');
 
-const topEmoji         = document.getElementById('top-emoji');
-const topCategory      = document.getElementById('top-category');
-const topGroup         = document.getElementById('top-group');
-const confFillCircle   = document.getElementById('conf-fill-circle');
-const confPct          = document.getElementById('conf-pct');
-const top5List         = document.getElementById('top5-list');
-const specCanvas       = document.getElementById('spec-canvas');
-const specRateEl       = document.getElementById('spec-rate');
-const specDurEl        = document.getElementById('spec-dur');
-const specModeEl       = document.getElementById('spec-mode');
-const cursorTimeEl     = document.getElementById('cursor-time');
-const cursorFreqEl     = document.getElementById('cursor-freq');
-const cursorLevelEl    = document.getElementById('cursor-level');
+const topEmoji = document.getElementById('top-emoji');
+const topCategory = document.getElementById('top-category');
+const topGroup = document.getElementById('top-group');
+const confFillCircle = document.getElementById('conf-fill-circle');
+const confPct = document.getElementById('conf-pct');
+const top5List = document.getElementById('top5-list');
+const specCanvas = document.getElementById('spec-canvas');
+const specRateEl = document.getElementById('spec-rate');
+const specDurEl = document.getElementById('spec-dur');
+const specModeEl = document.getElementById('spec-mode');
+const cursorTimeEl = document.getElementById('cursor-time');
+const cursorFreqEl = document.getElementById('cursor-freq');
+const cursorLevelEl = document.getElementById('cursor-level');
 
-const statRmsEl        = document.getElementById('stat-rms');
-const statZcrEl        = document.getElementById('stat-zcr');
-const statPeakEl       = document.getElementById('stat-peak');
-const statLatencyEl    = document.getElementById('stat-latency');
-const statRmsBar       = document.getElementById('stat-rms-bar');
-const statZcrBar       = document.getElementById('stat-zcr-bar');
-const statPeakBar      = document.getElementById('stat-peak-bar');
-const statLatencyBar   = document.getElementById('stat-latency-bar');
+const statRmsEl = document.getElementById('stat-rms');
+const statZcrEl = document.getElementById('stat-zcr');
+const statPeakEl = document.getElementById('stat-peak');
+const statLatencyEl = document.getElementById('stat-latency');
+const statRmsBar = document.getElementById('stat-rms-bar');
+const statZcrBar = document.getElementById('stat-zcr-bar');
+const statPeakBar = document.getElementById('stat-peak-bar');
+const statLatencyBar = document.getElementById('stat-latency-bar');
 
-const statusLabel      = document.getElementById('status-label');
-const headerStatus     = document.getElementById('header-status');
-const heroCanvas       = document.getElementById('hero-wave');
-const heroShowcase     = document.querySelector('.banner-visual-showcase');
-const heroSignalLabel  = document.getElementById('hero-signal-label');
-const heroSignalDb     = document.getElementById('hero-signal-db');
+const statusLabel = document.getElementById('status-label');
+const headerStatus = document.getElementById('header-status');
+const heroCanvas = document.getElementById('hero-wave');
+const heroShowcase = document.querySelector('.banner-visual-showcase');
+const heroSignalLabel = document.getElementById('hero-signal-label');
+const heroSignalDb = document.getElementById('hero-signal-db');
 
-const micBtn           = document.getElementById('mic-btn');
-const micLabel         = document.getElementById('mic-label');
-const micHint          = document.getElementById('mic-hint');
-const micLevelFill     = document.getElementById('mic-level-fill');
+const micBtn = document.getElementById('mic-btn');
+const micLabel = document.getElementById('mic-label');
+const micHint = document.getElementById('mic-hint');
+const micLevelFill = document.getElementById('mic-level-fill');
 
-const taxonomyGrid     = document.getElementById('cat-grid');
-const taxonomySearch   = document.getElementById('taxonomy-search');
-const searchClearBtn   = document.getElementById('search-clear');
-const taxCountEl       = document.getElementById('tax-count');
-const surpriseBtn      = document.getElementById('surprise-btn');
-const catFilterTabs    = document.querySelectorAll('.filter-tab');
-const audioEl          = document.getElementById('audio-el');
-const bgCanvas         = document.getElementById('bg-canvas');
+const taxonomyGrid = document.getElementById('cat-grid');
+const taxonomySearch = document.getElementById('taxonomy-search');
+const searchClearBtn = document.getElementById('search-clear');
+const taxCountEl = document.getElementById('tax-count');
+const surpriseBtn = document.getElementById('surprise-btn');
+const catFilterTabs = document.querySelectorAll('.filter-tab');
+const audioEl = document.getElementById('audio-el');
+const bgCanvas = document.getElementById('bg-canvas');
 
-const shortcutsBtn     = document.getElementById('shortcuts-btn');
-const shortcutsModal   = document.getElementById('shortcuts-modal');
-const shortcutsClose   = document.getElementById('shortcuts-close');
-const footerShortcuts  = document.getElementById('footer-shortcuts');
-const dropOverlay      = document.getElementById('drop-overlay');
-const toastStack       = document.getElementById('toast-stack');
+const shortcutsBtn = document.getElementById('shortcuts-btn');
+const shortcutsModal = document.getElementById('shortcuts-modal');
+const shortcutsClose = document.getElementById('shortcuts-close');
+const footerShortcuts = document.getElementById('footer-shortcuts');
+const dropOverlay = document.getElementById('drop-overlay');
+const toastStack = document.getElementById('toast-stack');
 
-let currentDecodedBuffer   = null;
+let currentDecodedBuffer = null;
 let currentSpectrogramData = null;
-let spectrogramCache       = null;
-let specHover              = null;
-let currentWavePeaks       = null;
-let currentFeatureMode     = 'mel'; // 'mel' | 'rp' | 'active'
-let currentRecurrenceData  = null;
+let spectrogramCache = null;
+let specHover = null;
+let currentWavePeaks = null;
+let currentFeatureMode = 'mel'; // 'mel' | 'rp' | 'active'
+let currentRecurrenceData = null;
 let currentActiveSegmentData = null;
-let recurrencePlotCache    = null;
-let activeSegmentCache     = null;
+let recurrencePlotCache = null;
+let activeSegmentCache = null;
 
-const featModeBar          = document.getElementById('feat-mode-bar');
-const specSublabel         = document.getElementById('spec-sublabel');
-const legScaleLbl          = document.getElementById('leg-scale-lbl');
-const legGradientBar       = document.getElementById('leg-gradient-bar');
-const legMarks             = document.getElementById('leg-marks');
-const ciK1                 = document.getElementById('ci-k1');
-const ciK2                 = document.getElementById('ci-k2');
-const ciK3                 = document.getElementById('ci-k3');
-let audioAnalyser          = null;
-let audioSourceNode        = null;
-let audioFreqData          = null;
-let audioTimeData          = null;
-let playerRaf              = null;
+const featModeBar = document.getElementById('feat-mode-bar');
+const specSublabel = document.getElementById('spec-sublabel');
+const legScaleLbl = document.getElementById('leg-scale-lbl');
+const legGradientBar = document.getElementById('leg-gradient-bar');
+const legMarks = document.getElementById('leg-marks');
+const ciK1 = document.getElementById('ci-k1');
+const ciK2 = document.getElementById('ci-k2');
+const ciK3 = document.getElementById('ci-k3');
+let audioAnalyser = null;
+let audioSourceNode = null;
+let audioFreqData = null;
+let audioTimeData = null;
+let playerRaf = null;
 
 /* ── Confidence Gradient Definition in DOM ───────────────────── */
 (function injectGradients() {
@@ -387,7 +389,7 @@ function switchView(viewName, updateHistory = true) {
     if (updateHistory && window.location.hash !== `#${viewName}`) {
       history.replaceState(null, '', `#${viewName}`);
     }
-  } catch (_) {}
+  } catch (_) { }
 
   viewTabs.forEach(t => {
     const isTarget = t.dataset.view === viewName;
@@ -437,7 +439,7 @@ function initActiveView() {
       if (stored && document.getElementById(`view-${stored}`)) {
         target = stored;
       }
-    } catch (_) {}
+    } catch (_) { }
   }
   if (target) {
     switchView(target, false);
@@ -486,7 +488,7 @@ window.addEventListener('orientationchange', () => setTimeout(() => positionNavG
 requestAnimationFrame(() => requestAnimationFrame(() => positionNavGlider(false)));
 setTimeout(() => positionNavGlider(false), 350);
 if (document.fonts && document.fonts.ready) {
-  document.fonts.ready.then(() => positionNavGlider(false)).catch(() => {});
+  document.fonts.ready.then(() => positionNavGlider(false)).catch(() => { });
 }
 
 /* Arrow-key navigation between workspace tabs */
@@ -534,7 +536,7 @@ window.addEventListener('resize', () => requestAnimationFrame(updateNavArrows));
 requestAnimationFrame(updateNavArrows);
 setTimeout(updateNavArrows, 350);
 if (document.fonts && document.fonts.ready) {
-  document.fonts.ready.then(updateNavArrows).catch(() => {});
+  document.fonts.ready.then(updateNavArrows).catch(() => { });
 }
 
 // Restore active workspace view from hash or session storage
@@ -1098,15 +1100,15 @@ presetsRow.addEventListener('click', e => {
   btn.classList.add('active');
 
   const presetMapping = {
-    dog:             { targetId: 0,  name: CANONICAL_ESC50_FILES[0] },
-    rain:            { targetId: 10, name: CANONICAL_ESC50_FILES[10] },
-    alarm:           { targetId: 37, name: CANONICAL_ESC50_FILES[37] },
-    typing:          { targetId: 32, name: CANONICAL_ESC50_FILES[32] },
+    dog: { targetId: 0, name: CANONICAL_ESC50_FILES[0] },
+    rain: { targetId: 10, name: CANONICAL_ESC50_FILES[10] },
+    alarm: { targetId: 37, name: CANONICAL_ESC50_FILES[37] },
+    typing: { targetId: 32, name: CANONICAL_ESC50_FILES[32] },
     keyboard_typing: { targetId: 32, name: CANONICAL_ESC50_FILES[32] },
-    siren:           { targetId: 42, name: CANONICAL_ESC50_FILES[42] },
-    baby:            { targetId: 20, name: CANONICAL_ESC50_FILES[20] },
-    knock:           { targetId: 30, name: CANONICAL_ESC50_FILES[30] },
-    chainsaw:        { targetId: 41, name: CANONICAL_ESC50_FILES[41] },
+    siren: { targetId: 42, name: CANONICAL_ESC50_FILES[42] },
+    baby: { targetId: 20, name: CANONICAL_ESC50_FILES[20] },
+    knock: { targetId: 30, name: CANONICAL_ESC50_FILES[30] },
+    chainsaw: { targetId: 41, name: CANONICAL_ESC50_FILES[41] },
   };
 
   const preset = presetMapping[soundKey];
@@ -1411,12 +1413,12 @@ function loadAudioFile(file, isPreset = false) {
         currentDecodedBuffer = await audioContext.decodeAudioData(e.target.result.slice(0));
         currentSpectrogramData = computeAcousticSpectrogram(currentDecodedBuffer);
         currentWavePeaks = computeWaveformPeaks(currentDecodedBuffer, 128);
-        
+
         // Compute Threshold-Free Recurrence Plot & Active Segment
         const rawPcm = currentDecodedBuffer.getChannelData(0);
         currentRecurrenceData = computeThresholdFreeRecurrencePlot(rawPcm, 128);
         currentActiveSegmentData = computeActiveSegment(rawPcm, currentDecodedBuffer.sampleRate);
-        
+
         spectrogramCache = null;
         recurrencePlotCache = null;
         activeSegmentCache = null;
@@ -1490,7 +1492,7 @@ async function ensureAudioContext() {
     audioContext = new Ctx();
   }
   if (audioContext.state === 'suspended') {
-    try { await audioContext.resume(); } catch (_) {}
+    try { await audioContext.resume(); } catch (_) { }
   }
   return audioContext;
 }
@@ -1635,7 +1637,7 @@ function resetStudioUpload() {
     if (mediaRecorder) mediaRecorder.onstop = null;
     try {
       if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
-    } catch (_) {}
+    } catch (_) { }
     cleanupMic();
     updateMicUI();
   }
@@ -1727,7 +1729,7 @@ function setPlayIcon(playing) {
 
 function startAudioPlayback() {
   if (!audioEl.src) return;
-  ensureAudioContext().then(ensureAudioAnalyser).catch(() => {});
+  ensureAudioContext().then(ensureAudioAnalyser).catch(() => { });
   audioEl.play().then(() => {
     isPlaying = true;
     setPlayIcon(true);
@@ -1958,15 +1960,15 @@ async function executeClassification() {
             }));
             predictions = data.isOutOfScope && data.category && data.category.id === -1
               ? [{
-                  category: { ...data.category, emoji: data.category.emoji || '❓' },
-                  confidence: data.confidenceType === 'not_computed_rule_gate'
-                    ? null
-                    : (Number.isFinite(data.oodScore) ? data.oodScore : null),
-                  inferenceTime: data.inferenceTime,
-                  isOutOfScope: true,
-                  confidenceType: data.confidenceType || 'rule_gate',
-                  explanation: data.explanation,
-                }, ...classPredictions.filter(p => p.category.id >= 0)]
+                category: { ...data.category, emoji: data.category.emoji || '❓' },
+                confidence: data.confidenceType === 'not_computed_rule_gate'
+                  ? null
+                  : (Number.isFinite(data.oodScore) ? data.oodScore : null),
+                inferenceTime: data.inferenceTime,
+                isOutOfScope: true,
+                confidenceType: data.confidenceType || 'rule_gate',
+                explanation: data.explanation,
+              }, ...classPredictions.filter(p => p.category.id >= 0)]
               : classPredictions;
             inferenceSource = 'api';
             serverLatency = data.inferenceTime;
@@ -2894,7 +2896,7 @@ async function loadTaxonomyCategory(cat) {
           break;
         }
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   if (!file) {
@@ -3130,7 +3132,7 @@ async function copyTextToClipboard(text) {
       await navigator.clipboard.writeText(text);
       return true;
     }
-  } catch (_) {}
+  } catch (_) { }
 
   try {
     const area = document.createElement('textarea');
@@ -3573,29 +3575,29 @@ let currentTrainingMetrics = { trainLoss: [], valLoss: [], trainAcc: [], valAcc:
 let lastCompletedJob = null;
 
 // DOM references for View 5
-const trainModelTypeEl   = document.getElementById('train-model-type');
-const trainEpochsEl      = document.getElementById('train-epochs');
-const trainBatchSizeEl   = document.getElementById('train-batch-size');
-const trainLrEl          = document.getElementById('train-lr');
-const trainAugmentEl     = document.getElementById('train-augment');
-const trainDescEl        = document.getElementById('train-desc');
-const btnStartTraining   = document.getElementById('btn-start-training');
-const btnTrainIdle       = document.getElementById('btn-train-idle');
-const btnTrainBusy       = document.getElementById('btn-train-busy');
-const trainingJobIdEl    = document.getElementById('training-job-id');
-const trainingApiStatus  = document.getElementById('training-api-status');
+const trainModelTypeEl = document.getElementById('train-model-type');
+const trainEpochsEl = document.getElementById('train-epochs');
+const trainBatchSizeEl = document.getElementById('train-batch-size');
+const trainLrEl = document.getElementById('train-lr');
+const trainAugmentEl = document.getElementById('train-augment');
+const trainDescEl = document.getElementById('train-desc');
+const btnStartTraining = document.getElementById('btn-start-training');
+const btnTrainIdle = document.getElementById('btn-train-idle');
+const btnTrainBusy = document.getElementById('btn-train-busy');
+const trainingJobIdEl = document.getElementById('training-job-id');
+const trainingApiStatus = document.getElementById('training-api-status');
 
-const tmEpochEl          = document.getElementById('tm-epoch');
-const tmTrainLossEl      = document.getElementById('tm-train-loss');
-const tmValLossEl        = document.getElementById('tm-val-loss');
-const tmTrainAccEl       = document.getElementById('tm-train-acc');
-const tmValAccEl         = document.getElementById('tm-val-acc');
-const tmStatusEl         = document.getElementById('tm-status');
-const trainProgressFill  = document.getElementById('train-progress-fill');
-const trainProgressPct   = document.getElementById('train-progress-pct');
-const trainLossChart     = document.getElementById('train-loss-chart');
-const btnSaveCheckpoint  = document.getElementById('btn-save-checkpoint');
-const checkpointGrid     = document.getElementById('checkpoint-grid');
+const tmEpochEl = document.getElementById('tm-epoch');
+const tmTrainLossEl = document.getElementById('tm-train-loss');
+const tmValLossEl = document.getElementById('tm-val-loss');
+const tmTrainAccEl = document.getElementById('tm-train-acc');
+const tmValAccEl = document.getElementById('tm-val-acc');
+const tmStatusEl = document.getElementById('tm-status');
+const trainProgressFill = document.getElementById('train-progress-fill');
+const trainProgressPct = document.getElementById('train-progress-pct');
+const trainLossChart = document.getElementById('train-loss-chart');
+const btnSaveCheckpoint = document.getElementById('btn-save-checkpoint');
+const checkpointGrid = document.getElementById('checkpoint-grid');
 
 // Augmentation toggle label updater
 if (trainAugmentEl) {
@@ -3643,9 +3645,9 @@ async function checkBackendStatus() {
 
   if (backendOnline) {
     if (trainingApiStatus) {
-    const missingCount = Array.isArray(window.soundSenseHealth?.missingModels) ? window.soundSenseHealth.missingModels.length : 0;
-    trainingApiStatus.textContent = missingCount ? `API Connected · ${missingCount} model(s) unavailable` : 'API Connected (Port 3001)';
-    trainingApiStatus.style.color = missingCount ? 'var(--amber, #f59e0b)' : 'var(--emerald)';
+      const missingCount = Array.isArray(window.soundSenseHealth?.missingModels) ? window.soundSenseHealth.missingModels.length : 0;
+      trainingApiStatus.textContent = missingCount ? `API Connected · ${missingCount} model(s) unavailable` : 'API Connected (Port 3001)';
+      trainingApiStatus.style.color = missingCount ? 'var(--amber, #f59e0b)' : 'var(--emerald)';
     }
     setStatus('Engine Ready · Backend Online', 'ready');
     return true;
@@ -3672,7 +3674,7 @@ async function refreshCheckpoints() {
         checkpoints = data.checkpoints;
       }
     }
-  } catch (_) {}
+  } catch (_) { }
 
   renderCheckpoints(checkpoints);
 }
@@ -3914,21 +3916,21 @@ if (btnSaveCheckpoint) {
    VIEW 6: SYSTEM ANALYTICS & TELEMETRY DASHBOARD
    ════════════════════════════════════════════════════════════════ */
 
-const ahStatusEl     = document.getElementById('ah-status');
-const ahUptimeEl     = document.getElementById('ah-uptime');
-const ahPredsEl      = document.getElementById('ah-predictions');
-const ahMemoryEl     = document.getElementById('ah-memory');
-const ahNodeEl       = document.getElementById('ah-node');
-const ahCkptsEl      = document.getElementById('ah-checkpoints');
+const ahStatusEl = document.getElementById('ah-status');
+const ahUptimeEl = document.getElementById('ah-uptime');
+const ahPredsEl = document.getElementById('ah-predictions');
+const ahMemoryEl = document.getElementById('ah-memory');
+const ahNodeEl = document.getElementById('ah-node');
+const ahCkptsEl = document.getElementById('ah-checkpoints');
 
 const classDistChart = document.getElementById('class-dist-chart');
 const modelPerfChart = document.getElementById('model-perf-chart');
-const telemetryTsEl  = document.getElementById('telemetry-timestamp');
+const telemetryTsEl = document.getElementById('telemetry-timestamp');
 
-const tgAudioEl      = document.getElementById('tg-audio');
-const tgMelEl        = document.getElementById('tg-mel');
-const tgMfccEl       = document.getElementById('tg-mfcc');
-const tgRpEl         = document.getElementById('tg-rp');
+const tgAudioEl = document.getElementById('tg-audio');
+const tgMelEl = document.getElementById('tg-mel');
+const tgMfccEl = document.getElementById('tg-mfcc');
+const tgRpEl = document.getElementById('tg-rp');
 
 /**
  * Loads analytics data from /api/stats
@@ -3940,7 +3942,7 @@ async function loadAnalyticsData() {
     if (res.ok) {
       statsData = await res.json();
     }
-  } catch (_) {}
+  } catch (_) { }
 
   // Populate UI
   if (statsData && statsData.system) {
@@ -3999,7 +4001,10 @@ async function loadAnalyticsData() {
   const perfChip = document.getElementById('perf-chip');
   if (perfChip) {
     const isCv = perf.some(item => String(item.evaluatedOn || '').toLowerCase().includes('cross-validation'));
-    perfChip.textContent = perf.length ? (isCv ? 'ESC-50 cross-validation results' : 'Evaluation report results') : 'Awaiting evaluation report';
+    const astPerf = perfByModel.get('ast');
+    perfChip.textContent = astPerf && Number.isFinite(astPerf.accuracy)
+      ? `AST deployed: ${astPerf.accuracy.toFixed(1)}% fold-1 test`
+      : 'Awaiting evaluation report';
   }
 
   if (telemetryTsEl) {
@@ -4008,7 +4013,8 @@ async function loadAnalyticsData() {
 
   // Draw Charts
   drawClassDistributionChart(d?.groupDistribution);
-  drawModelPerformanceChart(statsData?.modelPerformance);
+  _lastPerfList = perf.filter(item => ['resnet18', 'vgg16', 'sresnet', 'cnngru'].includes(item.modelKey));
+  drawModelPerformanceChart(_lastPerfList);
 }
 
 /**
@@ -4192,35 +4198,35 @@ let isDeveloperAuthenticated = false;
 let currentAuthUser = null;
 let pendingDevView = null;
 
-const accountBtn         = document.getElementById('account-btn');
-const accountAvatar      = document.getElementById('account-avatar');
-const devBadgeDot        = document.getElementById('dev-badge-dot');
+const accountBtn = document.getElementById('account-btn');
+const accountAvatar = document.getElementById('account-avatar');
+const devBadgeDot = document.getElementById('dev-badge-dot');
 const accountMenuPopover = document.getElementById('account-menu-popover');
-const btnLogout          = document.getElementById('btn-logout');
+const btnLogout = document.getElementById('btn-logout');
 const menuGotoArchitecture = document.getElementById('menu-goto-architecture');
-const menuGotoTaxonomy     = document.getElementById('menu-goto-taxonomy');
-const menuGotoPipeline     = document.getElementById('menu-goto-pipeline');
-const menuGotoTraining     = document.getElementById('menu-goto-training');
-const menuGotoAnalytics    = document.getElementById('menu-goto-analytics');
-const popoverNameEl      = document.getElementById('popover-name');
-const popoverEmailEl     = document.getElementById('popover-email');
-const popoverInitialEl   = document.getElementById('popover-initial');
+const menuGotoTaxonomy = document.getElementById('menu-goto-taxonomy');
+const menuGotoPipeline = document.getElementById('menu-goto-pipeline');
+const menuGotoTraining = document.getElementById('menu-goto-training');
+const menuGotoAnalytics = document.getElementById('menu-goto-analytics');
+const popoverNameEl = document.getElementById('popover-name');
+const popoverEmailEl = document.getElementById('popover-email');
+const popoverInitialEl = document.getElementById('popover-initial');
 const tagBadgeArchitecture = document.getElementById('tag-badge-architecture');
-const tagBadgeTaxonomy     = document.getElementById('tag-badge-taxonomy');
-const tagBadgePipeline     = document.getElementById('tag-badge-pipeline');
-const tagBadgeTraining     = document.getElementById('tag-badge-training');
-const tagBadgeAnalytics    = document.getElementById('tag-badge-analytics');
+const tagBadgeTaxonomy = document.getElementById('tag-badge-taxonomy');
+const tagBadgePipeline = document.getElementById('tag-badge-pipeline');
+const tagBadgeTraining = document.getElementById('tag-badge-training');
+const tagBadgeAnalytics = document.getElementById('tag-badge-analytics');
 
-const authModal          = document.getElementById('auth-modal');
-const authModalClose     = document.getElementById('auth-modal-close');
-const authLoginForm      = document.getElementById('auth-login-form');
-const authUsernameInput  = document.getElementById('auth-username');
-const authPasswordInput  = document.getElementById('auth-password');
-const authErrorMsg       = document.getElementById('auth-error-msg');
-const btnLoginSubmit     = document.getElementById('btn-login-submit');
-const btnLoginIdle       = document.getElementById('btn-login-idle');
-const btnLoginBusy       = document.getElementById('btn-login-busy');
-const devOnlyTabs        = document.querySelectorAll('.dev-tab');
+const authModal = document.getElementById('auth-modal');
+const authModalClose = document.getElementById('auth-modal-close');
+const authLoginForm = document.getElementById('auth-login-form');
+const authUsernameInput = document.getElementById('auth-username');
+const authPasswordInput = document.getElementById('auth-password');
+const authErrorMsg = document.getElementById('auth-error-msg');
+const btnLoginSubmit = document.getElementById('btn-login-submit');
+const btnLoginIdle = document.getElementById('btn-login-idle');
+const btnLoginBusy = document.getElementById('btn-login-busy');
+const devOnlyTabs = document.querySelectorAll('.dev-tab');
 
 function openAuthModal() {
   const modal = authModal || document.getElementById('auth-modal');
@@ -4481,7 +4487,7 @@ function fitAccountMenuPopover() {
 }
 
 // Global handler for developer account button clicks
-window.handleAccountBtnClick = function(e) {
+window.handleAccountBtnClick = function (e) {
   if (e) {
     if (typeof e.preventDefault === 'function') e.preventDefault();
     if (typeof e.stopPropagation === 'function') e.stopPropagation();
@@ -4599,14 +4605,14 @@ if (btnLogout) {
         fetch('/api/auth/logout', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` }
-        }).catch(() => {});
+        }).catch(() => { });
       }
-    } catch (_) {}
+    } catch (_) { }
 
     try {
       sessionStorage.removeItem('soundsense_dev_auth');
       localStorage.removeItem('soundsense_dev_auth');
-    } catch (_) {}
+    } catch (_) { }
     setDeveloperMode(false);
 
     showToast('Signed Out', 'Exited Developer Mode. Developer portals are now locked.', 'info', 3500);
@@ -4690,7 +4696,7 @@ async function submitDeveloperLogin(rawUser, rawPass) {
     try {
       sessionStorage.setItem('soundsense_dev_auth', JSON.stringify({ token: authToken, user: authUser }));
       localStorage.removeItem('soundsense_dev_auth');
-    } catch (_) {}
+    } catch (_) { }
 
     setDeveloperMode(true, authUser);
     closeAuthModal();
@@ -4748,7 +4754,7 @@ if (btnQuickLogin) {
       }
     }
     localStorage.removeItem('soundsense_dev_auth');
-  } catch (_) {}
+  } catch (_) { }
   setDeveloperMode(false);
 })();
 
@@ -4768,16 +4774,16 @@ if (btnQuickLogin) {
 
     root.setAttribute('data-theme', effective);
     if (typeof drawClassDistributionChart === 'function') {
-      try { drawClassDistributionChart(); } catch(_) {}
+      try { drawClassDistributionChart(); } catch (_) { }
     }
     if (typeof drawModelPerformanceChart === 'function') {
-      try { drawModelPerformanceChart(); } catch(_) {}
+      try { drawModelPerformanceChart(_lastPerfList); } catch (_) { }
     }
     root.setAttribute('data-theme-pref', preference);
 
     try {
       localStorage.setItem('soundsense_theme', preference);
-    } catch (_) {}
+    } catch (_) { }
 
     themeBtns.forEach((btn) => {
       const val = btn.getAttribute('data-theme-val');
@@ -4791,7 +4797,7 @@ if (btnQuickLogin) {
   let savedPref = 'system';
   try {
     savedPref = localStorage.getItem('soundsense_theme') || 'system';
-  } catch (_) {}
+  } catch (_) { }
   applyTheme(savedPref);
 
   // Attach click handlers to Day / Night / Device buttons
@@ -4865,323 +4871,323 @@ if (btnQuickLogin) {
   }
 })();
 
-  // ─────────────────────────────────────────────────────────────
-  // Dynamic Overview Background Canvas (Particle Constellation & Wave)
-  // ─────────────────────────────────────────────────────────────
-  (function initOverviewCanvas() {
-    const canvas = document.getElementById('overview-fx-canvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+// ─────────────────────────────────────────────────────────────
+// Dynamic Overview Background Canvas (Particle Constellation & Wave)
+// ─────────────────────────────────────────────────────────────
+(function initOverviewCanvas() {
+  const canvas = document.getElementById('overview-fx-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
 
-    let width = 0;
-    let height = 0;
-    let particles = [];
-    const NUM_PARTICLES = 40;
-    let mouse = { x: -1000, y: -1000, active: false };
-    let animId = null;
-    let wavePhase = 0;
+  let width = 0;
+  let height = 0;
+  let particles = [];
+  const NUM_PARTICLES = 40;
+  let mouse = { x: -1000, y: -1000, active: false };
+  let animId = null;
+  let wavePhase = 0;
 
-    function resize() {
-      const rect = canvas.parentElement.getBoundingClientRect();
-      width = canvas.width = rect.width;
-      height = canvas.height = rect.height;
-    }
+  function resize() {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    width = canvas.width = rect.width;
+    height = canvas.height = rect.height;
+  }
 
-    function initParticles() {
-      particles = [];
-      for (let i = 0; i < NUM_PARTICLES; i++) {
-        particles.push({
-          x: Math.random() * width,
-          y: Math.random() * height,
-          vx: (Math.random() - 0.5) * 0.6,
-          vy: (Math.random() - 0.5) * 0.6,
-          radius: Math.random() * 2 + 1.2,
-          color: Math.random() > 0.4 ? '34, 211, 238' : '99, 102, 241'
-        });
-      }
-    }
-
-    window.addEventListener('resize', () => {
-      resize();
-      initParticles();
-    });
-
-    const wrapper = canvas.parentElement;
-    if (wrapper) {
-      wrapper.addEventListener('mousemove', (e) => {
-        const rect = canvas.getBoundingClientRect();
-        mouse.x = e.clientX - rect.left;
-        mouse.y = e.clientY - rect.top;
-        mouse.active = true;
-      });
-      wrapper.addEventListener('mouseleave', () => {
-        mouse.active = false;
+  function initParticles() {
+    particles = [];
+    for (let i = 0; i < NUM_PARTICLES; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.6,
+        vy: (Math.random() - 0.5) * 0.6,
+        radius: Math.random() * 2 + 1.2,
+        color: Math.random() > 0.4 ? '34, 211, 238' : '99, 102, 241'
       });
     }
+  }
 
-    function draw() {
-      const overviewPanel = document.getElementById('view-overview');
-      if (!overviewPanel || !overviewPanel.classList.contains('active')) {
-        animId = requestAnimationFrame(draw);
-        return;
-      }
-
-      ctx.clearRect(0, 0, width, height);
-
-      // Draw undulating acoustic harmonic wave ribbons
-      wavePhase += 0.018;
-      ctx.beginPath();
-      ctx.moveTo(0, height);
-      for (let x = 0; x <= width; x += 15) {
-        const y = height * 0.72 + Math.sin(x * 0.008 + wavePhase) * 22 + Math.cos(x * 0.015 - wavePhase * 0.5) * 12;
-        ctx.lineTo(x, y);
-      }
-      ctx.lineTo(width, height);
-      ctx.closePath();
-      const waveGrad = ctx.createLinearGradient(0, height * 0.6, 0, height);
-      waveGrad.addColorStop(0, 'rgba(6, 182, 212, 0.08)');
-      waveGrad.addColorStop(1, 'rgba(6, 182, 212, 0.01)');
-      ctx.fillStyle = waveGrad;
-      ctx.fill();
-
-      // Update and draw particles
-      for (let i = 0; i < particles.length; i++) {
-        const p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-
-        if (p.x < 0) p.x = width;
-        if (p.x > width) p.x = 0;
-        if (p.y < 0) p.y = height;
-        if (p.y > height) p.y = 0;
-
-        // Proximity lines between particles
-        for (let j = i + 1; j < particles.length; j++) {
-          const p2 = particles[j];
-          const dx = p.x - p2.x;
-          const dy = p.y - p2.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-
-          if (dist < 95) {
-            const alpha = (1 - dist / 95) * 0.22;
-            ctx.beginPath();
-            ctx.moveTo(p.x, p.y);
-            ctx.lineTo(p2.x, p2.y);
-            ctx.strokeStyle = `rgba(34, 211, 238, ${alpha})`;
-            ctx.lineWidth = 1;
-            ctx.stroke();
-          }
-        }
-
-        // Connection to mouse
-        if (mouse.active) {
-          const mdx = p.x - mouse.x;
-          const mdy = p.y - mouse.y;
-          const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
-          if (mdist < 130) {
-            const mAlpha = (1 - mdist / 130) * 0.35;
-            ctx.beginPath();
-            ctx.moveTo(p.x, p.y);
-            ctx.lineTo(mouse.x, mouse.y);
-            ctx.strokeStyle = `rgba(34, 211, 238, ${mAlpha})`;
-            ctx.lineWidth = 1.2;
-            ctx.stroke();
-          }
-        }
-
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(' + p.color + ', 0.75)';
-        ctx.fill();
-      }
-
-      animId = requestAnimationFrame(draw);
-    }
-
+  window.addEventListener('resize', () => {
     resize();
     initParticles();
-    animId = requestAnimationFrame(draw);
-  })();
+  });
 
-  // ─────────────────────────────────────────────────────────────
-  // Interactive Soundscape Simulator (Acoustic Archetypes)
-  // ─────────────────────────────────────────────────────────────
-  (function initSoundSimulator() {
-    const simBtns = document.querySelectorAll('.sim-archetype-btn');
-    const simCanvas = document.getElementById('sim-mini-canvas');
-    const simDomainBadge = document.getElementById('sim-domain-badge');
-    const simConfBadge = document.getElementById('sim-conf-badge');
-    const simPredName = document.getElementById('sim-pred-name');
-    const simPredDesc = document.getElementById('sim-pred-desc');
-    const simCanvasLabel = document.getElementById('sim-canvas-label');
+  const wrapper = canvas.parentElement;
+  if (wrapper) {
+    wrapper.addEventListener('mousemove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = e.clientX - rect.left;
+      mouse.y = e.clientY - rect.top;
+      mouse.active = true;
+    });
+    wrapper.addEventListener('mouseleave', () => {
+      mouse.active = false;
+    });
+  }
 
-    const simPlayPauseBtn = document.getElementById('sim-playpause-btn');
-    const simPauseIcon = document.getElementById('sim-pause-icon');
-    const simPlayIcon = document.getElementById('sim-play-icon');
-    const simBtnText = document.getElementById('sim-btn-text');
-    const simStatusText = document.getElementById('sim-status-text');
-    const simStatusDot = document.getElementById('sim-status-dot');
-    let isSimPaused = false;
-
-    if (!simCanvas) return;
-    const sctx = simCanvas.getContext('2d');
-    if (!sctx) return;
-
-    let activeArch = 'dog';
-    let simPhase = 0;
-
-    const ARCHETYPES = {
-      dog: {
-        name: 'Synthetic dog bark sample',
-        domain: 'Synthetic audio · Animals',
-        conf: 'No model score',
-        desc: 'Multi-harmonic acoustic formants with rapid periodic vocal tract modulations centered around 450 Hz – 1.8 kHz.',
-        waveColor: '#22d3ee',
-        style: 'burst'
-      },
-      rain: {
-        name: 'Synthetic rain and thunder sample',
-        domain: 'Synthetic audio · Natural soundscapes',
-        conf: 'No model score',
-        desc: 'Continuous stochastic broadband pink-noise envelope with low-frequency rumble impulses below 120 Hz.',
-        waveColor: '#38bdf8',
-        style: 'noise'
-      },
-      baby: {
-        name: 'Synthetic infant cry sample',
-        domain: 'Synthetic audio · Human sounds',
-        conf: 'No model score',
-        desc: 'High-pitch vocal tract resonance with frequency modulation sweeping between 800 Hz and 2.6 kHz.',
-        waveColor: '#fbbf24',
-        style: 'sweep'
-      },
-      knock: {
-        name: 'Synthetic door knock sample',
-        domain: 'Synthetic audio · Interior',
-        conf: 'No model score',
-        desc: 'Sharp mechanical impact transients with rapid exponential decay and characteristic room reverberation.',
-        waveColor: '#a78bfa',
-        style: 'impulse'
-      }
-    };
-
-    if (simPlayPauseBtn) {
-      simPlayPauseBtn.addEventListener('click', () => {
-        isSimPaused = !isSimPaused;
-        if (isSimPaused) {
-          simPlayPauseBtn.classList.add('paused');
-          if (simPauseIcon) simPauseIcon.style.display = 'none';
-          if (simPlayIcon) simPlayIcon.style.display = 'block';
-          if (simBtnText) simBtnText.textContent = 'Resume';
-          if (simStatusText) simStatusText.textContent = 'Simulation Paused';
-          if (simStatusDot) simStatusDot.style.background = 'var(--amber)';
-        } else {
-          simPlayPauseBtn.classList.remove('paused');
-          if (simPauseIcon) simPauseIcon.style.display = 'block';
-          if (simPlayIcon) simPlayIcon.style.display = 'none';
-          if (simBtnText) simBtnText.textContent = 'Pause';
-          if (simStatusText) simStatusText.textContent = 'Synthetic preview';
-          if (simStatusDot) simStatusDot.style.background = '';
-        }
-      });
+  function draw() {
+    const overviewPanel = document.getElementById('view-overview');
+    if (!overviewPanel || !overviewPanel.classList.contains('active')) {
+      animId = requestAnimationFrame(draw);
+      return;
     }
 
-    simBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const arch = btn.getAttribute('data-archetype');
-        if (!arch || !ARCHETYPES[arch]) return;
-        activeArch = arch;
+    ctx.clearRect(0, 0, width, height);
 
-        simBtns.forEach(b => b.classList.toggle('active', b === btn));
-        const data = ARCHETYPES[arch];
+    // Draw undulating acoustic harmonic wave ribbons
+    wavePhase += 0.018;
+    ctx.beginPath();
+    ctx.moveTo(0, height);
+    for (let x = 0; x <= width; x += 15) {
+      const y = height * 0.72 + Math.sin(x * 0.008 + wavePhase) * 22 + Math.cos(x * 0.015 - wavePhase * 0.5) * 12;
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(width, height);
+    ctx.closePath();
+    const waveGrad = ctx.createLinearGradient(0, height * 0.6, 0, height);
+    waveGrad.addColorStop(0, 'rgba(6, 182, 212, 0.08)');
+    waveGrad.addColorStop(1, 'rgba(6, 182, 212, 0.01)');
+    ctx.fillStyle = waveGrad;
+    ctx.fill();
 
-        if (simPredName) simPredName.textContent = data.name;
-        if (simDomainBadge) simDomainBadge.textContent = data.domain;
-        if (simConfBadge) simConfBadge.textContent = data.conf;
-        if (simPredDesc) simPredDesc.textContent = data.desc;
-        if (simCanvasLabel) simCanvasLabel.textContent = `Synthetic waveform: ${data.name} (22.05 kHz)`;
-      });
-    });
+    // Update and draw particles
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      p.x += p.vx;
+      p.y += p.vy;
 
-    function drawSimWave() {
-      const overviewPanel = document.getElementById('view-overview');
-      if (!overviewPanel || !overviewPanel.classList.contains('active')) {
-        requestAnimationFrame(drawSimWave);
-        return;
-      }
+      if (p.x < 0) p.x = width;
+      if (p.x > width) p.x = 0;
+      if (p.y < 0) p.y = height;
+      if (p.y > height) p.y = 0;
 
-      if (isSimPaused) {
-        requestAnimationFrame(drawSimWave);
-        return;
-      }
+      // Proximity lines between particles
+      for (let j = i + 1; j < particles.length; j++) {
+        const p2 = particles[j];
+        const dx = p.x - p2.x;
+        const dy = p.y - p2.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
 
-      const rect = simCanvas.getBoundingClientRect();
-      if (simCanvas.width !== rect.width || simCanvas.height !== rect.height) {
-        simCanvas.width = rect.width;
-        simCanvas.height = rect.height;
-      }
-
-      const w = simCanvas.width;
-      const h = simCanvas.height;
-      sctx.fillStyle = '#070a14';
-      sctx.fillRect(0, 0, w, h);
-
-      simPhase += 0.05;
-      const data = ARCHETYPES[activeArch] || ARCHETYPES.dog;
-
-      // Draw subtle grid lines
-      sctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
-      sctx.lineWidth = 1;
-      for (let y = 20; y < h; y += 25) {
-        sctx.beginPath();
-        sctx.moveTo(0, y);
-        sctx.lineTo(w, y);
-        sctx.stroke();
-      }
-
-      // Draw simulated spectrum bars
-      const numBars = 42;
-      const barWidth = (w / numBars) - 2;
-
-      for (let i = 0; i < numBars; i++) {
-        let barHeight = 0;
-        const normX = i / numBars;
-
-        if (data.style === 'burst') {
-          barHeight = (Math.sin(i * 0.4 + simPhase) * 0.4 + 0.5) * (Math.sin(i * 0.15) * 45 + 25);
-        } else if (data.style === 'noise') {
-          barHeight = (Math.random() * 0.35 + 0.35) * (60 - normX * 30);
-        } else if (data.style === 'sweep') {
-          const center = Math.sin(simPhase * 0.6) * 0.3 + 0.5;
-          const dist = Math.abs(normX - center);
-          barHeight = Math.max(8, (1 - dist * 2.2) * 65 + Math.random() * 8);
-        } else if (data.style === 'impulse') {
-          const pulse = (Math.sin(simPhase * 1.5) > 0.6) ? 70 : 12;
-          barHeight = pulse * Math.exp(-normX * 3.5) + Math.random() * 6;
+        if (dist < 95) {
+          const alpha = (1 - dist / 95) * 0.22;
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.strokeStyle = `rgba(34, 211, 238, ${alpha})`;
+          ctx.lineWidth = 1;
+          ctx.stroke();
         }
-
-        const bx = i * (barWidth + 2);
-        const by = h - barHeight - 12;
-
-        const grad = sctx.createLinearGradient(0, by, 0, h);
-        grad.addColorStop(0, data.waveColor);
-        grad.addColorStop(1, 'rgba(6, 182, 212, 0.15)');
-
-        sctx.fillStyle = grad;
-        sctx.fillRect(bx, by, barWidth, barHeight);
       }
 
+      // Connection to mouse
+      if (mouse.active) {
+        const mdx = p.x - mouse.x;
+        const mdy = p.y - mouse.y;
+        const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
+        if (mdist < 130) {
+          const mAlpha = (1 - mdist / 130) * 0.35;
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(mouse.x, mouse.y);
+          ctx.strokeStyle = `rgba(34, 211, 238, ${mAlpha})`;
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+        }
+      }
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(' + p.color + ', 0.75)';
+      ctx.fill();
+    }
+
+    animId = requestAnimationFrame(draw);
+  }
+
+  resize();
+  initParticles();
+  animId = requestAnimationFrame(draw);
+})();
+
+// ─────────────────────────────────────────────────────────────
+// Interactive Soundscape Simulator (Acoustic Archetypes)
+// ─────────────────────────────────────────────────────────────
+(function initSoundSimulator() {
+  const simBtns = document.querySelectorAll('.sim-archetype-btn');
+  const simCanvas = document.getElementById('sim-mini-canvas');
+  const simDomainBadge = document.getElementById('sim-domain-badge');
+  const simConfBadge = document.getElementById('sim-conf-badge');
+  const simPredName = document.getElementById('sim-pred-name');
+  const simPredDesc = document.getElementById('sim-pred-desc');
+  const simCanvasLabel = document.getElementById('sim-canvas-label');
+
+  const simPlayPauseBtn = document.getElementById('sim-playpause-btn');
+  const simPauseIcon = document.getElementById('sim-pause-icon');
+  const simPlayIcon = document.getElementById('sim-play-icon');
+  const simBtnText = document.getElementById('sim-btn-text');
+  const simStatusText = document.getElementById('sim-status-text');
+  const simStatusDot = document.getElementById('sim-status-dot');
+  let isSimPaused = false;
+
+  if (!simCanvas) return;
+  const sctx = simCanvas.getContext('2d');
+  if (!sctx) return;
+
+  let activeArch = 'dog';
+  let simPhase = 0;
+
+  const ARCHETYPES = {
+    dog: {
+      name: 'Synthetic dog bark sample',
+      domain: 'Synthetic audio · Animals',
+      conf: 'No model score',
+      desc: 'Multi-harmonic acoustic formants with rapid periodic vocal tract modulations centered around 450 Hz – 1.8 kHz.',
+      waveColor: '#22d3ee',
+      style: 'burst'
+    },
+    rain: {
+      name: 'Synthetic rain and thunder sample',
+      domain: 'Synthetic audio · Natural soundscapes',
+      conf: 'No model score',
+      desc: 'Continuous stochastic broadband pink-noise envelope with low-frequency rumble impulses below 120 Hz.',
+      waveColor: '#38bdf8',
+      style: 'noise'
+    },
+    baby: {
+      name: 'Synthetic infant cry sample',
+      domain: 'Synthetic audio · Human sounds',
+      conf: 'No model score',
+      desc: 'High-pitch vocal tract resonance with frequency modulation sweeping between 800 Hz and 2.6 kHz.',
+      waveColor: '#fbbf24',
+      style: 'sweep'
+    },
+    knock: {
+      name: 'Synthetic door knock sample',
+      domain: 'Synthetic audio · Interior',
+      conf: 'No model score',
+      desc: 'Sharp mechanical impact transients with rapid exponential decay and characteristic room reverberation.',
+      waveColor: '#a78bfa',
+      style: 'impulse'
+    }
+  };
+
+  if (simPlayPauseBtn) {
+    simPlayPauseBtn.addEventListener('click', () => {
+      isSimPaused = !isSimPaused;
+      if (isSimPaused) {
+        simPlayPauseBtn.classList.add('paused');
+        if (simPauseIcon) simPauseIcon.style.display = 'none';
+        if (simPlayIcon) simPlayIcon.style.display = 'block';
+        if (simBtnText) simBtnText.textContent = 'Resume';
+        if (simStatusText) simStatusText.textContent = 'Simulation Paused';
+        if (simStatusDot) simStatusDot.style.background = 'var(--amber)';
+      } else {
+        simPlayPauseBtn.classList.remove('paused');
+        if (simPauseIcon) simPauseIcon.style.display = 'block';
+        if (simPlayIcon) simPlayIcon.style.display = 'none';
+        if (simBtnText) simBtnText.textContent = 'Pause';
+        if (simStatusText) simStatusText.textContent = 'Synthetic preview';
+        if (simStatusDot) simStatusDot.style.background = '';
+      }
+    });
+  }
+
+  simBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const arch = btn.getAttribute('data-archetype');
+      if (!arch || !ARCHETYPES[arch]) return;
+      activeArch = arch;
+
+      simBtns.forEach(b => b.classList.toggle('active', b === btn));
+      const data = ARCHETYPES[arch];
+
+      if (simPredName) simPredName.textContent = data.name;
+      if (simDomainBadge) simDomainBadge.textContent = data.domain;
+      if (simConfBadge) simConfBadge.textContent = data.conf;
+      if (simPredDesc) simPredDesc.textContent = data.desc;
+      if (simCanvasLabel) simCanvasLabel.textContent = `Synthetic waveform: ${data.name} (22.05 kHz)`;
+    });
+  });
+
+  function drawSimWave() {
+    const overviewPanel = document.getElementById('view-overview');
+    if (!overviewPanel || !overviewPanel.classList.contains('active')) {
       requestAnimationFrame(drawSimWave);
+      return;
+    }
+
+    if (isSimPaused) {
+      requestAnimationFrame(drawSimWave);
+      return;
+    }
+
+    const rect = simCanvas.getBoundingClientRect();
+    if (simCanvas.width !== rect.width || simCanvas.height !== rect.height) {
+      simCanvas.width = rect.width;
+      simCanvas.height = rect.height;
+    }
+
+    const w = simCanvas.width;
+    const h = simCanvas.height;
+    sctx.fillStyle = '#070a14';
+    sctx.fillRect(0, 0, w, h);
+
+    simPhase += 0.05;
+    const data = ARCHETYPES[activeArch] || ARCHETYPES.dog;
+
+    // Draw subtle grid lines
+    sctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+    sctx.lineWidth = 1;
+    for (let y = 20; y < h; y += 25) {
+      sctx.beginPath();
+      sctx.moveTo(0, y);
+      sctx.lineTo(w, y);
+      sctx.stroke();
+    }
+
+    // Draw simulated spectrum bars
+    const numBars = 42;
+    const barWidth = (w / numBars) - 2;
+
+    for (let i = 0; i < numBars; i++) {
+      let barHeight = 0;
+      const normX = i / numBars;
+
+      if (data.style === 'burst') {
+        barHeight = (Math.sin(i * 0.4 + simPhase) * 0.4 + 0.5) * (Math.sin(i * 0.15) * 45 + 25);
+      } else if (data.style === 'noise') {
+        barHeight = (Math.random() * 0.35 + 0.35) * (60 - normX * 30);
+      } else if (data.style === 'sweep') {
+        const center = Math.sin(simPhase * 0.6) * 0.3 + 0.5;
+        const dist = Math.abs(normX - center);
+        barHeight = Math.max(8, (1 - dist * 2.2) * 65 + Math.random() * 8);
+      } else if (data.style === 'impulse') {
+        const pulse = (Math.sin(simPhase * 1.5) > 0.6) ? 70 : 12;
+        barHeight = pulse * Math.exp(-normX * 3.5) + Math.random() * 6;
+      }
+
+      const bx = i * (barWidth + 2);
+      const by = h - barHeight - 12;
+
+      const grad = sctx.createLinearGradient(0, by, 0, h);
+      grad.addColorStop(0, data.waveColor);
+      grad.addColorStop(1, 'rgba(6, 182, 212, 0.15)');
+
+      sctx.fillStyle = grad;
+      sctx.fillRect(bx, by, barWidth, barHeight);
     }
 
     requestAnimationFrame(drawSimWave);
-  })();
+  }
 
-  // ─────────────────────────────────────────────────────────────
-  // API Reference Interactive Explorer
-  // ─────────────────────────────────────────────────────────────
-  (function initApiExplorer() {
+  requestAnimationFrame(drawSimWave);
+})();
+
+// ─────────────────────────────────────────────────────────────
+// API Reference Interactive Explorer
+// ─────────────────────────────────────────────────────────────
+(function initApiExplorer() {
   const endpointBtns = document.querySelectorAll('.api-endpoint-btn');
   const langBtns = document.querySelectorAll('.api-lang-btn');
   const apiMetaBadge = document.getElementById('api-meta-badge');

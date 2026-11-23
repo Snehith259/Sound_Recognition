@@ -1,16 +1,19 @@
 # SoundSense evaluation report
 
-Generated: 2026-11-21T15:50:59.839438+00:00
+Generated: 2026-11-23T16:09:23.956412+00:00
 
 Scores in this table are included only when produced by the evaluation harness.
 
-| Model | Checkpoint | ESC-50 CV top-1 | External top-1 | ECE |
+| Model | Checkpoint | ESC-50 Accuracy* | External dev top-1 | ECE |
 |---|---|---:|---:|---:|
+| AST-ESC50 | available | 92.71% | 85.71% | 3.92% |
 | ResNet-18 | missing | — | — | — |
 | VGG-16 | missing | — | — | — |
 | SResNet | missing | — | — | — |
 | CNN-GRU | missing | — | — | — |
 | Ensemble Fusion | missing | — | — | — |
+
+\* *AST metrics come from a pretrained checkpoint evaluated on fold 1; the four neural baselines require five-fold training.*
 
 ## Status
 
@@ -20,6 +23,13 @@ Scores in this table are included only when produced by the evaluation harness.
 - **CNN-GRU:** Checkpoint file is absent.
 - **Ensemble Fusion:** Requires all four selected architecture checkpoints.
 - External audio set: 69 dev clips; 105 final holdout clips (not evaluated).
+
+## Deployed Model (AST-ESC50)
+
+- **ESC-50 fold-1 test:** top-1: **92.71%**, top-5: **98.99%**, macro-F1: **92.14%**, ECE: **0.0392**, probability-R²: **0.8771** (n=398).
+- **External independent dev recordings:** allowed-label top-1: **85.71%** (n=56); ambient subset top-1: **91.67%** (n=24).
+- **Unambiguous single-label external dev:** top-1: **91.30%**, ECE: **0.0544**, probability-R²: **0.8813** (n=23).
+- **OOD ranking AUROC:** **0.8558**.
 
 ## Local diagnostics
 

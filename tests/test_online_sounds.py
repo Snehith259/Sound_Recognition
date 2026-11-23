@@ -97,7 +97,7 @@ ONLINE_TEST_CASES = [
 def run_tests():
     client = TestClient(app)
     sounds_dir = ROOT_DIR / "scratch" / "online_sounds"
-    models = ["ensemble", "resnet18", "cnngru", "vgg16", "sresnet"]
+    models = ["ast"]
 
     print("=" * 80)
     print(" SOUNDSENSE ONLINE ACOUSTIC GENERALIZATION BENCHMARK")
@@ -130,10 +130,14 @@ def run_tests():
 
             pred_cat = data["category"]["name"]
             pred_id = data["category"]["id"]
-            conf = data["confidence"]
+            conf = data.get("confidence")
+            conf_str = f"{conf*100:5.1f}%" if conf is not None else " GATE"
             engine = data.get("engine")
             is_ood = data.get("isOutOfScope", False)
-            top3 = [(p["category"]["name"], round(p["confidence"] * 100, 1)) for p in data.get("predictions", [])[:3]]
+            top3 = [
+                (p["category"]["name"], round(p["confidence"] * 100, 1) if p.get("confidence") is not None else None)
+                for p in data.get("predictions", [])[:3]
+            ]
 
             if tc["is_ood"]:
                 is_correct = is_ood or (pred_id == -1) or ("Not in ESC-50" in pred_cat)
@@ -141,7 +145,7 @@ def run_tests():
                 is_correct = (pred_id == tc["expected_id"])
 
             mark = "PASS" if is_correct else "MISMATCH"
-            print(f"    [{mark:8s}] Model: {model:10s} -> {pred_cat:20s} ({conf*100:5.1f}%) | Latency: {data.get('inferenceTime', 0)}ms | Top-3: {top3}")
+            print(f"    [{mark:8s}] Model: {model:10s} -> {pred_cat:20s} ({conf_str}) | Latency: {data.get('inferenceTime', 0)}ms | Top-3: {top3}")
 
             detailed_results.append({
                 "case_id": tc["id"],
@@ -171,7 +175,8 @@ def run_tests():
         if r["correct"]:
             correct_total += 1
         st = "CORRECT" if r["correct"] else "MISMATCH"
-        print(f"{r['name']:<20s} | {r['model']:<10s} | {r['predicted']:<22s} | {r['confidence']*100:5.1f}%     | {st}")
+        conf_disp = f"{r['confidence']*100:5.1f}%" if r["confidence"] is not None else "     GATE"
+        print(f"{r['name']:<20s} | {r['model']:<10s} | {r['predicted']:<22s} | {conf_disp:<10s} | {st}")
 
     total_evals = len(detailed_results)
     acc = (correct_total / total_evals) * 100.0

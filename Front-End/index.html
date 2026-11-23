@@ -593,7 +593,8 @@
               <label class="control-label" for="model-select">Architecture</label>
               <div class="select-wrap">
                 <select id="model-select" class="custom-select" aria-label="Select classification model">
-                  <option value="resnet18" selected>ResNet-18 (Deep Residual)</option>
+                  <option value="ast" selected>AST-ESC50 (Transformer · Deployed)</option>
+                  <option value="resnet18">ResNet-18 (Deep Residual)</option>
                   <option value="cnngru">CNN-GRU (Temporal Recurrent)</option>
                   <option value="vgg16">VGG-16 (Deep CNN)</option>
                   <option value="sresnet">SResNet (Fast MFCC)</option>
@@ -1218,11 +1219,16 @@
           <div class="perf-chart-head">
             <div>
               <h4 class="table-caption">Accuracy Benchmark</h4>
-              <p class="perf-chart-sub">ESC-50 cross-validation accuracy by architecture</p>
+              <p class="perf-chart-sub">ESC-50 accuracy (AST: fold-1 test; neural baselines: five-fold CV when evaluated)</p>
             </div>
             <span class="perf-chip" id="perf-chip">Awaiting evaluation report</span>
           </div>
           <div class="perf-bars">
+            <div class="perf-row" data-value="0" data-model-key="ast">
+              <span class="perf-name">AST-ESC50</span>
+              <div class="perf-track"><span class="perf-fill perf-fusion" data-w="0"></span></div>
+              <span class="perf-pct">Not evaluated</span>
+            </div>
             <div class="perf-row" data-value="0" data-model-key="sresnet">
               <span class="perf-name">SResNet</span>
               <div class="perf-track"><span class="perf-fill" data-w="0"></span></div>
@@ -1235,7 +1241,7 @@
             </div>
             <div class="perf-row" data-value="0" data-model-key="resnet18">
               <span class="perf-name">ResNet-18</span>
-              <div class="perf-track"><span class="perf-fill perf-fusion" data-w="0"></span></div>
+              <div class="perf-track"><span class="perf-fill" data-w="0"></span></div>
               <span class="perf-pct">Not evaluated</span>
             </div>
             <div class="perf-row" data-value="0" data-model-key="vgg16">
@@ -1256,16 +1262,23 @@
                 <th>Feature Stream</th>
                 <th>Parameter Footprint</th>
                 <th>Inference Speed</th>
-                <th>ESC-50 Accuracy</th>
+                <th>ESC-50 Accuracy*</th>
               </tr>
             </thead>
             <tbody>
-              <tr class="highlight-row" data-model-key="resnet18">
+              <tr class="highlight-row" data-model-key="ast">
+                <td><strong>AST-ESC50</strong></td>
+                <td>AST Mel Spectrogram</td>
+                <td data-model-metric="params">~87M</td>
+                <td data-model-metric="latency">—</td>
+                <td data-model-metric="accuracy"><strong class="col-highlight">Not evaluated</strong></td>
+              </tr>
+              <tr data-model-key="resnet18">
                 <td><strong>ResNet-18</strong></td>
                 <td>Log-Mel Spectrogram</td>
                 <td data-model-metric="params">—</td>
                 <td data-model-metric="latency">—</td>
-                <td data-model-metric="accuracy"><strong class="col-highlight">Not evaluated</strong></td>
+                <td data-model-metric="accuracy">Not evaluated</td>
               </tr>
               <tr data-model-key="vgg16">
                 <td><strong>VGG-16</strong></td>
@@ -1290,6 +1303,7 @@
               </tr>
             </tbody>
           </table>
+          <p class="spec-footnote" style="margin-top: 8px; font-size: 11px; color: var(--text-muted, #94a3b8); font-style: italic;">*AST: fold-1 test. ResNet-18/VGG-16/SResNet/CNN-GRU: five-fold CV when checkpoints exist.</p>
         </div>
 
         <!-- Phase 03: Academic & Methodological Foundations -->

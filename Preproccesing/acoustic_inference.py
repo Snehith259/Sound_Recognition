@@ -33,8 +33,9 @@ import torch.nn as nn
 # Tiny single-clip inference workloads become dramatically slower when PyTorch
 # fans out across every host core. Keep the API responsive while allowing an
 # explicit deployment override.
+_default_threads = min(4, max(1, os.cpu_count() or 1))
 try:
-    torch.set_num_threads(max(1, int(os.environ.get("SOUNDSENSE_TORCH_THREADS", "1"))))
+    torch.set_num_threads(max(1, int(os.environ.get("SOUNDSENSE_TORCH_THREADS", str(_default_threads)))))
 except (RuntimeError, ValueError):
     pass
 
@@ -107,6 +108,114 @@ ANALYSIS_WINDOW_HOP_SECONDS = 2.5
 MAX_ANALYSIS_WINDOWS = 12
 SILENCE_DBFS_THRESHOLD = float(os.environ.get("SOUNDSENSE_SILENCE_DBFS", "-58"))
 
+# ── AST Deployed Checkpoint Configuration ──────────────────────────
+import threading
+
+AST_MODEL_ID = os.environ.get(
+    "SOUNDSENSE_AST_MODEL", "Adam-ousse/ast-esc50-finetuned-fold1"
+)
+AST_REVISION = "fb2443ee3c362d6683a8f493eab2d15598360fb6"
+AST_CACHE_DIR = CHECKPOINTS_DIR / ".cache" / "huggingface"
+AST_SAMPLE_RATE = 16000
+_AST_ENGINE: Optional[Dict[str, Any]] = None
+_AST_LOCK = threading.Lock()
+
+
+def _load_ast_engine() -> Dict[str, Any]:
+    """Load the local ESC-50 AST checkpoint once. No network I/O."""
+    global _AST_ENGINE
+    if _AST_ENGINE is not None:
+        return _AST_ENGINE
+    with _AST_LOCK:
+        if _AST_ENGINE is not None:
+            return _AST_ENGINE
+
+        from transformers import AutoFeatureExtractor, AutoModelForAudioClassification
+
+        kwargs = {
+            "cache_dir": str(AST_CACHE_DIR),
+            "local_files_only": True,
+            "revision": AST_REVISION,
+        }
+        try:
+            feature_extractor = AutoFeatureExtractor.from_pretrained(AST_MODEL_ID, **kwargs)
+            model = AutoModelForAudioClassification.from_pretrained(AST_MODEL_ID, **kwargs)
+        except Exception as err:
+            raise FileNotFoundError(
+                f"AST checkpoint not installed or failed to load offline: {err}. "
+                "Run `python -m eval.fetch_ast` to bootstrap weights."
+            ) from err
+
+        model.eval()
+
+        name_to_id = {category["name"]: category["id"] for category in ESC50_CATEGORIES}
+        label_map: Dict[int, int] = {}
+        for raw_index, label in model.config.id2label.items():
+            output_index = int(raw_index)
+            key = str(label).strip().lower().replace("-", "_").replace(" ", "_")
+            if key in name_to_id:
+                label_map[output_index] = name_to_id[key]
+            elif key.startswith("label_") and 0 <= output_index < len(ESC50_CATEGORIES):
+                # Generic LABEL_n checkpoints use canonical ESC-50 order.
+                label_map[output_index] = output_index
+        if len(label_map) != len(ESC50_CATEGORIES):
+            raise RuntimeError(
+                f"AST label mapping incomplete: {len(label_map)}/{len(ESC50_CATEGORIES)}"
+            )
+
+        _AST_ENGINE = {
+            "feature_extractor": feature_extractor,
+            "model": model,
+            "label_map": label_map,
+            "sampling_rate": AST_SAMPLE_RATE,
+            "model_id": AST_MODEL_ID,
+            "revision": AST_REVISION,
+        }
+    return _AST_ENGINE
+
+
+def _ast_probabilities(y: np.ndarray, sr: int) -> Tuple[np.ndarray, int]:
+    """Mean class probabilities over 5 s windows. No filename or metadata use."""
+    engine = _load_ast_engine()
+    if sr != AST_SAMPLE_RATE:
+        y = librosa.resample(
+            np.asarray(y, dtype=np.float32), orig_sr=sr, target_sr=AST_SAMPLE_RATE
+        )
+    y = np.asarray(y, dtype=np.float32)
+
+    window = int(AST_SAMPLE_RATE * ANALYSIS_WINDOW_SECONDS)
+    hop = int(AST_SAMPLE_RATE * ANALYSIS_WINDOW_HOP_SECONDS)
+    if y.size <= window:
+        starts = [0]
+    else:
+        starts = list(range(0, y.size - window + 1, hop))
+        final_start = y.size - window
+        if starts[-1] != final_start:
+            starts.append(final_start)
+        if len(starts) > MAX_ANALYSIS_WINDOWS:
+            starts = starts[:MAX_ANALYSIS_WINDOWS - 1] + [final_start]
+
+    accumulated = np.zeros(len(ESC50_CATEGORIES), dtype=np.float64)
+    for start in starts:
+        chunk = y[start:start + window]
+        if chunk.size < window:
+            chunk = np.pad(chunk, (0, window - chunk.size))
+        inputs = engine["feature_extractor"](
+            chunk, sampling_rate=AST_SAMPLE_RATE, return_tensors="pt"
+        )
+        with torch.no_grad():
+            logits = engine["model"](**inputs).logits[0]
+        probs = torch.softmax(logits, dim=-1).numpy()
+        mapped = np.zeros(len(ESC50_CATEGORIES), dtype=np.float64)
+        for output_index, category_id in engine["label_map"].items():
+            mapped[category_id] = probs[output_index]
+        accumulated += mapped
+
+    accumulated /= max(1, len(starts))
+    accumulated /= max(float(accumulated.sum()), 1e-12)
+    return accumulated.astype(np.float32), len(starts)
+
+
 _ENGINE_STATUS: Dict[str, Any] = {
     "state": "not_loaded",
     "modelId": "architecture-checkpoints",
@@ -115,15 +224,28 @@ _ENGINE_STATUS: Dict[str, Any] = {
 
 
 def warm_up_engine() -> bool:
-    """Pre-loads the default selected checkpoint. Safe to call in a background thread."""
+    """Pre-loads the default selected checkpoint (AST first, then resnet18). Safe to call in a background thread."""
+    try:
+        entry = load_model_checkpoint("ast")
+        if entry is not None:
+            _ENGINE_STATUS.update(state="ready", modelId=entry["filename"], error=None)
+            return True
+    except Exception:
+        pass
+
     try:
         entry = load_model_checkpoint("resnet18")
-        if entry is None:
-            raise FileNotFoundError("ResNet-18 checkpoint is not available.")
-        _ENGINE_STATUS.update(state="ready", modelId=entry["filename"], error=None)
-        return True
+        if entry is not None:
+            _ENGINE_STATUS.update(state="ready", modelId=entry["filename"], error=None)
+            return True
+        _ENGINE_STATUS.update(
+            state="unavailable",
+            modelId="none",
+            error="No trained checkpoints available (AST and ResNet-18 missing).",
+        )
+        return False
     except Exception as err:
-        _ENGINE_STATUS.update(state="unavailable", error=str(err))
+        _ENGINE_STATUS.update(state="unavailable", modelId="none", error=str(err))
         return False
 
 
@@ -151,6 +273,32 @@ def model_status() -> Dict[str, Any]:
         "cnngru": "esc50_cnngru_recurrent_v08.pt",
     }
     checkpoints = {}
+
+    # Check local snapshot for AST model.safetensors
+    manifest_path = CHECKPOINTS_DIR / "ast_manifest.json"
+    ast_manifest = {}
+    if manifest_path.is_file():
+        try:
+            with open(manifest_path, "r", encoding="utf-8") as f:
+                ast_manifest = json.load(f)
+        except Exception:
+            pass
+    ast_snapshot_dir = (
+        AST_CACHE_DIR
+        / f"models--{AST_MODEL_ID.replace('/', '--')}"
+        / "snapshots"
+        / AST_REVISION
+    )
+    ast_model_file = ast_snapshot_dir / "model.safetensors"
+    ast_present = ast_model_file.is_file()
+    checkpoints["ast"] = {
+        "filename": f"hf:{AST_MODEL_ID}",
+        "available": ast_present,
+        "sha256": ast_manifest.get("sha256"),
+        "sizeBytes": ast_manifest.get("sizeBytes")
+        or (ast_model_file.stat().st_size if ast_present else None),
+    }
+
     for model_name, filename in expected.items():
         path = CHECKPOINTS_DIR / filename
         present = path.is_file()
@@ -234,14 +382,25 @@ def load_model_checkpoint(model_name: str) -> Optional[Dict[str, Any]]:
     global _MODEL_CACHE
     norm = re.sub(r"[^a-z0-9]", "", model_name.lower())
     aliases = {
+        "ast": "ast", "astesc50": "ast",
         "resnet18": "resnet18", "vgg16": "vgg16", "sresnet": "sresnet",
         "cnngru": "cnngru", "ensemble": "ensemble", "fusion": "ensemble",
     }
     matched_key = aliases.get(norm)
     if matched_key is None:
-        raise ValueError(f"Unknown model '{model_name}'. Choose resnet18, vgg16, sresnet, cnngru, or ensemble.")
+        raise ValueError(f"Unknown model '{model_name}'. Choose ast, resnet18, vgg16, sresnet, cnngru, or ensemble.")
     if matched_key == "ensemble":
         return None
+    if matched_key == "ast":
+        engine = _load_ast_engine()
+        return {
+            "model": engine["model"],
+            "feat_type": "ast",
+            "filename": f"hf:{AST_MODEL_ID}",
+            "arch_key": "ast",
+            "temperature": 1.0,
+            "metrics": {},
+        }
     if matched_key in _MODEL_CACHE:
         return _MODEL_CACHE[matched_key]
 
@@ -519,7 +678,7 @@ def _build_tone_result(metrics: Dict[str, float], model_name: str, started_at: f
 
 def run_acoustic_inference(
     audio_input: bytes | str | Path,
-    model_name: str = "resnet18",
+    model_name: str = "ast",
     confidence_threshold: Optional[float] = None,
 ) -> Dict[str, Any]:
     """
@@ -549,50 +708,58 @@ def run_acoustic_inference(
         return _build_tone_result(metrics, model_name, t_start)
 
     t_infer = time.time()
-    is_multi_ensemble = re.sub(r"[^a-z0-9]", "", model_name.lower()) in {"ensemble", "fusion"}
-    model_names = ["resnet18", "vgg16", "sresnet", "cnngru"] if is_multi_ensemble else [model_name]
-    entries = [load_model_checkpoint(name) for name in model_names]
-    missing = [name for name, entry in zip(model_names, entries) if entry is None]
-    if missing:
-        raise FileNotFoundError(f"No trained checkpoint is available for: {', '.join(missing)}.")
-
-    window_samples = int(22050 * ANALYSIS_WINDOW_SECONDS)
-    hop_samples = int(22050 * ANALYSIS_WINDOW_HOP_SECONDS)
-    if y.size < window_samples:
-        windows = [np.pad(y, (0, window_samples - y.size))]
+    norm_name = re.sub(r"[^a-z0-9]", "", model_name.lower())
+    if norm_name in {"ast", "astesc50"}:
+        probs, window_count = _ast_probabilities(y, sr)
+        engine_name = "ast-esc50"
+        confidence_type = "model_softmax"
     else:
-        starts = list(range(0, max(1, y.size - window_samples + 1), hop_samples))
-        final_start = y.size - window_samples
-        if starts[-1] != final_start:
-            starts.append(final_start)
-        if len(starts) > MAX_ANALYSIS_WINDOWS:
-            starts = starts[:MAX_ANALYSIS_WINDOWS - 1] + [final_start]
-        windows = [y[start:start + window_samples] for start in starts]
+        is_multi_ensemble = norm_name in {"ensemble", "fusion"}
+        model_names = ["resnet18", "vgg16", "sresnet", "cnngru"] if is_multi_ensemble else [model_name]
+        entries = [load_model_checkpoint(name) for name in model_names]
+        missing = [name for name, entry in zip(model_names, entries) if entry is None]
+        if missing:
+            raise FileNotFoundError(f"No trained checkpoint is available for: {', '.join(missing)}.")
 
-    from Preproccesing.feature_extractor import extract_log_mel_spectrogram, extract_mfcc
-    per_model_log_probs = []
-    for entry in entries:
-        window_log_probs = []
-        for window in windows:
-            peak = float(np.max(np.abs(window))) if window.size else 0.0
-            model_window = window / peak if peak > 1e-8 else window
-            if entry["feat_type"] == "mfcc":
-                feat = extract_mfcc(model_window, sr=22050)
-            else:
-                feat = extract_log_mel_spectrogram(model_window, sr=22050)
-            tx = torch.from_numpy(feat).unsqueeze(0).unsqueeze(0).float()
-            with torch.no_grad():
-                logits = entry["model"](tx)
-            temperature = max(0.05, float(entry.get("temperature", 1.0)))
-            window_log_probs.append(torch.log_softmax(logits / temperature, dim=1)[0].numpy())
-        per_model_log_probs.append(np.mean(window_log_probs, axis=0))
+        window_samples = int(22050 * ANALYSIS_WINDOW_SECONDS)
+        hop_samples = int(22050 * ANALYSIS_WINDOW_HOP_SECONDS)
+        if y.size < window_samples:
+            windows = [np.pad(y, (0, window_samples - y.size))]
+        else:
+            starts = list(range(0, max(1, y.size - window_samples + 1), hop_samples))
+            final_start = y.size - window_samples
+            if starts[-1] != final_start:
+                starts.append(final_start)
+            if len(starts) > MAX_ANALYSIS_WINDOWS:
+                starts = starts[:MAX_ANALYSIS_WINDOWS - 1] + [final_start]
+            windows = [y[start:start + window_samples] for start in starts]
 
-    mean_log_probs = np.mean(per_model_log_probs, axis=0)
-    mean_log_probs -= np.max(mean_log_probs)
-    probs = np.exp(mean_log_probs)
-    probs /= np.sum(probs)
-    model_entry = {"arch_key": "ensemble" if is_multi_ensemble else entries[0]["arch_key"]}
-    engine_name = f"{model_entry['arch_key']}-checkpoint"
+        from Preproccesing.feature_extractor import extract_log_mel_spectrogram, extract_mfcc
+        per_model_log_probs = []
+        for entry in entries:
+            window_log_probs = []
+            for window in windows:
+                peak = float(np.max(np.abs(window))) if window.size else 0.0
+                model_window = window / peak if peak > 1e-8 else window
+                if entry["feat_type"] == "mfcc":
+                    feat = extract_mfcc(model_window, sr=22050)
+                else:
+                    feat = extract_log_mel_spectrogram(model_window, sr=22050)
+                tx = torch.from_numpy(feat).unsqueeze(0).unsqueeze(0).float()
+                with torch.no_grad():
+                    logits = entry["model"](tx)
+                temperature = max(0.05, float(entry.get("temperature", 1.0)))
+                window_log_probs.append(torch.log_softmax(logits / temperature, dim=1)[0].numpy())
+            per_model_log_probs.append(np.mean(window_log_probs, axis=0))
+
+        mean_log_probs = np.mean(per_model_log_probs, axis=0)
+        mean_log_probs -= np.max(mean_log_probs)
+        probs = np.exp(mean_log_probs)
+        probs /= np.sum(probs)
+        model_entry = {"arch_key": "ensemble" if is_multi_ensemble else entries[0]["arch_key"]}
+        engine_name = f"{model_entry['arch_key']}-checkpoint"
+        confidence_type = "temperature_scaled_softmax_score"
+        window_count = len(windows)
 
     order = np.argsort(probs)[::-1]
     top_id = int(order[0])
@@ -616,10 +783,10 @@ def run_acoustic_inference(
         "requestedModel": model_name,
         "metrics": {k: v for k, v in metrics.items() if k != "flatness_raw"},
         "inferenceTime": elapsed_ms,
-        "windowCount": len(windows),
+        "windowCount": window_count,
         "classProbabilities": [float(p) for p in probs],
         "oodScore": round(max(0.0, min(1.0, ood_score)), 4),
-        "confidenceType": "temperature_scaled_softmax_score",
+        "confidenceType": confidence_type,
         "belowConfidenceThreshold": (
             top_prob < max(0.0, min(1.0, confidence_threshold))
             if confidence_threshold is not None else False
@@ -645,7 +812,7 @@ if __name__ == "__main__":
     import json
     if len(sys.argv) > 1:
         target_file = sys.argv[1]
-        target_model = sys.argv[2] if len(sys.argv) > 2 else "resnet18"
+        target_model = sys.argv[2] if len(sys.argv) > 2 else "ast"
         target_threshold = float(sys.argv[3]) if len(sys.argv) > 3 and sys.argv[3] else None
         try:
             if target_file == "-":

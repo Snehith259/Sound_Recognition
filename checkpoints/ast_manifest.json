@@ -1,0 +1,11 @@
+{
+  "modelId": "Adam-ousse/ast-esc50-finetuned-fold1",
+  "revision": "fb2443ee3c362d6683a8f493eab2d15598360fb6",
+  "sha256": "f3b7ad3ffc95f5d867c7bb088da394bf048e649850535e9faa1f75276e0c6617",
+  "sizeBytes": 344937696,
+  "license": "MIT",
+  "source": "https://huggingface.co/Adam-ousse/ast-esc50-finetuned-fold1",
+  "featureType": "ast",
+  "samplingRate": 16000,
+  "windowSeconds": 5.0
+}

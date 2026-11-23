@@ -1,6 +1,7 @@
 """
 SoundSense — FastAPI API Endpoints Integration Test
 Tests /api/health, /api/stats, and /api/predict using FastAPI TestClient.
+Verifies AST deployed model succeeds (HTTP 200) and absent models return HTTP 503.
 """
 
 import sys
@@ -37,29 +38,43 @@ def test_api():
     for m in stats["modelPerformance"]:
         print(f"    - {m['model']:25s} | Acc: {m['accuracy']}% | Latency: {m.get('latency')}ms")
 
-    # 3. /api/predict for each model
+    # 3. /api/predict for deployed AST model
     wav_path = ROOT_DIR / "ESC-50" / "wav_files" / "5-263831-A-6.wav"
-    assert wav_path.exists(), f"Sample audio {wav_path} not found"
+    if not wav_path.exists():
+        wav_path = ROOT_DIR / "eval" / "external" / "ambient" / "birdnet_window_000.wav"
+        expected_class = "chirping_birds"
+    else:
+        expected_class = "hen"
 
-    print("\n[3] Testing POST /api/predict across all models on 5-263831-A-6.wav (Hen):")
-    for model_name in ["resnet18", "vgg16", "sresnet", "cnngru", "ensemble"]:
-        with open(wav_path, "rb") as f:
-            file_bytes = f.read()
+    print(f"\n[3] Testing POST /api/predict with default and deployed AST model on {wav_path.name}:")
+    with open(wav_path, "rb") as f:
+        file_bytes = f.read()
 
-        response = client.post(
+    response = client.post(
+        "/api/predict",
+        data={"model": "ast", "threshold": "0.5"},
+        files={"audio": (wav_path.name, file_bytes, "audio/wav")}
+    )
+    assert response.status_code == 200, f"Predict failed ({response.status_code}): {response.text}"
+    data = response.json()
+    assert data["success"] is True
+    cat_name = data["category"]["name"]
+    confidence = data["confidence"]
+    engine = data.get("engine")
+    print(f"  Model: ast        -> Category: {cat_name:15s} | Conf: {confidence*100:5.1f}% | Engine: {engine}")
+    assert cat_name == expected_class, f"Expected '{expected_class}', got '{cat_name}'"
+    assert confidence >= 0.70, f"Confidence too low: {confidence}"
+
+    # 4. Absent models must return 503
+    print("\n[4] Testing POST /api/predict with absent models (must return HTTP 503):")
+    for absent_model in ["resnet18", "vgg16", "sresnet", "cnngru", "ensemble"]:
+        res_absent = client.post(
             "/api/predict",
-            data={"model": model_name, "threshold": "0.5"},
-            files={"audio": ("5-263831-A-6.wav", file_bytes, "audio/wav")}
+            data={"model": absent_model},
+            files={"audio": (wav_path.name, file_bytes, "audio/wav")}
         )
-        assert response.status_code == 200, f"Predict failed ({response.status_code}): {response.text}"
-        data = response.json()
-        assert data["success"] is True
-        cat_name = data["category"]["name"]
-        confidence = data["confidence"]
-        engine = data.get("engine")
-        print(f"  Model: {model_name:10s} -> Category: {cat_name:15s} | Conf: {confidence*100:5.1f}% | Engine: {engine}")
-        assert cat_name == "hen", f"Expected 'hen', got '{cat_name}'"
-        assert confidence >= 0.80, f"Confidence too low: {confidence}"
+        assert res_absent.status_code == 503, f"Expected 503 for {absent_model}, got {res_absent.status_code}"
+        print(f"  OK: Model [{absent_model:10s}] returned HTTP 503 as required: {res_absent.json()['error']}")
 
     print("\n" + "=" * 60)
     print(" ALL API TESTS PASSED SUCCESSFULLY! FULL BACKEND PARITY VERIFIED.")

@@ -80,6 +80,7 @@ const serverState = {
 };
 
 const checkpointFiles = {
+  ast: 'ast_manifest.json',
   resnet18: 'esc50_resnet18_v1.pt',
   vgg16: 'esc50_vgg16_v1.pt',
   sresnet: 'esc50_sresnet_linear_v09.pt',
@@ -110,8 +111,8 @@ function getCheckpointInventory() {
 }
 
 function getModelPerformance(report) {
-  const displayNames = { resnet18: 'ResNet-18', vgg16: 'VGG-16', sresnet: 'SResNet', cnngru: 'CNN-GRU', ensemble: 'Ensemble Fusion' };
-  const colors = { resnet18: '#38bdf8', vgg16: '#fbbf24', sresnet: '#a855f7', cnngru: '#34d399', ensemble: '#818cf8' };
+  const displayNames = { ast: 'AST-ESC50', resnet18: 'ResNet-18', vgg16: 'VGG-16', sresnet: 'SResNet', cnngru: 'CNN-GRU', ensemble: 'Ensemble Fusion' };
+  const colors = { ast: '#6366f1', resnet18: '#38bdf8', vgg16: '#fbbf24', sresnet: '#a855f7', cnngru: '#34d399', ensemble: '#818cf8' };
   return Object.entries(report.models || {}).flatMap(([key, item]) => {
     const metrics = item.metrics || {};
     if (metrics.top1 == null) return [];
@@ -171,7 +172,7 @@ app.post('/api/predict', upload.single('audio'), (req, res) => {
       return res.status(400).json({ error: 'No audio file provided. Send multipart/form-data with field "audio".' });
     }
 
-    const modelKey = req.body.model || 'resnet18';
+    const modelKey = req.body.model || 'ast';
     const thresholdRaw = Number(req.body.threshold);
     const threshold = Number.isFinite(thresholdRaw) ? (thresholdRaw > 1 ? thresholdRaw / 100 : thresholdRaw) : null;
     const fileName = req.file.originalname || `upload_${Date.now()}.wav`;
@@ -267,7 +268,7 @@ app.post('/api/predict/batch', upload.array('audio', 100), (req, res) => {
       return res.status(400).json({ error: 'No audio files provided. Send multipart/form-data with field "audio".' });
     }
 
-    const modelKey = req.body.model || 'resnet18';
+    const modelKey = req.body.model || 'ast';
     const thresholdRaw = Number(req.body.threshold);
     const threshold = Number.isFinite(thresholdRaw) ? (thresholdRaw > 1 ? thresholdRaw / 100 : thresholdRaw) : null;
     const pyScript = path.join(__dirname, 'Preproccesing', 'acoustic_inference.py');
