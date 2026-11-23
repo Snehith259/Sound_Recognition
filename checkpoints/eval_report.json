@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-23T16:09:23.956412+00:00",
+  "generatedAt": "2026-11-23T17:46:31.723881+00:00",
   "source": "SoundSense evaluation harness",
   "evaluation": "Metrics appear only after the corresponding harness run completes.",
   "trainingRuns": 0,
@@ -2829,13 +2829,18 @@
       "displayName": "ResNet-18",
       "checkpoint": {
         "filename": "esc50_resnet18_v1.pt",
-        "available": false,
-        "sha256": null,
-        "sizeBytes": null
+        "available": true,
+        "sha256": "2669c6684bcf4677cb80e4142ce48d4040516481204949cb971f4d6467b4c96d",
+        "sizeBytes": 45344067
       },
-      "available": false,
-      "metrics": {},
-      "evaluation": "External dev split",
+      "available": true,
+      "metrics": {
+        "top1": 0.5879,
+        "top5": 0.8844,
+        "macroF1": 0.5882000000000001,
+        "latencyMs": 6.45
+      },
+      "evaluation": "ESC-50 fold-1 test (diagnostic baseline; not five-fold CV)",
       "external": {
         "n": 0,
         "failedRequests": 1,
@@ -2846,20 +2851,24 @@
         "falseRejectionRate": null,
         "meanConfidenceInScope": null,
         "meanLatencyMs": null
-      },
-      "availabilityReason": "Checkpoint file is absent."
+      }
     },
     "vgg16": {
       "displayName": "VGG-16",
       "checkpoint": {
         "filename": "esc50_vgg16_v1.pt",
-        "available": false,
-        "sha256": null,
-        "sizeBytes": null
+        "available": true,
+        "sha256": "46a8eca5709238d11817d6d394ac969e3f2cb2e53ddf0d4408bad3c27a8d5011",
+        "sizeBytes": 63261981
       },
-      "available": false,
-      "metrics": {},
-      "evaluation": "External dev split",
+      "available": true,
+      "metrics": {
+        "top1": 0.6456999999999999,
+        "top5": 0.9095,
+        "macroF1": 0.6368,
+        "latencyMs": 50.41
+      },
+      "evaluation": "ESC-50 fold-1 test (diagnostic baseline; not five-fold CV)",
       "external": {
         "n": 0,
         "failedRequests": 1,
@@ -2870,20 +2879,24 @@
         "falseRejectionRate": null,
         "meanConfidenceInScope": null,
         "meanLatencyMs": null
-      },
-      "availabilityReason": "Checkpoint file is absent."
+      }
     },
     "sresnet": {
       "displayName": "SResNet",
       "checkpoint": {
         "filename": "esc50_sresnet_linear_v09.pt",
-        "available": false,
-        "sha256": null,
-        "sizeBytes": null
+        "available": true,
+        "sha256": "3c80a224274556e9c4c863f871f573916bc4cfdcbf4cbf245a0a24f141468cdd",
+        "sizeBytes": 1724753
       },
-      "available": false,
-      "metrics": {},
-      "evaluation": "External dev split",
+      "available": true,
+      "metrics": {
+        "top1": 0.3467,
+        "top5": 0.7337,
+        "macroF1": 0.3375,
+        "latencyMs": 3.02
+      },
+      "evaluation": "ESC-50 fold-1 test (diagnostic baseline; not five-fold CV)",
       "external": {
         "n": 0,
         "failedRequests": 1,
@@ -2894,20 +2907,24 @@
         "falseRejectionRate": null,
         "meanConfidenceInScope": null,
         "meanLatencyMs": null
-      },
-      "availabilityReason": "Checkpoint file is absent."
+      }
     },
     "cnngru": {
       "displayName": "CNN-GRU",
       "checkpoint": {
         "filename": "esc50_cnngru_recurrent_v08.pt",
-        "available": false,
-        "sha256": null,
-        "sizeBytes": null
+        "available": true,
+        "sha256": "a8033cfba8fd7ff6020bedfa773df580f339d4564240a56d742146b7dfb98f3f",
+        "sizeBytes": 2109397
       },
-      "available": false,
-      "metrics": {},
-      "evaluation": "External dev split",
+      "available": true,
+      "metrics": {
+        "top1": 0.6734,
+        "top5": 0.9045000000000001,
+        "macroF1": 0.6686,
+        "latencyMs": 2.03
+      },
+      "evaluation": "ESC-50 fold-1 test (diagnostic baseline; not five-fold CV)",
       "external": {
         "n": 0,
         "failedRequests": 1,
@@ -2918,15 +2935,19 @@
         "falseRejectionRate": null,
         "meanConfidenceInScope": null,
         "meanLatencyMs": null
-      },
-      "availabilityReason": "Checkpoint file is absent."
+      }
     },
     "ensemble": {
       "displayName": "Ensemble Fusion",
       "checkpoint": {},
-      "available": false,
-      "metrics": {},
-      "evaluation": "External dev split",
+      "available": true,
+      "metrics": {
+        "top1": 0.7161,
+        "top5": 0.9296,
+        "macroF1": 0.7137,
+        "latencyMs": 61.91
+      },
+      "evaluation": "ESC-50 fold-1 test (diagnostic baseline; not five-fold CV)",
       "external": {
         "n": 0,
         "failedRequests": 1,
@@ -2937,8 +2958,7 @@
         "falseRejectionRate": null,
         "meanConfidenceInScope": null,
         "meanLatencyMs": null
-      },
-      "availabilityReason": "Requires all four selected architecture checkpoints."
+      }
     }
   }
 }

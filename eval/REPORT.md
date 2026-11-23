@@ -1,27 +1,22 @@
 # SoundSense evaluation report
 
-Generated: 2026-11-23T16:09:23.956412+00:00
+Generated: 2026-11-23T17:46:31.723881+00:00
 
 Scores in this table are included only when produced by the evaluation harness.
 
 | Model | Checkpoint | ESC-50 Accuracy* | External dev top-1 | ECE |
 |---|---|---:|---:|---:|
 | AST-ESC50 | available | 92.71% | 85.71% | 3.92% |
-| ResNet-18 | missing | — | — | — |
-| VGG-16 | missing | — | — | — |
-| SResNet | missing | — | — | — |
-| CNN-GRU | missing | — | — | — |
-| Ensemble Fusion | missing | — | — | — |
+| ResNet-18 | available | 58.79% | — | — |
+| VGG-16 | available | 64.57% | — | — |
+| SResNet | available | 34.67% | — | — |
+| CNN-GRU | available | 67.34% | — | — |
+| Ensemble Fusion | available | 71.61% | — | — |
 
 \* *AST metrics come from a pretrained checkpoint evaluated on fold 1; the four neural baselines require five-fold training.*
 
 ## Status
 
-- **ResNet-18:** Checkpoint file is absent.
-- **VGG-16:** Checkpoint file is absent.
-- **SResNet:** Checkpoint file is absent.
-- **CNN-GRU:** Checkpoint file is absent.
-- **Ensemble Fusion:** Requires all four selected architecture checkpoints.
 - External audio set: 69 dev clips; 105 final holdout clips (not evaluated).
 
 ## Deployed Model (AST-ESC50)

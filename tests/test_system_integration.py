@@ -28,38 +28,32 @@ def test_ast_checkpoint_available():
     print(f"  OK: AST deployed checkpoint loaded ({entry['filename']}, feature: {entry['feat_type']})")
 
 
-def test_other_checkpoints_optional():
-    print("\n[Test 2] Checking other 4 architecture checkpoints (fail explicitly if absent):")
+def test_other_checkpoints_trained_and_working():
+    print("\n[Test 2] Checking other architecture checkpoints are trained and working:")
     audio_path = ROOT_DIR / "eval" / "external" / "ambient" / "birdnet_window_000.wav"
     audio_bytes = audio_path.read_bytes()
     architectures = ["resnet18", "vgg16", "sresnet", "cnngru", "ensemble"]
 
     for m in architectures:
-        entry = load_model_checkpoint(m)
-        if entry is None:
-            # Model is absent in this checkout; verify run_acoustic_inference raises FileNotFoundError
-            try:
-                run_acoustic_inference(audio_bytes, model_name=m)
-                raise AssertionError(f"Expected FileNotFoundError for absent model {m}, but inference succeeded!")
-            except FileNotFoundError as err:
-                print(f"  OK: {m} correctly raised FileNotFoundError ({err})")
-        else:
-            print(f"  OK: {m} is trained and loaded ({entry['filename']})")
+        res = run_acoustic_inference(audio_bytes, model_name=m)
+        assert res["success"] is True, f"Inference failed for {m}"
+        assert res["predictions"], f"No predictions returned for {m}"
+        print(f"  OK: {m} is trained and returned predictions: {res['category']['name']} ({res['confidence']*100:.1f}%)")
 
 
-def test_missing_model_returns_503():
-    print("\n[Test 3] Checking that POST /api/predict with absent model returns HTTP 503:")
+def test_invalid_model_returns_400():
+    print("\n[Test 3] Checking that POST /api/predict with invalid model returns HTTP 400:")
     client = TestClient(app)
     audio_path = ROOT_DIR / "eval" / "external" / "ambient" / "birdnet_window_000.wav"
     audio_bytes = audio_path.read_bytes()
 
     res = client.post(
         "/api/predict",
-        data={"model": "resnet18"},
+        data={"model": "nonexistent_model"},
         files={"audio": ("sample.wav", audio_bytes, "audio/wav")}
     )
-    assert res.status_code == 503, f"Expected 503 for absent model resnet18, got {res.status_code}: {res.text}"
-    print(f"  OK: POST /api/predict returned HTTP 503 as required: {res.json()}")
+    assert res.status_code == 400, f"Expected 400 for invalid model, got {res.status_code}: {res.text}"
+    print(f"  OK: POST /api/predict returned HTTP 400 as required: {res.json()}")
 
 
 def test_model_status_report():
@@ -67,7 +61,8 @@ def test_model_status_report():
     status = model_status()
     assert "report" in status
     assert "checkpoints" in status
-    assert "ast" in status["availableModels"], f"ast must be available, got {status['availableModels']}"
+    for m in ["ast", "resnet18", "vgg16", "sresnet", "cnngru"]:
+        assert m in status["availableModels"], f"{m} must be available, got {status['availableModels']}"
     print(f"  OK: Status report verified. Available models: {status['availableModels']}")
 
 
@@ -108,8 +103,8 @@ def run_tests():
     print("=" * 60)
 
     test_ast_checkpoint_available()
-    test_other_checkpoints_optional()
-    test_missing_model_returns_503()
+    test_other_checkpoints_trained_and_working()
+    test_invalid_model_returns_400()
     test_model_status_report()
     test_ast_real_audio_inference()
     test_filename_invariance()

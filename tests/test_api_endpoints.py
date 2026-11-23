@@ -65,16 +65,27 @@ def test_api():
     assert cat_name == expected_class, f"Expected '{expected_class}', got '{cat_name}'"
     assert confidence >= 0.70, f"Confidence too low: {confidence}"
 
-    # 4. Absent models must return 503
-    print("\n[4] Testing POST /api/predict with absent models (must return HTTP 503):")
-    for absent_model in ["resnet18", "vgg16", "sresnet", "cnngru", "ensemble"]:
-        res_absent = client.post(
+    # 4. All architecture models must succeed with HTTP 200
+    print("\n[4] Testing POST /api/predict with all active architecture models:")
+    for model_name in ["resnet18", "vgg16", "sresnet", "cnngru", "ensemble"]:
+        res_m = client.post(
             "/api/predict",
-            data={"model": absent_model},
+            data={"model": model_name},
             files={"audio": (wav_path.name, file_bytes, "audio/wav")}
         )
-        assert res_absent.status_code == 503, f"Expected 503 for {absent_model}, got {res_absent.status_code}"
-        print(f"  OK: Model [{absent_model:10s}] returned HTTP 503 as required: {res_absent.json()['error']}")
+        assert res_m.status_code == 200, f"Expected 200 for {model_name}, got {res_m.status_code}: {res_m.text}"
+        m_data = res_m.json()
+        assert m_data["success"] is True
+        print(f"  OK: Model [{model_name:10s}] -> Category: {m_data['category']['name']:15s} | Conf: {m_data['confidence']*100:5.1f}% | Engine: {m_data.get('engine')}")
+
+    # 5. Invalid model must return 400
+    res_invalid = client.post(
+        "/api/predict",
+        data={"model": "unknown_model_arch"},
+        files={"audio": (wav_path.name, file_bytes, "audio/wav")}
+    )
+    assert res_invalid.status_code == 400, f"Expected 400 for unknown model, got {res_invalid.status_code}"
+    print(f"  OK: Invalid model returned HTTP 400 as required: {res_invalid.json().get('details') or res_invalid.json().get('error')}")
 
     print("\n" + "=" * 60)
     print(" ALL API TESTS PASSED SUCCESSFULLY! FULL BACKEND PARITY VERIFIED.")

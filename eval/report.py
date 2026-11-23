@@ -127,6 +127,17 @@ def build_report() -> dict[str, Any]:
             if not result["metrics"]:
                 result["metrics"] = {key: external.get(key) for key in ("top1",) if external.get(key) is not None}
                 result["evaluation"] = f"External {ext_final_report.get('split', 'dev')} split"
+        model_report = _read(CHECKPOINTS / "model_report.json")
+        diag_models = model_report.get("models", {})
+        if not result["metrics"] and name in diag_models:
+            diag = diag_models[name]
+            result["metrics"] = {
+                "top1": diag["top1"] / 100.0,
+                "top5": diag["top5"] / 100.0,
+                "macroF1": diag["macroF1"] / 100.0,
+                "latencyMs": diag.get("latencyMs"),
+            }
+            result["evaluation"] = "ESC-50 fold-1 test (diagnostic baseline; not five-fold CV)"
         if name == "ensemble" and not result["available"]:
             result["availabilityReason"] = "Requires all four selected architecture checkpoints."
         elif not result["available"]:
