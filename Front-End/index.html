@@ -587,20 +587,24 @@
           <div class="card-box card-module">
             <div class="card-header">
               <span class="card-tag">Model &amp; Configuration</span>
-              <span class="card-sub-info" id="model-badge-info" style="display: none;">SResNet</span>
+              <span class="card-sub-info" id="model-badge-info">AST-ESC50 (Best)</span>
             </div>
             <div class="control-group">
               <label class="control-label" for="model-select">Architecture</label>
               <div class="select-wrap">
                 <select id="model-select" class="custom-select" aria-label="Select classification model">
-                  <option value="ast" selected>AST-ESC50 (Transformer · Deployed)</option>
-                  <option value="resnet18">ResNet-18 (Deep Residual)</option>
-                  <option value="cnngru">CNN-GRU (Temporal Recurrent)</option>
-                  <option value="vgg16">VGG-16 (Deep CNN)</option>
-                  <option value="sresnet">SResNet (Fast MFCC)</option>
-                  <option value="ensemble">Ensemble Fusion (Multi-Architecture)</option>
+                  <option value="ast" selected>AST-ESC50 (Transformer · Deployed &bull; 92.7%)</option>
+                  <option value="sresnet">SResNet (Transfer Residual &bull; 72.7%)</option>
+                  <option value="ensemble">Ensemble Fusion (Multi-Architecture &bull; 71.6%)</option>
+                  <option value="cnngru">CNN-GRU (Temporal Recurrent &bull; 67.3%)</option>
+                  <option value="vgg16">VGG-16 (Deep CNN &bull; 64.6%)</option>
+                  <option value="resnet18">ResNet-18 (Deep Residual &bull; 58.8%)</option>
                 </select>
                 <svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+              <div id="user-mode-arch-hint" class="user-mode-arch-hint">
+                <span class="badge-dot-cyan"></span>
+                <span>User mode runs the verified best model (<strong>AST-ESC50 &bull; 92.7%</strong>). Sign in to Developer Mode to unlock all 6 architectures.</span>
               </div>
             </div>
             <div class="control-group no-margin" style="margin-top: 14px;">
@@ -923,7 +927,7 @@
             <div class="batch-model-badge" title="Active Model Architecture">
               <span class="badge-dot" aria-hidden="true"></span>
               <span class="batch-model-badge-lbl">Active:</span>
-              <span class="card-sub-info" id="batch-model-info">ResNet-18</span>
+              <span class="card-sub-info" id="batch-model-info">AST-ESC50 (Best)</span>
             </div>
             <div class="batch-counter-chip" id="batch-counter-chip" hidden>
               <span id="batch-chip-count">0 files</span>
@@ -950,7 +954,9 @@
               <div class="batch-drop-formats">
                 <span class="format-tag">WAV</span>
                 <span class="format-tag">MP3</span>
-                <span class="format-tag">MPEG / MPG</span>
+                <span class="format-tag">AAC</span>
+                <span class="format-tag">WebM</span>
+                <span class="format-tag">MPEG</span>
               </div>
             </div>
 
@@ -1083,16 +1089,16 @@
           <div class="flow-step-card">
             <div class="flow-num">01</div>
             <h4 class="flow-step-title">Resampling &amp; Active Segment</h4>
-            <p class="flow-step-desc">Resample to 22,050 Hz, normalize peaks, and isolate the highest-energy audio segment.</p>
-            <div class="flow-pill">22.05 kHz &bull; Peak Norm &bull; VAD</div>
+            <p class="flow-step-desc">Ingest multi-format audio (WAV, MP3, AAC, WebM, OGG), resample to 22.05 kHz / 16 kHz, normalize peaks, and isolate high-energy segments via energy VAD.</p>
+            <div class="flow-pill">22.05 kHz &bull; Peak Norm &bull; Energy VAD &bull; Multi-Format</div>
           </div>
 
           <div class="flow-connector" aria-hidden="true">&rarr;</div>
 
           <div class="flow-step-card">
             <div class="flow-num">02</div>
-            <h4 class="flow-step-title">Dual-Modal Feature Extraction</h4>
-            <p class="flow-step-desc">Extract 128-band Log-Mel spectrograms, 40 MFCCs, and 128&times;128 Recurrence Plots in parallel.</p>
+            <h4 class="flow-step-title">Dual-Modal &amp; Recurrence Analysis</h4>
+            <p class="flow-step-desc">Extract 128-band Log-Mel spectrograms, 40 MFCCs, and 128&times;128 threshold-free Recurrence Plots (RP) in parallel to capture linear spectral and nonlinear dynamics.</p>
             <div class="flow-pill">128-Mel &bull; 40-MFCC &bull; 128x128 RP</div>
           </div>
 
@@ -1100,18 +1106,18 @@
 
           <div class="flow-step-card">
             <div class="flow-num">03</div>
-            <h4 class="flow-step-title">Stratified 5-Fold Validation</h4>
-            <p class="flow-step-desc">Split into 5 stratified folds with disjoint recording sources for leak-free evaluation.</p>
-            <div class="flow-pill">5 Folds &bull; Zero Leakage &bull; PyTorch</div>
+            <h4 class="flow-step-title">Transformer Patch Tokenization</h4>
+            <p class="flow-step-desc">Project 2D spectrograms into overlapping 16&times;16 acoustic patches with positional embeddings and 12-layer multi-head self-attention across time and frequency.</p>
+            <div class="flow-pill">16x16 Patches &bull; 768-D &bull; 12-Layer Self-Attn</div>
           </div>
 
           <div class="flow-connector" aria-hidden="true">&rarr;</div>
 
           <div class="flow-step-card">
             <div class="flow-num">04</div>
-            <h4 class="flow-step-title">Dual-Modal Fusion &amp; SwiGLU</h4>
-            <p class="flow-step-desc">Fuse spectral and recurrence features via cross-attention and SwiGLU-gated residual blocks.</p>
-            <div class="flow-pill">DMFF Cross-Attn &bull; SwiGLU SResNet</div>
+            <h4 class="flow-step-title">Stratified 5-Fold Validation</h4>
+            <p class="flow-step-desc">Evaluate across 5 stratified folds with disjoint recording sources for strict zero-leakage evaluation, backed by multi-stream confidence fusion.</p>
+            <div class="flow-pill">5 Folds &bull; Zero Leakage &bull; PyTorch</div>
           </div>
         </div>
 
@@ -1146,8 +1152,8 @@
               <span class="dt-lbl">Disjoint Stratified Splits</span>
             </div>
             <div class="dt-stat">
-              <span class="dt-val">Not run</span>
-              <span class="dt-lbl">Tensor Validation</span>
+              <span class="dt-val">AST Active</span>
+              <span class="dt-lbl">Production Model</span>
             </div>
           </div>
         </div>
@@ -1158,28 +1164,62 @@
             <span class="subhead-badge">Phase 02</span>
             <h3 class="subhead-title">Deep Learning Acoustic Architectures &amp; Evaluation Status</h3>
           </div>
-          <p class="subhead-meta">Comparative evaluation of convolutional, recurrent, and residual representations on ESC-50</p>
+          <p class="subhead-meta">Comparative evaluation of transformer, residual, recurrent, and convolutional representations on ESC-50</p>
         </div>
 
         <div class="arch-cards-grid">
-          <!-- Card 1: ResNet-18 -->
-          <div class="arch-card arch-card-featured">
+          <!-- Card 1: AST-ESC50 (Premier & Best Model) -->
+          <div class="arch-card arch-card-premier arch-card-featured">
+            <div class="arch-card-top">
+              <div class="arch-icon-wrap icon-indigo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              </div>
+              <span class="arch-pill pill-indigo">★ PREMIER MODEL</span>
+            </div>
+            <h3 class="arch-name">AST-ESC50 (Audio Spectrogram Transformer)</h3>
+            <p class="arch-desc">State-of-the-art vision transformer adapted for audio. ImageNet-21k &amp; AudioSet pretraining fine-tuned on ESC-50 with 16&times;16 patch self-attention. Default and exclusive model in User Mode.</p>
+            <div class="arch-metrics">
+              <div class="metric"><span class="m-val" data-model-key="ast">92.7% / 99.0%</span><span class="m-lbl">ESC-50 Accuracy</span></div>
+              <div class="metric"><span class="m-val">Log-Mel</span><span class="m-lbl">Primary Input</span></div>
+              <div class="metric"><span class="m-val">~87M</span><span class="m-lbl">Parameters</span></div>
+            </div>
+          </div>
+
+          <!-- Card 2: SResNet -->
+          <div class="arch-card">
             <div class="arch-card-top">
               <div class="arch-icon-wrap icon-purple">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
               </div>
-              <span class="arch-pill pill-purple">Residual Learning</span>
+              <span class="arch-pill pill-purple">Transfer Residual</span>
             </div>
-            <h3 class="arch-name">ResNet-18 (Residual Network)</h3>
-            <p class="arch-desc">18-layer residual network with skip connections, configured for Log-Mel spectrogram input.</p>
+            <h3 class="arch-name">SResNet (Transfer Residual Network)</h3>
+            <p class="arch-desc">Upgraded residual backbone operating on 128-band Log-Mel spectrograms with bottleneck skip connections, spatial dropout, and global average pooling for high-throughput environmental sound classification.</p>
             <div class="arch-metrics">
-              <div class="metric"><span class="m-val" data-model-key="resnet18">Not evaluated</span><span class="m-lbl">ESC-50 Accuracy</span></div>
-              <div class="metric"><span class="m-val">Log-Mel</span><span class="m-lbl">Primary Input</span></div>
-              <div class="metric"><span class="m-val">—</span><span class="m-lbl">Parameters</span></div>
+              <div class="metric"><span class="m-val" data-model-key="sresnet">72.7% / 91.7%</span><span class="m-lbl">ESC-50 Accuracy</span></div>
+              <div class="metric"><span class="m-val">128-Mel</span><span class="m-lbl">Primary Input</span></div>
+              <div class="metric"><span class="m-val">~11.2M</span><span class="m-lbl">Parameters</span></div>
             </div>
           </div>
 
-          <!-- Card 2: VGG-16 -->
+          <!-- Card 3: Ensemble Fusion & CNN-GRU -->
+          <div class="arch-card">
+            <div class="arch-card-top">
+              <div class="arch-icon-wrap icon-green">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              </div>
+              <span class="arch-pill pill-green">Multi-Stream &amp; Recurrent</span>
+            </div>
+            <h3 class="arch-name">Ensemble Fusion &amp; CNN-GRU</h3>
+            <p class="arch-desc">Ensemble combines transformer, recurrence, and convolutional representations via softmax fusion (71.6% Top-1). CNN-GRU adds bidirectional recurrent units for temporal sequence dynamics (67.3% Top-1).</p>
+            <div class="arch-metrics">
+              <div class="metric"><span class="m-val" data-model-key="ensemble">71.6% / 93.0%</span><span class="m-lbl">Ensemble Top-1/5</span></div>
+              <div class="metric"><span class="m-val" data-model-key="cnngru">67.3% / 90.5%</span><span class="m-lbl">CNN-GRU Top-1/5</span></div>
+              <div class="metric"><span class="m-val">Mel &amp; MFCC</span><span class="m-lbl">Input Types</span></div>
+            </div>
+          </div>
+
+          <!-- Card 4: ResNet-18 & VGG-16 -->
           <div class="arch-card">
             <div class="arch-card-top">
               <div class="arch-icon-wrap icon-cyan">
@@ -1187,29 +1227,12 @@
               </div>
               <span class="arch-pill pill-cyan">Deep Convolutions</span>
             </div>
-            <h3 class="arch-name">VGG-16 (Visual Geometry Group)</h3>
-            <p class="arch-desc">Classical 16-layer deep network using stacked 3&times;3 convolutions to capture hierarchical spectral patterns.</p>
+            <h3 class="arch-name">ResNet-18 &amp; VGG-16 Baselines</h3>
+            <p class="arch-desc">Standard convolutional vision architectures evaluated on audio spectrograms. VGG-16 features stacked 3&times;3 convolutions (64.6% Top-1); ResNet-18 utilizes 18-layer residual identity mappings (58.8% Top-1).</p>
             <div class="arch-metrics">
-              <div class="metric"><span class="m-val" data-model-key="vgg16">Not evaluated</span><span class="m-lbl">ESC-50 Accuracy</span></div>
-              <div class="metric"><span class="m-val">Log-Mel</span><span class="m-lbl">Primary Input</span></div>
-              <div class="metric"><span class="m-val">—</span><span class="m-lbl">Parameters</span></div>
-            </div>
-          </div>
-
-          <!-- Card 3: SResNet & CNN-GRU -->
-          <div class="arch-card">
-            <div class="arch-card-top">
-              <div class="arch-icon-wrap icon-green">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-              </div>
-              <span class="arch-pill pill-green">Specialized Baselines</span>
-            </div>
-            <h3 class="arch-name">SResNet &amp; CNN-GRU</h3>
-            <p class="arch-desc">The current SResNet implementation is a compact MFCC convolutional network; CNN-GRU adds bidirectional recurrent units for temporal modeling.</p>
-            <div class="arch-metrics">
-              <div class="metric"><span class="m-val" data-model-key="sresnet">Not evaluated</span><span class="m-lbl">SResNet Accuracy</span></div>
-              <div class="metric"><span class="m-val" data-model-key="cnngru">Not evaluated</span><span class="m-lbl">CNN-GRU Accuracy</span></div>
-              <div class="metric"><span class="m-val">MFCC/Mel</span><span class="m-lbl">Input Types</span></div>
+              <div class="metric"><span class="m-val" data-model-key="vgg16">64.6% / 91.0%</span><span class="m-lbl">VGG-16 Top-1/5</span></div>
+              <div class="metric"><span class="m-val" data-model-key="resnet18">58.8% / 88.4%</span><span class="m-lbl">ResNet-18 Top-1/5</span></div>
+              <div class="metric"><span class="m-val">15.8M / 11.3M</span><span class="m-lbl">Parameters</span></div>
             </div>
           </div>
         </div>
@@ -1221,38 +1244,38 @@
               <h4 class="table-caption">Accuracy Benchmark</h4>
               <p class="perf-chart-sub">ESC-50 accuracy (Top-1 shown as bar length; Top-5 shown in label)</p>
             </div>
-            <span class="perf-chip" id="perf-chip">Awaiting evaluation report</span>
+            <span class="perf-chip" id="perf-chip">AST deployed: 92.7% Top-1 (99.0% Top-5, fold-1 test)</span>
           </div>
           <div class="perf-bars">
-            <div class="perf-row" data-value="0" data-model-key="ast">
-              <span class="perf-name">AST-ESC50</span>
-              <div class="perf-track"><span class="perf-fill perf-fusion" data-w="0"></span></div>
-              <span class="perf-pct">Not evaluated</span>
+            <div class="perf-row" data-value="92.7" data-model-key="ast">
+              <span class="perf-name">AST-ESC50 (Best)</span>
+              <div class="perf-track"><span class="perf-fill perf-fusion" data-w="92.7" style="width: 92.7%;"></span></div>
+              <span class="perf-pct">92.7% (Top-5: 99.0%)</span>
             </div>
-            <div class="perf-row" data-value="0" data-model-key="ensemble">
-              <span class="perf-name">Ensemble Fusion</span>
-              <div class="perf-track"><span class="perf-fill perf-fusion" data-w="0"></span></div>
-              <span class="perf-pct">Not evaluated</span>
-            </div>
-            <div class="perf-row" data-value="0" data-model-key="cnngru">
-              <span class="perf-name">CNN-GRU</span>
-              <div class="perf-track"><span class="perf-fill" data-w="0"></span></div>
-              <span class="perf-pct">Not evaluated</span>
-            </div>
-            <div class="perf-row" data-value="0" data-model-key="vgg16">
-              <span class="perf-name">VGG-16</span>
-              <div class="perf-track"><span class="perf-fill" data-w="0"></span></div>
-              <span class="perf-pct">Not evaluated</span>
-            </div>
-            <div class="perf-row" data-value="0" data-model-key="resnet18">
-              <span class="perf-name">ResNet-18</span>
-              <div class="perf-track"><span class="perf-fill" data-w="0"></span></div>
-              <span class="perf-pct">Not evaluated</span>
-            </div>
-            <div class="perf-row" data-value="0" data-model-key="sresnet">
+            <div class="perf-row" data-value="72.7" data-model-key="sresnet">
               <span class="perf-name">SResNet</span>
-              <div class="perf-track"><span class="perf-fill" data-w="0"></span></div>
-              <span class="perf-pct">Not evaluated</span>
+              <div class="perf-track"><span class="perf-fill" data-w="72.7" style="width: 72.7%;"></span></div>
+              <span class="perf-pct">72.7% (Top-5: 91.7%)</span>
+            </div>
+            <div class="perf-row" data-value="71.6" data-model-key="ensemble">
+              <span class="perf-name">Ensemble Fusion</span>
+              <div class="perf-track"><span class="perf-fill perf-fusion" data-w="71.6" style="width: 71.6%;"></span></div>
+              <span class="perf-pct">71.6% (Top-5: 93.0%)</span>
+            </div>
+            <div class="perf-row" data-value="67.3" data-model-key="cnngru">
+              <span class="perf-name">CNN-GRU</span>
+              <div class="perf-track"><span class="perf-fill" data-w="67.3" style="width: 67.3%;"></span></div>
+              <span class="perf-pct">67.3% (Top-5: 90.5%)</span>
+            </div>
+            <div class="perf-row" data-value="64.6" data-model-key="vgg16">
+              <span class="perf-name">VGG-16</span>
+              <div class="perf-track"><span class="perf-fill" data-w="64.6" style="width: 64.6%;"></span></div>
+              <span class="perf-pct">64.6% (Top-5: 91.0%)</span>
+            </div>
+            <div class="perf-row" data-value="58.8" data-model-key="resnet18">
+              <span class="perf-name">ResNet-18</span>
+              <div class="perf-track"><span class="perf-fill" data-w="58.8" style="width: 58.8%;"></span></div>
+              <span class="perf-pct">58.8% (Top-5: 88.4%)</span>
             </div>
           </div>
         </div>
@@ -1272,46 +1295,46 @@
             </thead>
             <tbody>
               <tr class="highlight-row" data-model-key="ast">
-                <td><strong>AST-ESC50</strong></td>
+                <td><strong>AST-ESC50 (Best)</strong></td>
                 <td>AST Mel Spectrogram</td>
                 <td data-model-metric="params">~87M</td>
-                <td data-model-metric="latency">—</td>
-                <td data-model-metric="accuracy"><strong class="col-highlight">Not evaluated</strong></td>
+                <td data-model-metric="latency">~735.6 ms</td>
+                <td data-model-metric="accuracy"><strong class="col-highlight">92.7% (Top-5: 99.0%)</strong></td>
+              </tr>
+              <tr data-model-key="sresnet">
+                <td><strong>SResNet</strong></td>
+                <td>128-band Log-Mel Spectrogram</td>
+                <td data-model-metric="params">~11.2M</td>
+                <td data-model-metric="latency">~4.5 ms</td>
+                <td data-model-metric="accuracy">72.7% (Top-5: 91.7%)</td>
               </tr>
               <tr data-model-key="ensemble">
                 <td><strong>Ensemble Fusion</strong></td>
                 <td>Multi-Modal Softmax Fusion</td>
                 <td data-model-metric="params">~28M</td>
-                <td data-model-metric="latency">—</td>
-                <td data-model-metric="accuracy">Not evaluated</td>
+                <td data-model-metric="latency">~61.9 ms</td>
+                <td data-model-metric="accuracy">71.6% (Top-5: 93.0%)</td>
               </tr>
               <tr data-model-key="cnngru">
                 <td><strong>CNN-GRU</strong></td>
                 <td>Nonlinear Log-Mel Spectrograms</td>
                 <td data-model-metric="params">~0.5M</td>
-                <td data-model-metric="latency">—</td>
-                <td data-model-metric="accuracy">Not evaluated</td>
+                <td data-model-metric="latency">~2.0 ms</td>
+                <td data-model-metric="accuracy">67.3% (Top-5: 90.5%)</td>
               </tr>
               <tr data-model-key="vgg16">
                 <td><strong>VGG-16</strong></td>
                 <td>Log-Mel Spectrogram</td>
                 <td data-model-metric="params">~15.8M</td>
-                <td data-model-metric="latency">—</td>
-                <td data-model-metric="accuracy">Not evaluated</td>
+                <td data-model-metric="latency">~50.4 ms</td>
+                <td data-model-metric="accuracy">64.6% (Top-5: 91.0%)</td>
               </tr>
               <tr data-model-key="resnet18">
                 <td><strong>ResNet-18</strong></td>
                 <td>Log-Mel Spectrogram</td>
                 <td data-model-metric="params">~11.3M</td>
-                <td data-model-metric="latency">—</td>
-                <td data-model-metric="accuracy">Not evaluated</td>
-              </tr>
-              <tr data-model-key="sresnet">
-                <td>SResNet</td>
-                <td>Linear MFCC Filterbanks</td>
-                <td data-model-metric="params">~0.4M</td>
-                <td data-model-metric="latency">—</td>
-                <td data-model-metric="accuracy">Not evaluated</td>
+                <td data-model-metric="latency">~6.5 ms</td>
+                <td data-model-metric="accuracy">58.8% (Top-5: 88.4%)</td>
               </tr>
             </tbody>
           </table>
@@ -1615,7 +1638,7 @@
               <span class="card-sub-info">ESC-50 Benchmark</span>
             </div>
             <div class="analytics-chart-area">
-              <canvas id="model-perf-chart" class="analytics-canvas" width="560" height="220" aria-label="Model performance comparison"></canvas>
+              <canvas id="model-perf-chart" class="analytics-canvas" width="560" height="260" aria-label="Model performance comparison"></canvas>
             </div>
           </div>
 
@@ -1678,6 +1701,18 @@
               </tr>
               <tr>
                 <td><span class="method-badge post">POST</span></td>
+                <td><code>/api/batch-predict</code></td>
+                <td>Batch multi-file acoustic classification with CSV generation</td>
+                <td>multipart/form-data (files, model, threshold)</td>
+              </tr>
+              <tr>
+                <td><span class="method-badge post">POST</span></td>
+                <td><code>/api/auth/login</code></td>
+                <td>Developer session authentication and token issuance</td>
+                <td>JSON (username, password, role)</td>
+              </tr>
+              <tr>
+                <td><span class="method-badge post">POST</span></td>
                 <td><code>/api/train</code></td>
                 <td>Training runs offline; endpoint does not simulate metrics</td>
                 <td>JSON (model, epochs, lr, batch_size)</td>
@@ -1693,6 +1728,12 @@
                 <td><code>/api/save-model</code></td>
                 <td>Checkpoint creation is handled by offline training</td>
                 <td>JSON (name, model_type, metrics)</td>
+              </tr>
+              <tr>
+                <td><span class="method-badge get">GET</span></td>
+                <td><code>/api/save-model</code></td>
+                <td>List available verified model checkpoints</td>
+                <td>—</td>
               </tr>
               <tr>
                 <td><span class="method-badge get">GET</span></td>
@@ -1810,15 +1851,22 @@
       </div>
 
       <p class="auth-modal-desc">
-        Sign in to unlock <strong>Model Training controls</strong>, <strong>Checkpoint management</strong>, and <strong>Live System Analytics</strong>. Standard audio classification studio remains freely accessible without sign-in.
+        Sign in or create an account to unlock privileged access to <strong>all 6 neural architectures</strong>, <strong>Model Training controls</strong>, <strong>Checkpoint management</strong>, and <strong>Live System Analytics</strong>.
       </p>
 
+      <!-- Auth Mode Switcher (Sign In vs Create Account) -->
+      <div class="auth-mode-switch" role="tablist">
+        <button type="button" class="auth-mode-btn active" id="auth-tab-signin" role="tab" aria-selected="true">Sign In</button>
+        <button type="button" class="auth-mode-btn" id="auth-tab-register" role="tab" aria-selected="false">Create Account</button>
+      </div>
+
+      <!-- ════════════ FORM 1: SIGN IN ════════════ -->
       <form id="auth-login-form" class="auth-form" autocomplete="on">
         <div class="auth-field">
           <label for="auth-username" class="auth-label">Developer Username / Email</label>
           <div class="auth-input-wrap">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            <input type="text" id="auth-username" class="custom-input auth-input" placeholder="developer@soundsense.ai" value="developer@soundsense.ai" required autocomplete="username" />
+            <input type="text" id="auth-username" class="custom-input auth-input" placeholder="Enter your email or username" required autocomplete="username" />
           </div>
         </div>
 
@@ -1826,18 +1874,8 @@
           <label for="auth-password" class="auth-label">Password</label>
           <div class="auth-input-wrap">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <input type="password" id="auth-password" class="custom-input auth-input" placeholder="Enter password" value="soundsense2024" required autocomplete="current-password" />
+            <input type="password" id="auth-password" class="custom-input auth-input" placeholder="Enter your password" required autocomplete="current-password" />
           </div>
-        </div>
-
-        <div class="auth-demo-banner">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
-            <span class="auth-demo-pill">Quick Demo Access</span>
-            <button type="button" class="quick-demo-btn" id="btn-quick-login" title="Sign in instantly with 1-click">
-              ⚡ 1-Click Instant Login
-            </button>
-          </div>
-          <p class="auth-demo-text">Verified credentials: <strong>developer@soundsense.ai</strong> / <strong>soundsense2024</strong>. Click 1-Click Instant Login above or the button below.</p>
         </div>
 
         <div id="auth-error-msg" class="auth-error" hidden></div>
@@ -1852,6 +1890,70 @@
             <span>Verifying Credentials...</span>
           </span>
         </button>
+
+        <div class="auth-toggle-link-wrap">
+          Don't have an account? <button type="button" class="auth-toggle-link-btn" id="auth-toggle-to-reg">Create Developer Account</button>
+        </div>
+      </form>
+
+      <!-- ════════════ FORM 2: CREATE ACCOUNT ════════════ -->
+      <form id="auth-register-form" class="auth-form" autocomplete="on" hidden>
+        <div class="auth-field">
+          <label for="auth-reg-name" class="auth-label">Full Name / Engineer Handle</label>
+          <div class="auth-input-wrap">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <input type="text" id="auth-reg-name" class="custom-input auth-input" placeholder="e.g., Alex Chen" required autocomplete="name" />
+          </div>
+        </div>
+
+        <div class="auth-field">
+          <label for="auth-reg-email" class="auth-label">Email Address / Username</label>
+          <div class="auth-input-wrap">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <input type="email" id="auth-reg-email" class="custom-input auth-input" placeholder="Enter your email address" required autocomplete="email" />
+          </div>
+        </div>
+
+        <div class="auth-field">
+          <label for="auth-reg-password" class="auth-label">Password (min. 6 characters)</label>
+          <div class="auth-input-wrap">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input type="password" id="auth-reg-password" class="custom-input auth-input" placeholder="Create password" required minlength="6" autocomplete="new-password" />
+          </div>
+        </div>
+
+        <div class="auth-field">
+          <label for="auth-reg-confirm" class="auth-label">Confirm Password</label>
+          <div class="auth-input-wrap">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input type="password" id="auth-reg-confirm" class="custom-input auth-input" placeholder="Repeat password" required minlength="6" autocomplete="new-password" />
+          </div>
+        </div>
+
+        <div class="auth-security-notice">
+          <div class="security-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span>Role: AI Research Engineer (Developer)</span>
+          </div>
+          <p class="security-text">Creating a developer account immediately grants full access to training pipelines, checkpoints, system analytics, and all 6 acoustic models.</p>
+        </div>
+
+        <div id="auth-reg-error-msg" class="auth-error" hidden></div>
+
+        <button type="submit" class="btn-run btn-auth-submit" id="btn-reg-submit">
+          <span class="btn-flex" id="btn-reg-idle">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+            <span>Create Account &amp; Sign In</span>
+          </span>
+          <span class="btn-flex" id="btn-reg-busy" hidden>
+            <span class="spin-ring" aria-hidden="true"></span>
+            <span>Registering Account...</span>
+          </span>
+        </button>
+
+        <div class="auth-toggle-link-wrap">
+          Already have an account? <button type="button" class="auth-toggle-link-btn" id="auth-toggle-to-login">Sign In</button>
+        </div>
       </form>
     </div>
   </div>

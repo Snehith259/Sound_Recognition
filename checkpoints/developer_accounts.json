@@ -1,0 +1,23 @@
+{
+  "developer@soundsense.ai": {
+    "name": "SoundSense Developer",
+    "email": "developer@soundsense.ai",
+    "password": "SoundSense@Dev2026!",
+    "role": "developer",
+    "createdAt": "2026-11-24T00:00:00Z"
+  },
+  "admin@soundsense.ai": {
+    "name": "Lead AI Engineer",
+    "email": "admin@soundsense.ai",
+    "password": "SoundSense@Dev2026!",
+    "role": "developer",
+    "createdAt": "2026-11-24T00:00:00Z"
+  },
+  "new_engineer_test@soundsense.ai": {
+    "name": "Sarah Connor",
+    "email": "new_engineer_test@soundsense.ai",
+    "password": "NeuralDevSecret2026!",
+    "role": "developer",
+    "createdAt": "2026-11-24T08:38:30.960721+00:00"
+  }
+}

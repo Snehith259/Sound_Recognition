@@ -401,19 +401,50 @@ app.post('/api/save-model', (_req, res) => {
 app.get('/api/save-model', (_req, res) => {
   const inventory = getCheckpointInventory();
   const metrics = readEvalReport().models || {};
+  const paramsMap = {
+    ast: '~87M',
+    sresnet: '~11.2M',
+    ensemble: '~28M',
+    cnngru: '~0.5M',
+    vgg16: '~15.8M',
+    resnet18: '~11.3M',
+  };
+  const displayNames = {
+    ast: 'AST-ESC50',
+    cnngru: 'CNN-GRU',
+    resnet18: 'ResNet-18',
+    vgg16: 'VGG-16',
+    sresnet: 'SResNet',
+    ensemble: 'Ensemble Fusion',
+  };
+  const descMap = {
+    ast: 'Audio Spectrogram Transformer with patch self-attention fine-tuned on ESC-50 (92.7% Top-1)',
+    sresnet: 'Upgraded transfer residual backbone on 128-band Log-Mel spectrograms (72.7% Top-1)',
+    ensemble: 'Multi-stream softmax fusion uniting transformer, recurrence, and convolutional heads (71.6% Top-1)',
+    cnngru: 'Hybrid 2D CNN with bidirectional recurrent GRU layers (67.3% Top-1)',
+    vgg16: 'Stacked 3x3 deep convolutional network on Log-Mel spectrograms (64.6% Top-1)',
+    resnet18: '18-layer residual network baseline with skip connections (58.8% Top-1)',
+  };
   const checkpoints = Object.entries(inventory)
     .filter(([, item]) => item.available)
-    .map(([modelType, item]) => ({
-      checkpointId: item.filename,
-      name: modelType,
-      modelType,
-      filename: item.filename,
-      sha256: item.sha256,
-      fileSizeBytes: item.sizeBytes,
-      accuracy: metrics[modelType]?.metrics?.top1 == null ? null : metrics[modelType].metrics.top1 * 100,
-      top5: metrics[modelType]?.metrics?.top5 == null ? null : metrics[modelType].metrics.top5 * 100,
-      status: 'available',
-    }));
+    .map(([modelType, item]) => {
+      const sizeBytes = item.sizeBytes;
+      const sizeMB = sizeBytes ? Math.round((sizeBytes / (1024 * 1024)) * 10) / 10 : null;
+      return {
+        checkpointId: item.filename,
+        name: displayNames[modelType] || modelType,
+        modelType,
+        filename: item.filename,
+        sha256: item.sha256,
+        fileSizeBytes: sizeBytes,
+        fileSizeMB: sizeMB,
+        params: paramsMap[modelType] || '—',
+        description: descMap[modelType] || 'ESC-50 Deep Learning Model Checkpoint',
+        accuracy: metrics[modelType]?.metrics?.top1 == null ? null : metrics[modelType].metrics.top1 * 100,
+        top5: metrics[modelType]?.metrics?.top5 == null ? null : metrics[modelType].metrics.top5 * 100,
+        status: modelType === 'ast' ? 'active' : 'available',
+      };
+    });
   res.json({
     success: true,
     checkpoints,
@@ -542,6 +573,45 @@ app.get('/api/stats', (_req, res) => {
    ROUTE 6: DEVELOPER AUTHENTICATION ENDPOINTS
    ══════════════════════════════════════════════════════════════ */
 const activeSessions = new Map();
+const DEV_ACCOUNTS_FILE = path.join(__dirname, 'checkpoints', 'developer_accounts.json');
+
+function loadDeveloperAccounts() {
+  if (!fs.existsSync(DEV_ACCOUNTS_FILE)) {
+    return {
+      'developer@soundsense.ai': {
+        name: 'SoundSense Developer',
+        email: 'developer@soundsense.ai',
+        password: 'SoundSense@Dev2026!',
+        role: 'developer',
+      },
+      'admin@soundsense.ai': {
+        name: 'Lead AI Engineer',
+        email: 'admin@soundsense.ai',
+        password: 'SoundSense@Dev2026!',
+        role: 'developer',
+      },
+    };
+  }
+  try {
+    const raw = fs.readFileSync(DEV_ACCOUNTS_FILE, 'utf-8');
+    return JSON.parse(raw) || {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function saveDeveloperAccount(account) {
+  try {
+    const accounts = loadDeveloperAccounts();
+    const key = (account.email || '').trim().toLowerCase();
+    accounts[key] = account;
+    fs.mkdirSync(path.dirname(DEV_ACCOUNTS_FILE), { recursive: true });
+    fs.writeFileSync(DEV_ACCOUNTS_FILE, JSON.stringify(accounts, null, 2), 'utf-8');
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
 
 /* POST /api/auth/login — Developer login */
 app.post('/api/auth/login', (req, res) => {
@@ -549,33 +619,44 @@ app.post('/api/auth/login', (req, res) => {
   const cleanUser = username.trim().toLowerCase();
   const cleanPass = password.trim();
 
-  // Flexible developer login: default credentials, admin/dev keywords, or any non-empty username/password
-  const isDevUser = cleanUser === 'developer@soundsense.ai' ||
-                    cleanUser === 'developer' ||
-                    cleanUser === 'admin' ||
-                    cleanUser === 'admin@soundsense.ai' ||
-                    cleanUser.includes('developer') ||
-                    cleanUser.includes('admin') ||
-                    cleanUser.includes('dev') ||
-                    cleanUser.length > 0;
+  if (!cleanUser || !cleanPass) {
+    return res.status(400).json({ success: false, error: 'Username and password are required.' });
+  }
 
-  const isDevPass = cleanPass === 'soundsense2024' ||
-                    cleanPass === 'soundsense' ||
-                    cleanPass === 'admin' ||
-                    cleanPass === 'admin123' ||
-                    cleanPass.length >= 3;
+  const DEV_USERS = new Set(['developer@soundsense.ai', 'developer', 'admin@soundsense.ai', 'admin']);
+  if (process.env.SOUNDSENSE_DEV_USER) {
+    DEV_USERS.add(process.env.SOUNDSENSE_DEV_USER.trim().toLowerCase());
+  }
 
-  const isDev = isDevUser && isDevPass;
+  const VALID_DEV_PASSWORDS = new Set(['SoundSense@Dev2026!', 'soundsense2024']);
+  if (process.env.SOUNDSENSE_DEV_PASSWORD) {
+    VALID_DEV_PASSWORDS.add(process.env.SOUNDSENSE_DEV_PASSWORD.trim());
+  }
 
-  if (isDev) {
+  const accounts = loadDeveloperAccounts();
+  const regMatch = accounts[cleanUser];
+
+  let validCreds = false;
+  let userName = '';
+  let userEmail = cleanUser.includes('@') ? cleanUser : `${cleanUser}@soundsense.ai`;
+
+  if (regMatch && regMatch.password === cleanPass) {
+    validCreds = true;
+    userName = regMatch.name;
+    userEmail = regMatch.email || userEmail;
+  } else if (DEV_USERS.has(cleanUser) && VALID_DEV_PASSWORDS.has(cleanPass)) {
+    validCreds = true;
+  }
+
+  if (validCreds) {
     const token = `dev_token_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
     const baseName = cleanUser.includes('@') ? cleanUser.split('@')[0] : cleanUser;
-    const formattedName = baseName.replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    const formattedName = userName || baseName.replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     const user = {
       name: formattedName ? `${formattedName} (AI Engineer)` : 'Lead AI Engineer',
-      email: cleanUser.includes('@') ? cleanUser : `${cleanUser}@soundsense.ai`,
+      email: userEmail,
       role: 'developer',
-      permissions: ['training_controls', 'checkpoint_mgmt', 'system_analytics', 'cloud_sync'],
+      permissions: ['training_controls', 'checkpoint_mgmt', 'system_analytics', 'cloud_sync', 'all_architectures'],
       signedInAt: new Date().toISOString(),
     };
     activeSessions.set(token, user);
@@ -583,13 +664,64 @@ app.post('/api/auth/login', (req, res) => {
       success: true,
       token,
       user,
+      role: 'developer',
       message: 'Developer authenticated successfully.'
     });
   }
 
   return res.status(401).json({
     success: false,
-    error: 'Please enter a valid developer username and password (minimum 3 characters).'
+    error: 'Invalid developer credentials. Access denied.'
+  });
+});
+
+/* POST /api/auth/register — Create developer account */
+app.post('/api/auth/register', (req, res) => {
+  const { name = '', email = '', password = '' } = req.body || {};
+  const cleanName = name.trim();
+  const cleanEmail = (email || '').trim().toLowerCase();
+  const cleanPass = (password || '').trim();
+
+  if (!cleanName) {
+    return res.status(400).json({ success: false, error: 'Full name is required.' });
+  }
+  if (!cleanEmail || (!cleanEmail.includes('@') && cleanEmail.length < 3)) {
+    return res.status(400).json({ success: false, error: 'A valid email address or username is required.' });
+  }
+  if (cleanPass.length < 6) {
+    return res.status(400).json({ success: false, error: 'Password must be at least 6 characters.' });
+  }
+
+  const emailKey = cleanEmail.includes('@') ? cleanEmail : `${cleanEmail}@soundsense.ai`;
+  const accounts = loadDeveloperAccounts();
+  if (accounts[emailKey] || accounts[cleanEmail]) {
+    return res.status(400).json({ success: false, error: 'An account with this email/username already exists. Please sign in.' });
+  }
+
+  const newAccount = {
+    name: cleanName,
+    email: emailKey,
+    password: cleanPass,
+    role: 'developer',
+    createdAt: new Date().toISOString(),
+  };
+  saveDeveloperAccount(newAccount);
+
+  const token = `dev_token_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+  const user = {
+    name: `${cleanName} (AI Engineer)`,
+    email: emailKey,
+    role: 'developer',
+    permissions: ['training_controls', 'checkpoint_mgmt', 'system_analytics', 'cloud_sync', 'all_architectures'],
+    signedInAt: new Date().toISOString(),
+  };
+  activeSessions.set(token, user);
+  return res.json({
+    success: true,
+    token,
+    user,
+    role: 'developer',
+    message: `Account for ${cleanName} created successfully! Developer mode unlocked.`
   });
 });
 

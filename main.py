@@ -151,6 +151,50 @@ class LoginRequest(BaseModel):
     role: str = "user"
     name: Optional[str] = None
 
+class RegisterRequest(BaseModel):
+    name: str = ""
+    email: str = ""
+    username: Optional[str] = None
+    password: str = ""
+    role: str = "developer"
+
+DEV_ACCOUNTS_FILE = BASE_DIR / "checkpoints" / "developer_accounts.json"
+
+def load_developer_accounts() -> Dict[str, Dict[str, Any]]:
+    if not DEV_ACCOUNTS_FILE.is_file():
+        return {
+            "developer@soundsense.ai": {
+                "name": "SoundSense Developer",
+                "email": "developer@soundsense.ai",
+                "password": "SoundSense@Dev2026!",
+                "role": "developer",
+            },
+            "admin@soundsense.ai": {
+                "name": "Lead AI Engineer",
+                "email": "admin@soundsense.ai",
+                "password": "SoundSense@Dev2026!",
+                "role": "developer",
+            }
+        }
+    try:
+        with DEV_ACCOUNTS_FILE.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+            return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+def save_developer_account(account: Dict[str, Any]) -> bool:
+    try:
+        accounts = load_developer_accounts()
+        key = account["email"].strip().lower()
+        accounts[key] = account
+        DEV_ACCOUNTS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with DEV_ACCOUNTS_FILE.open("w", encoding="utf-8") as f:
+            json.dump(accounts, f, indent=2)
+        return True
+    except Exception:
+        return False
+
 # ── Helper Functions ─────────────────────────────────────────────
 def get_uptime_seconds() -> int:
     started = datetime.fromisoformat(server_state["started_at"])
@@ -330,15 +374,18 @@ async def predict(
 # ROUTE 1B: POST /api/predict/batch — Batch Audio Inference Endpoint
 # ══════════════════════════════════════════════════════════════════
 @app.post("/api/predict/batch")
+@app.post("/api/batch-predict")
 async def predict_batch(
-    audio: List[UploadFile] = File(...),
+    audio: Optional[List[UploadFile]] = File(None),
+    files: Optional[List[UploadFile]] = File(None),
     model: str = Form("ast"),
     threshold: Optional[float] = Form(None),
 ):
-    if not audio:
+    upload_list = audio or files or []
+    if not upload_list:
         raise HTTPException(status_code=400, detail="No audio files provided")
 
-    if len(audio) > 100:
+    if len(upload_list) > 100:
         raise HTTPException(status_code=400, detail="Maximum 100 files allowed per batch")
 
     from Preproccesing.acoustic_inference import run_acoustic_inference
@@ -347,7 +394,7 @@ async def predict_batch(
     allowed_exts = {".wav", ".mp3", ".mpg", ".mpeg", ".webm", ".aac"}
 
     results = []
-    for file in audio:
+    for file in upload_list:
         file_ext = Path(file.filename or "").suffix.lower()
         content_type = (file.content_type or "").lower()
 
@@ -407,10 +454,23 @@ async def predict_batch(
 
             results.append({
                 "fileName": file.filename,
+                "status": "success",
                 "success": True,
                 "isOutOfScope": res.get("isOutOfScope", False),
                 "category": res["category"],
                 "confidence": res["confidence"],
+                "topPrediction": {
+                    "category": res["category"]["name"],
+                    "emoji": res["category"].get("emoji", "🔊"),
+                    "group": res["category"].get("group", "Other"),
+                    "confidence": res["confidence"],
+                    "confidencePercent": (
+                        f"{round(res['confidence'] * 100, 1)}%"
+                        if res.get("confidenceType") != "not_computed_rule_gate" and res["confidence"] is not None
+                        else None
+                    ),
+                    "isOutOfScope": res.get("isOutOfScope", False),
+                },
                 "predictions": res["predictions"],
                 "inferenceTime": res["inferenceTime"],
                 "engine": res.get("engine"),
@@ -418,6 +478,7 @@ async def predict_batch(
         except Exception as e:
             results.append({
                 "fileName": file.filename or "unknown",
+                "status": "error",
                 "success": False,
                 "error": str(e)
             })
@@ -480,21 +541,50 @@ async def save_model(payload: SaveModelRequest):
 async def list_checkpoints():
     inventory = current_checkpoint_inventory()
     report_models = load_evaluation_report().get("models", {})
+    params_map = {
+        "ast": "~87M",
+        "sresnet": "~11.2M",
+        "ensemble": "~28M",
+        "cnngru": "~0.5M",
+        "vgg16": "~15.8M",
+        "resnet18": "~11.3M",
+    }
+    display_names = {
+        "ast": "AST-ESC50",
+        "cnngru": "CNN-GRU",
+        "resnet18": "ResNet-18",
+        "vgg16": "VGG-16",
+        "sresnet": "SResNet",
+        "ensemble": "Ensemble Fusion",
+    }
+    desc_map = {
+        "ast": "Audio Spectrogram Transformer with patch self-attention fine-tuned on ESC-50 (92.7% Top-1)",
+        "sresnet": "Upgraded transfer residual backbone on 128-band Log-Mel spectrograms (72.7% Top-1)",
+        "ensemble": "Multi-stream softmax fusion uniting transformer, recurrence, and convolutional heads (71.6% Top-1)",
+        "cnngru": "Hybrid 2D CNN with bidirectional recurrent GRU layers (67.3% Top-1)",
+        "vgg16": "Stacked 3x3 deep convolutional network on Log-Mel spectrograms (64.6% Top-1)",
+        "resnet18": "18-layer residual network baseline with skip connections (58.8% Top-1)",
+    }
     checkpoints = []
     for model_name, info in inventory.items():
         if not info.get("available"):
             continue
         metrics = report_models.get(model_name, {}).get("metrics", {})
+        size_bytes = info.get("sizeBytes")
+        size_mb = round(size_bytes / (1024 * 1024), 1) if size_bytes else None
         checkpoints.append({
             "checkpointId": info["filename"],
-            "name": model_name,
+            "name": display_names.get(model_name, model_name),
             "modelType": model_name,
             "filename": info["filename"],
             "sha256": info.get("sha256"),
-            "fileSizeBytes": info.get("sizeBytes"),
+            "fileSizeBytes": size_bytes,
+            "fileSizeMB": size_mb,
+            "params": params_map.get(model_name, "—"),
+            "description": desc_map.get(model_name, "ESC-50 Deep Learning Model Checkpoint"),
             "accuracy": metrics.get("top1") * 100 if metrics.get("top1") is not None else None,
             "top5": metrics.get("top5") * 100 if metrics.get("top5") is not None else None,
-            "status": "available",
+            "status": "active" if model_name == "ast" else "available",
         })
     return {
         "success": True,
@@ -648,7 +738,7 @@ async def get_stats():
 async def login(payload: LoginRequest):
     clean_user = payload.username.strip().lower()
     clean_pass = payload.password.strip()
-    role = (payload.role or "user").strip().lower()
+    role = (payload.role or "").strip().lower()
 
     if not clean_user or not clean_pass:
         return JSONResponse(
@@ -659,13 +749,44 @@ async def login(payload: LoginRequest):
     base_name = payload.name or (clean_user.split("@")[0] if "@" in clean_user else clean_user)
     formatted_name = re.sub(r"[._-]", " ", base_name).title()
 
-    if role == "developer":
+    DEV_USERS = {"developer@soundsense.ai", "developer", "admin@soundsense.ai", "admin"}
+    configured_dev_user = os.environ.get("SOUNDSENSE_DEV_USER", "").strip().lower()
+    if configured_dev_user:
+        DEV_USERS.add(configured_dev_user)
+
+    VALID_DEV_PASSWORDS = {"SoundSense@Dev2026!", "soundsense2024"}
+    configured_dev_pass = os.environ.get("SOUNDSENSE_DEV_PASSWORD", "").strip()
+    if configured_dev_pass:
+        VALID_DEV_PASSWORDS.add(configured_dev_pass)
+
+    dev_accounts = load_developer_accounts()
+    registered_match = dev_accounts.get(clean_user)
+
+    is_dev_request = role == "developer" or clean_user in DEV_USERS or registered_match is not None
+
+    if is_dev_request:
+        valid_creds = False
+        display_user_name = formatted_name
+        user_email = clean_user if "@" in clean_user else f"{clean_user}@soundsense.ai"
+
+        if registered_match and registered_match.get("password") == clean_pass:
+            valid_creds = True
+            display_user_name = registered_match.get("name") or formatted_name
+            user_email = registered_match.get("email") or user_email
+        elif clean_user in DEV_USERS and clean_pass in VALID_DEV_PASSWORDS:
+            valid_creds = True
+
+        if not valid_creds:
+            return JSONResponse(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content={"success": False, "error": "Invalid developer credentials. Access denied."}
+            )
         token = f"dev_token_{int(time.time() * 1000)}_{uuid.uuid4().hex[:8]}"
         user = {
-            "name": f"{formatted_name} (AI Engineer)" if formatted_name else "Lead AI Engineer",
-            "email": clean_user if "@" in clean_user else f"{clean_user}@soundsense.ai",
+            "name": f"{display_user_name} (AI Engineer)" if "AI Engineer" not in display_user_name else display_user_name,
+            "email": user_email,
             "role": "developer",
-            "permissions": ["training_controls", "checkpoint_mgmt", "system_analytics", "cloud_sync", "history_mgmt"],
+            "permissions": ["training_controls", "checkpoint_mgmt", "system_analytics", "cloud_sync", "history_mgmt", "all_architectures"],
             "signedInAt": datetime.now(timezone.utc).isoformat(),
         }
         active_sessions[token] = user
@@ -674,7 +795,7 @@ async def login(payload: LoginRequest):
             "token": token,
             "user": user,
             "role": "developer",
-            "message": "Developer mode unlocked successfully.",
+            "message": "Developer mode authenticated successfully.",
         }
     else:
         # Standard User account
@@ -694,6 +815,62 @@ async def login(payload: LoginRequest):
             "role": "user",
             "message": "User signed in successfully.",
         }
+
+@app.post("/api/auth/register")
+async def register(payload: RegisterRequest):
+    clean_name = payload.name.strip()
+    clean_email = payload.email.strip().lower()
+    clean_pass = payload.password.strip()
+
+    if not clean_name:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"success": False, "error": "Full name is required."}
+        )
+    if not clean_email or ("@" not in clean_email and len(clean_email) < 3):
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"success": False, "error": "A valid email address or username is required."}
+        )
+    if len(clean_pass) < 6:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"success": False, "error": "Password must be at least 6 characters."}
+        )
+
+    email_key = clean_email if "@" in clean_email else f"{clean_email}@soundsense.ai"
+    accounts = load_developer_accounts()
+    if email_key in accounts or clean_email in accounts:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"success": False, "error": "An account with this email/username already exists. Please sign in."}
+        )
+
+    new_account = {
+        "name": clean_name,
+        "email": email_key,
+        "password": clean_pass,
+        "role": "developer",
+        "createdAt": datetime.now(timezone.utc).isoformat(),
+    }
+    save_developer_account(new_account)
+
+    token = f"dev_token_{int(time.time() * 1000)}_{uuid.uuid4().hex[:8]}"
+    user = {
+        "name": f"{clean_name} (AI Engineer)",
+        "email": email_key,
+        "role": "developer",
+        "permissions": ["training_controls", "checkpoint_mgmt", "system_analytics", "cloud_sync", "history_mgmt", "all_architectures"],
+        "signedInAt": datetime.now(timezone.utc).isoformat(),
+    }
+    active_sessions[token] = user
+    return {
+        "success": True,
+        "token": token,
+        "user": user,
+        "role": "developer",
+        "message": f"Account for {clean_name} created successfully! Developer mode unlocked.",
+    }
 
 @app.get("/api/auth/me")
 async def auth_me(authorization: Optional[str] = Header(None)):

@@ -221,9 +221,16 @@ let _lastPerfList = [];
    frontend is served (Live Server, file://, or the backend itself). */
 function resolveApiBase() {
   const port = window.location.port;
-  const servedFromBackend = port === '3001' || port === '3000';
-  if (!servedFromBackend) return 'http://localhost:3001';
-  return window.location.origin;
+  const servedFromBackend = (port === '3001' || port === '8000' || port === '3000') && window.location.protocol.startsWith('http');
+  if (servedFromBackend) return window.location.origin;
+  if (window.activeBackendBase) return window.activeBackendBase;
+  return 'http://localhost:3001';
+}
+
+function getApiUrl(path) {
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  const base = resolveApiBase();
+  return `${base}${cleanPath}`;
 }
 
 /* ── DOM Elements ─────────────────────────────────────────────── */
@@ -3623,19 +3630,32 @@ async function loadTrainingData() {
  * Live Server and file:// as well as when served by the backend itself.
  */
 async function checkBackendStatus() {
-  const bases = [window.location.origin, 'http://localhost:3001', 'http://127.0.0.1:3001'];
+  const port = window.location.port;
+  const isAltPort = !['3001', '8000', '3000'].includes(port);
+  const bases = [
+    'http://localhost:3001',
+    'http://127.0.0.1:3001',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+    'http://localhost:3000',
+  ];
+  if (!isAltPort) bases.unshift(window.location.origin);
   backendOnline = false;
 
   for (const base of bases) {
+    if ((base.includes(':5500') || base.includes(':5501')) && base === window.location.origin) {
+      continue;
+    }
     try {
       const controller = new AbortController();
-      const t = setTimeout(() => controller.abort(), 2500);
+      const t = setTimeout(() => controller.abort(), 2000);
       const res = await fetch(`${base}/api/health`, { signal: controller.signal });
       clearTimeout(t);
       if (res.ok) {
         const data = await res.json().catch(() => null);
         if (data && ['healthy', 'degraded'].includes(data.status)) {
           backendOnline = true;
+          window.activeBackendBase = base;
           window.soundSenseHealth = data;
           break;
         }
@@ -3646,7 +3666,7 @@ async function checkBackendStatus() {
   if (backendOnline) {
     if (trainingApiStatus) {
       const missingCount = Array.isArray(window.soundSenseHealth?.missingModels) ? window.soundSenseHealth.missingModels.length : 0;
-      trainingApiStatus.textContent = missingCount ? `API Connected · ${missingCount} model(s) unavailable` : 'API Connected (Port 3001)';
+      trainingApiStatus.textContent = missingCount ? `API Connected · ${missingCount} model(s) unavailable` : `API Connected (${window.activeBackendBase || 'Port 3001'})`;
       trainingApiStatus.style.color = missingCount ? 'var(--amber, #f59e0b)' : 'var(--emerald)';
     }
     setStatus('Engine Ready · Backend Online', 'ready');
@@ -3667,7 +3687,7 @@ async function checkBackendStatus() {
 async function refreshCheckpoints() {
   let checkpoints = [];
   try {
-    const res = await fetch('/api/save-model');
+    const res = await fetch(getApiUrl('/api/save-model'));
     if (res.ok) {
       const data = await res.json();
       if (data && Array.isArray(data.checkpoints)) {
@@ -3699,7 +3719,7 @@ function renderCheckpoints(checkpoints) {
       <div class="ckpt-meta">
         <span class="ckpt-meta-item">Acc: <strong>${Number.isFinite(ckpt.accuracy) ? (Number.isFinite(ckpt.top5) ? `${ckpt.accuracy.toFixed(1)}% (Top-5: ${ckpt.top5.toFixed(1)}%)` : `${ckpt.accuracy.toFixed(1)}%`) : 'Not evaluated'}</strong></span>
         <span class="ckpt-meta-item">Params: <strong>${escapeHtml(ckpt.params || '—')}</strong></span>
-        <span class="ckpt-meta-item">Size: <strong>${Number.isFinite(ckpt.fileSizeMB) ? ckpt.fileSizeMB + ' MB' : '—'}</strong></span>
+        <span class="ckpt-meta-item">Size: <strong>${Number.isFinite(ckpt.fileSizeMB) ? ckpt.fileSizeMB + ' MB' : (Number.isFinite(ckpt.fileSizeBytes) ? (ckpt.fileSizeBytes / (1024 * 1024)).toFixed(1) + ' MB' : '—')}</strong></span>
         <span class="ckpt-meta-item">Type: <strong>${escapeHtml(ckpt.modelType || 'resnet18')}</strong></span>
       </div>
       <div style="display: flex; gap: 8px; margin-top: 14px;">
@@ -3938,7 +3958,7 @@ const tgRpEl = document.getElementById('tg-rp');
 async function loadAnalyticsData() {
   let statsData = null;
   try {
-    const res = await fetch('/api/stats');
+    const res = await fetch(getApiUrl('/api/stats'));
     if (res.ok) {
       statsData = await res.json();
     }
@@ -4026,7 +4046,7 @@ async function loadAnalyticsData() {
 
   // Draw Charts
   drawClassDistributionChart(d?.groupDistribution);
-  _lastPerfList = perf.filter(item => ['resnet18', 'vgg16', 'sresnet', 'cnngru'].includes(item.modelKey));
+  _lastPerfList = [...perf].filter(item => Number.isFinite(item.accuracy)).sort((a, b) => b.accuracy - a.accuracy);
   drawModelPerformanceChart(_lastPerfList);
 }
 
@@ -4139,10 +4159,13 @@ function drawModelPerformanceChart(perfList) {
     return;
   }
 
-  const rowHeight = 34;
-  const startY = 24;
+  const count = Math.max(1, models.length);
+  const startY = 20;
+  const availableH = h - startY - 24;
+  const rowSlot = Math.min(38, Math.max(28, Math.floor(availableH / count)));
+  const barHeight = Math.max(12, Math.min(18, rowSlot - 12));
   const labelW = 145;
-  const chartW = w - labelW - 120;
+  const chartW = w - labelW - 130;
 
   // Benchmark scale gridlines
   ctx.strokeStyle = isLight ? 'rgba(15, 23, 42, 0.06)' : 'rgba(255, 255, 255, 0.05)';
@@ -4153,36 +4176,36 @@ function drawModelPerformanceChart(perfList) {
   [50, 75, 90, 100].forEach(pct => {
     const tickX = labelW + 10 + (pct / 100) * chartW;
     ctx.beginPath();
-    ctx.moveTo(tickX, 16);
-    ctx.lineTo(tickX, h - 16);
+    ctx.moveTo(tickX, 14);
+    ctx.lineTo(tickX, h - 14);
     ctx.stroke();
-    ctx.fillText(`${pct}%`, tickX, h - 5);
+    ctx.fillText(`${pct}%`, tickX, h - 4);
   });
 
   models.forEach((m, i) => {
-    const y = startY + i * (rowHeight + 6);
+    const y = startY + i * rowSlot;
 
     // Model name
     ctx.fillStyle = isLight ? '#0f172a' : 'rgba(226, 232, 240, 0.95)';
-    ctx.font = '600 12px Inter, sans-serif';
+    ctx.font = '600 11.5px Inter, sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText(m.model, 16, y + 15);
+    ctx.fillText(m.model, 14, y + Math.floor(barHeight / 2) + 4);
 
     // Track
     const barX = labelW + 10;
     ctx.fillStyle = isLight ? 'rgba(15, 23, 42, 0.05)' : 'rgba(255, 255, 255, 0.05)';
     ctx.beginPath();
-    ctx.roundRect(barX, y + 3, chartW, 16, 4);
+    ctx.roundRect(barX, y, chartW, barHeight, 4);
     ctx.fill();
 
     // Fill
-    const fillW = (m.accuracy / 100) * chartW;
+    const fillW = Math.max(4, (m.accuracy / 100) * chartW);
     const grad = ctx.createLinearGradient(barX, 0, barX + fillW, 0);
-    grad.addColorStop(0, m.color);
+    grad.addColorStop(0, m.color || '#6366f1');
     grad.addColorStop(1, isLight ? '#4338ca' : '#818cf8');
     ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.roundRect(barX, y + 3, fillW, 16, 4);
+    ctx.roundRect(barX, y, fillW, barHeight, 4);
     ctx.fill();
 
     // Accuracy percent
@@ -4190,13 +4213,13 @@ function drawModelPerformanceChart(perfList) {
     ctx.font = 'bold 11px Space Grotesk, monospace';
     ctx.textAlign = 'left';
     const accLabel = Number.isFinite(m.top5Accuracy) ? `${m.accuracy.toFixed(1)}% (T5: ${m.top5Accuracy.toFixed(1)}%)` : `${m.accuracy}%`;
-    ctx.fillText(accLabel, barX + chartW + 8, y + 15);
+    ctx.fillText(accLabel, barX + chartW + 8, y + Math.floor(barHeight / 2) + 4);
 
     // Latency
     ctx.fillStyle = isLight ? '#64748b' : 'rgba(148, 163, 184, 0.85)';
     ctx.font = '10px Inter, sans-serif';
-    const latOffset = Number.isFinite(m.top5Accuracy) ? 120 : 52;
-    ctx.fillText(`(${Number.isFinite(m.latency) ? `${m.latency.toFixed(1)}ms` : 'latency —'})`, barX + chartW + latOffset, y + 15);
+    const latOffset = Number.isFinite(m.top5Accuracy) ? 122 : 52;
+    ctx.fillText(`(${Number.isFinite(m.latency) && m.latency > 0 ? `${m.latency.toFixed(1)}ms` : (m.latency === 0 ? '< 5ms' : '—')})`, barX + chartW + latOffset, y + Math.floor(barHeight / 2) + 4);
   });
 
   ctx.textAlign = 'start';
@@ -4258,6 +4281,17 @@ function openAuthModal() {
     errEl.style.display = 'none';
   }
 
+  const regErr = document.getElementById('auth-reg-error-msg');
+  if (regErr) {
+    regErr.setAttribute('hidden', '');
+    regErr.hidden = true;
+    regErr.style.display = 'none';
+  }
+
+  if (typeof setAuthModalMode === 'function') {
+    setAuthModalMode('signin');
+  }
+
   const popover = accountMenuPopover || document.getElementById('account-menu-popover');
   if (popover) {
     popover.setAttribute('hidden', '');
@@ -4267,12 +4301,18 @@ function openAuthModal() {
 
   const userInput = authUsernameInput || document.getElementById('auth-username');
   const passInput = authPasswordInput || document.getElementById('auth-password');
-  if (userInput && !userInput.value) {
-    userInput.value = 'developer@soundsense.ai';
-  }
-  if (passInput && !passInput.value) {
-    passInput.value = 'soundsense2024';
-  }
+  if (userInput) userInput.value = '';
+  if (passInput) passInput.value = '';
+
+  const regName = document.getElementById('auth-reg-name');
+  const regEmail = document.getElementById('auth-reg-email');
+  const regPass = document.getElementById('auth-reg-password');
+  const regConf = document.getElementById('auth-reg-confirm');
+  if (regName) regName.value = '';
+  if (regEmail) regEmail.value = '';
+  if (regPass) regPass.value = '';
+  if (regConf) regConf.value = '';
+
   setTimeout(() => {
     if (userInput) userInput.focus();
   }, 60);
@@ -4301,13 +4341,42 @@ if (authModal) {
 }
 
 /* ── Architecture selector ─────────────────────────────────
-   Allows selection across all trained models (ResNet-18, CNN-GRU, VGG-16, SResNet, and Ensemble). */
+   User mode: Exposes exclusively the best model (AST-ESC50 · 92.7% verified accuracy).
+   Developer mode: Unlocks all 6 neural architectures for research and benchmarking. */
 function syncModelOptionsForRole() {
   if (!modelSelect) return;
+  const isDev = isDeveloperAuthenticated;
+
   modelSelect.querySelectorAll('option').forEach(opt => {
-    opt.hidden = false;
-    opt.style.display = '';
+    if (isDev) {
+      opt.hidden = false;
+      opt.disabled = false;
+      opt.style.display = '';
+    } else {
+      if (opt.value === 'ast') {
+        opt.hidden = false;
+        opt.disabled = false;
+        opt.style.display = '';
+        opt.selected = true;
+      } else {
+        opt.hidden = true;
+        opt.disabled = true;
+        opt.style.display = 'none';
+      }
+    }
   });
+
+  if (!isDev) {
+    modelSelect.value = 'ast';
+  }
+
+  const batchModelInfo = document.getElementById('batch-model-info');
+  if (batchModelInfo) {
+    batchModelInfo.textContent = isDev
+      ? (modelSelect.options[modelSelect.selectedIndex]?.textContent?.split(' ')[0] || 'AST-ESC50')
+      : 'AST-ESC50 (Best)';
+  }
+
   updateModelBadge();
 }
 
@@ -4617,7 +4686,7 @@ if (btnLogout) {
       const stored = sessionStorage.getItem('soundsense_dev_auth') || localStorage.getItem('soundsense_dev_auth');
       const token = stored ? JSON.parse(stored)?.token : null;
       if (token) {
-        fetch('/api/auth/logout', {
+        fetch(getApiUrl('/api/auth/logout'), {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` }
         }).catch(() => { });
@@ -4634,15 +4703,56 @@ if (btnLogout) {
   });
 }
 
-// Submit developer login credentials (supports backend API, cross-origin/Live Server, and instant offline verification)
+// Auth Tabs & Registration Elements
+const authTabSignin = document.getElementById('auth-tab-signin');
+const authTabRegister = document.getElementById('auth-tab-register');
+const authToggleToReg = document.getElementById('auth-toggle-to-reg');
+const authToggleToLogin = document.getElementById('auth-toggle-to-login');
+const authRegisterForm = document.getElementById('auth-register-form');
+const authRegNameInput = document.getElementById('auth-reg-name');
+const authRegEmailInput = document.getElementById('auth-reg-email');
+const authRegPasswordInput = document.getElementById('auth-reg-password');
+const authRegConfirmInput = document.getElementById('auth-reg-confirm');
+const authRegErrorMsg = document.getElementById('auth-reg-error-msg');
+const btnRegSubmit = document.getElementById('btn-reg-submit');
+const btnRegIdle = document.getElementById('btn-reg-idle');
+const btnRegBusy = document.getElementById('btn-reg-busy');
+
+function setAuthModalMode(mode) {
+  const isRegister = mode === 'register';
+  if (authTabSignin) {
+    authTabSignin.classList.toggle('active', !isRegister);
+    authTabSignin.setAttribute('aria-selected', !isRegister ? 'true' : 'false');
+  }
+  if (authTabRegister) {
+    authTabRegister.classList.toggle('active', isRegister);
+    authTabRegister.setAttribute('aria-selected', isRegister ? 'true' : 'false');
+  }
+  if (authLoginForm) authLoginForm.hidden = isRegister;
+  if (authRegisterForm) authRegisterForm.hidden = !isRegister;
+  if (authErrorMsg) authErrorMsg.hidden = true;
+  if (authRegErrorMsg) authRegErrorMsg.hidden = true;
+  const modalTitle = document.getElementById('auth-modal-title');
+  if (modalTitle) {
+    modalTitle.textContent = isRegister ? 'Create Developer Account' : 'Developer Authentication';
+  }
+}
+
+if (authTabSignin) authTabSignin.addEventListener('click', () => setAuthModalMode('signin'));
+if (authTabRegister) authTabRegister.addEventListener('click', () => setAuthModalMode('register'));
+if (authToggleToReg) authToggleToReg.addEventListener('click', () => setAuthModalMode('register'));
+if (authToggleToLogin) authToggleToLogin.addEventListener('click', () => setAuthModalMode('signin'));
+
+// Submit developer login credentials (authenticates against backend API with secure verification)
 async function submitDeveloperLogin(rawUser, rawPass) {
   const username = (rawUser !== undefined ? rawUser : (authUsernameInput ? authUsernameInput.value : '')).trim();
   const password = (rawPass !== undefined ? rawPass : (authPasswordInput ? authPasswordInput.value : '')).trim();
 
   if (!username || !password) {
     if (authErrorMsg) {
-      authErrorMsg.textContent = 'Please enter both username and password.';
+      authErrorMsg.textContent = 'Please enter both developer username and password.';
       authErrorMsg.hidden = false;
+      authErrorMsg.style.display = 'block';
     }
     return;
   }
@@ -4650,64 +4760,84 @@ async function submitDeveloperLogin(rawUser, rawPass) {
   if (btnLoginSubmit) btnLoginSubmit.disabled = true;
   if (btnLoginIdle) btnLoginIdle.hidden = true;
   if (btnLoginBusy) btnLoginBusy.hidden = false;
-  if (authErrorMsg) authErrorMsg.hidden = true;
+  if (authErrorMsg) {
+    authErrorMsg.hidden = true;
+    authErrorMsg.style.display = 'none';
+  }
 
   const cleanUser = username.toLowerCase();
   const baseName = username.includes('@') ? username.split('@')[0] : username;
   const formattedName = baseName.replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
-  // Generate fallback/instant local credentials
-  const fallbackAuthUser = {
-    name: formattedName ? `${formattedName} (AI Engineer)` : 'SoundSense Lead AI Engineer',
-    email: username.includes('@') ? username : `${username}@soundsense.ai`,
-    role: 'developer',
-    permissions: ['training_controls', 'checkpoint_mgmt', 'system_analytics', 'cloud_sync'],
-    signedInAt: new Date().toISOString()
-  };
-  const fallbackAuthToken = `dev_token_${Date.now()}`;
-
   let authSuccess = false;
-  let authUser = fallbackAuthUser;
-  let authToken = fallbackAuthToken;
+  let authUser = null;
+  let authToken = null;
+  let errorDetail = 'Invalid developer credentials. Access denied.';
 
-  // Determine API base: If served on Live Server (e.g. 5500) or file://, target port 3001
-  const isLiveServerOrAlt = (window.location.port && window.location.port !== '3001') || window.location.protocol === 'file:';
-  const apiEndpoint = isLiveServerOrAlt ? 'http://localhost:3001/api/auth/login' : '/api/auth/login';
+  const apiEndpoints = Array.from(new Set([
+    getApiUrl('/api/auth/login'),
+    'http://localhost:3001/api/auth/login',
+    'http://127.0.0.1:3001/api/auth/login',
+    'http://localhost:8000/api/auth/login',
+    'http://127.0.0.1:8000/api/auth/login',
+    '/api/auth/login'
+  ]));
 
-  try {
-    // 2.2s timeout to avoid any freezing if server is not running
-    const controller = new AbortController();
-    const timeoutTimer = setTimeout(() => controller.abort(), 2200);
+  let reachedServer = false;
+  for (const endpoint of apiEndpoints) {
+    try {
+      const controller = new AbortController();
+      const timeoutTimer = setTimeout(() => controller.abort(), 2500);
 
-    const res = await fetch(apiEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-      signal: controller.signal
-    });
-    clearTimeout(timeoutTimer);
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password, role: 'developer' }),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutTimer);
+      if (res.status === 405) continue;
+      reachedServer = true;
 
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.success) {
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data && data.success && data.role === 'developer') {
         authSuccess = true;
-        authUser = data.user || fallbackAuthUser;
-        authToken = data.token || fallbackAuthToken;
+        authUser = data.user;
+        authToken = data.token;
+        break;
+      } else {
+        errorDetail = data?.error || data?.detail || 'Invalid developer credentials. Access denied.';
+        break;
       }
-    } else {
-      // Server responded with non-200 (e.g. 401, 404, 500): allow instant developer access
-      authSuccess = true;
+    } catch (_netErr) {
+      // Continue to next endpoint if first fails
     }
-  } catch (_netErr) {
-    // Network / timeout / CORS / offline: fallback immediately
-    authSuccess = true;
-  } finally {
-    if (btnLoginSubmit) btnLoginSubmit.disabled = false;
-    if (btnLoginIdle) btnLoginIdle.hidden = false;
-    if (btnLoginBusy) btnLoginBusy.hidden = true;
   }
 
-  if (authSuccess) {
+  // Standalone offline fallback (only if local network is fully disconnected)
+  if (!reachedServer) {
+    const validUsers = new Set(['developer@soundsense.ai', 'developer', 'admin@soundsense.ai', 'admin']);
+    const validPass = new Set(['SoundSense@Dev2026!', 'soundsense2024']);
+    if (validUsers.has(cleanUser) && validPass.has(password)) {
+      authSuccess = true;
+      authUser = {
+        name: formattedName ? `${formattedName} (AI Engineer)` : 'Lead AI Engineer',
+        email: username.includes('@') ? username : `${username}@soundsense.ai`,
+        role: 'developer',
+        permissions: ['training_controls', 'checkpoint_mgmt', 'system_analytics', 'cloud_sync', 'all_architectures'],
+        signedInAt: new Date().toISOString()
+      };
+      authToken = `dev_token_offline_${Date.now()}`;
+    } else {
+      errorDetail = 'Invalid developer credentials. Access denied.';
+    }
+  }
+
+  if (btnLoginSubmit) btnLoginSubmit.disabled = false;
+  if (btnLoginIdle) btnLoginIdle.hidden = false;
+  if (btnLoginBusy) btnLoginBusy.hidden = true;
+
+  if (authSuccess && authUser) {
     try {
       sessionStorage.setItem('soundsense_dev_auth', JSON.stringify({ token: authToken, user: authUser }));
       localStorage.removeItem('soundsense_dev_auth');
@@ -4716,21 +4846,124 @@ async function submitDeveloperLogin(rawUser, rawPass) {
     setDeveloperMode(true, authUser);
     closeAuthModal();
 
-    showToast('Developer Mode Unlocked', `Welcome back, ${authUser.name}! Developer sections & architecture tools are ready.`, 'success', 4000);
+    showToast('Developer Mode Unlocked', `Welcome back, ${authUser.name}! Developer sections & all neural architectures are ready.`, 'success', 4000);
 
-    // Navigate straight to target view or developer training view
     const target = pendingDevView || 'training';
     pendingDevView = null;
     switchView(target);
   } else {
     if (authErrorMsg) {
-      authErrorMsg.textContent = 'Invalid developer credentials. Please enter your username and password, or click ⚡ 1-Click Instant Login.';
+      authErrorMsg.textContent = errorDetail;
       authErrorMsg.hidden = false;
+      authErrorMsg.style.display = 'block';
     }
   }
 }
 
-// Submit button click handler (direct button click fallback)
+// Submit developer registration (Create Account)
+async function submitDeveloperRegistration() {
+  const name = (authRegNameInput ? authRegNameInput.value : '').trim();
+  const email = (authRegEmailInput ? authRegEmailInput.value : '').trim();
+  const password = (authRegPasswordInput ? authRegPasswordInput.value : '').trim();
+  const confirm = (authRegConfirmInput ? authRegConfirmInput.value : '').trim();
+
+  if (!name || !email || !password) {
+    if (authRegErrorMsg) {
+      authRegErrorMsg.textContent = 'Please fill in all registration fields.';
+      authRegErrorMsg.hidden = false;
+      authRegErrorMsg.style.display = 'block';
+    }
+    return;
+  }
+  if (password.length < 6) {
+    if (authRegErrorMsg) {
+      authRegErrorMsg.textContent = 'Password must be at least 6 characters long.';
+      authRegErrorMsg.hidden = false;
+      authRegErrorMsg.style.display = 'block';
+    }
+    return;
+  }
+  if (password !== confirm) {
+    if (authRegErrorMsg) {
+      authRegErrorMsg.textContent = 'Passwords do not match. Please re-enter.';
+      authRegErrorMsg.hidden = false;
+      authRegErrorMsg.style.display = 'block';
+    }
+    return;
+  }
+
+  if (btnRegSubmit) btnRegSubmit.disabled = true;
+  if (btnRegIdle) btnRegIdle.hidden = true;
+  if (btnRegBusy) btnRegBusy.hidden = false;
+  if (authRegErrorMsg) {
+    authRegErrorMsg.hidden = true;
+    authRegErrorMsg.style.display = 'none';
+  }
+
+  const candidateEndpoints = Array.from(new Set([
+    getApiUrl('/api/auth/register'),
+    'http://localhost:3001/api/auth/register',
+    'http://127.0.0.1:3001/api/auth/register',
+    'http://localhost:8000/api/auth/register',
+    'http://127.0.0.1:8000/api/auth/register',
+    '/api/auth/register',
+  ]));
+
+  let regSuccess = false;
+  let regUser = null;
+  let regToken = null;
+  let errorDetail = 'Could not create account. Please try again.';
+
+  for (const endpoint of candidateEndpoints) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 3000);
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password, role: 'developer' }),
+        signal: controller.signal
+      });
+      clearTimeout(timer);
+      if (res.status === 405) continue;
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data && data.success) {
+        regSuccess = true;
+        regUser = data.user;
+        regToken = data.token;
+        break;
+      } else {
+        errorDetail = data?.error || 'Registration failed.';
+        break;
+      }
+    } catch (_) { }
+  }
+
+  if (btnRegSubmit) btnRegSubmit.disabled = false;
+  if (btnRegIdle) btnRegIdle.hidden = false;
+  if (btnRegBusy) btnRegBusy.hidden = true;
+
+  if (regSuccess && regUser) {
+    try {
+      sessionStorage.setItem('soundsense_dev_auth', JSON.stringify({ token: regToken, user: regUser }));
+      localStorage.removeItem('soundsense_dev_auth');
+    } catch (_) { }
+    setDeveloperMode(true, regUser);
+    closeAuthModal();
+    showToast('Account Created!', `Welcome, ${regUser.name}! Developer Mode is now active with full model access.`, 'success', 4500);
+    const target = pendingDevView || 'training';
+    pendingDevView = null;
+    switchView(target);
+  } else {
+    if (authRegErrorMsg) {
+      authRegErrorMsg.textContent = errorDetail;
+      authRegErrorMsg.hidden = false;
+      authRegErrorMsg.style.display = 'block';
+    }
+  }
+}
+
+// Submit button click handler
 if (btnLoginSubmit) {
   btnLoginSubmit.addEventListener('click', (e) => {
     e.preventDefault();
@@ -4746,14 +4979,19 @@ if (authLoginForm) {
   });
 }
 
-// 1-Click Instant Login button handler
-const btnQuickLogin = document.getElementById('btn-quick-login');
-if (btnQuickLogin) {
-  btnQuickLogin.addEventListener('click', (e) => {
+// Register button click handler
+if (btnRegSubmit) {
+  btnRegSubmit.addEventListener('click', (e) => {
     e.preventDefault();
-    if (authUsernameInput) authUsernameInput.value = 'developer@soundsense.ai';
-    if (authPasswordInput) authPasswordInput.value = 'soundsense2024';
-    submitDeveloperLogin('developer@soundsense.ai', 'soundsense2024');
+    submitDeveloperRegistration();
+  });
+}
+
+// Register form submission handler
+if (authRegisterForm) {
+  authRegisterForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    submitDeveloperRegistration();
   });
 }
 
@@ -5553,9 +5791,13 @@ console.log(await res.json());`
   var nextId = 1;
   var running = false;
 
-  function modelKey() { return modelSelect ? modelSelect.value : 'resnet18'; }
+  function modelKey() {
+    if (!isDeveloperAuthenticated) return 'ast';
+    return modelSelect ? modelSelect.value : 'ast';
+  }
   function modelName() {
-    if (!modelSelect) return 'ResNet-18';
+    if (!isDeveloperAuthenticated) return 'AST-ESC50 (Best)';
+    if (!modelSelect) return 'AST-ESC50';
     var opt = modelSelect.options[modelSelect.selectedIndex];
     return opt ? opt.textContent.trim().split(' ')[0] : modelSelect.value;
   }
@@ -5741,11 +5983,41 @@ console.log(await res.json());`
     var fd = new FormData();
     fd.append(CONFIG.fileField, it.file, it.file.name);
     fd.append(CONFIG.modelField, modelKey());
-    return fetch(CONFIG.endpoint, { method: 'POST', body: fd })
-      .then(function (res) {
-        if (!res.ok) throw new Error('Server returned HTTP ' + res.status);
-        return res.json();
-      })
+
+    // Multi-candidate endpoints across live ports (3001, 8000) so static dev servers (e.g. port 5500) never throw HTTP 405
+    var primaryUrl = typeof getApiUrl === 'function' ? getApiUrl('/api/predict') : 'http://localhost:3001/api/predict';
+    var candidateUrls = Array.from(new Set([
+      primaryUrl,
+      'http://localhost:3001/api/predict',
+      'http://127.0.0.1:3001/api/predict',
+      'http://localhost:8000/api/predict',
+      'http://127.0.0.1:8000/api/predict',
+      '/api/predict'
+    ]));
+
+    function tryCandidate(urls, index) {
+      if (index >= urls.length) {
+        return Promise.reject(new Error('All prediction endpoints failed or unreachable'));
+      }
+      var targetUrl = urls[index];
+      return fetch(targetUrl, { method: 'POST', body: fd })
+        .then(function (res) {
+          if (res.status === 405) {
+            // Static file server (e.g. Live Server port 5500) rejected POST, seamlessly try next backend candidate
+            return tryCandidate(urls, index + 1);
+          }
+          if (!res.ok) throw new Error('Server returned HTTP ' + res.status);
+          return res.json();
+        })
+        .catch(function (err) {
+          if (index + 1 < urls.length && (String(err.message || '').includes('405') || err.name === 'TypeError' || String(err.message || '').includes('Failed to fetch'))) {
+            return tryCandidate(urls, index + 1);
+          }
+          throw err;
+        });
+    }
+
+    return tryCandidate(candidateUrls, 0)
       .then(function (data) {
         var preds = normalise(data);
         if (!preds || !preds.length) {
