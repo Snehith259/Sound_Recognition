@@ -22,6 +22,7 @@ Audio_Basics_HandsOn
 checkpoints/*.bin
 
 # Temp & user files
+cloudflared.exe
 uploads/*
 !uploads/.gitkeep
 *.tmp
