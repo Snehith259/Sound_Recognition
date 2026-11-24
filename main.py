@@ -224,24 +224,24 @@ async def predict(
     model: str = Form("ast"),
     threshold: Optional[float] = Form(None),
 ):
-    disallowed_exts = {".ogg", ".flac", ".m4a", ".aac"}
-    allowed_exts = {".wav", ".mp3", ".mpg", ".mpeg", ".webm"}
+    disallowed_exts = {".ogg", ".flac", ".m4a"}
+    allowed_exts = {".wav", ".mp3", ".mpg", ".mpeg", ".webm", ".aac"}
     file_ext = Path(audio.filename or "").suffix.lower()
     content_type = (audio.content_type or "").lower()
 
-    if file_ext in disallowed_exts or any(d in content_type for d in ["ogg", "flac", "m4a", "aac"]):
+    if file_ext in disallowed_exts or any(d in content_type for d in ["ogg", "flac", "m4a"]):
         raise HTTPException(
             status_code=400,
-            detail="OGG, FLAC, and M4A files are not accepted. Please upload WAV, MP3, or MPEG/MPG."
+            detail="OGG, FLAC, and M4A files are not accepted. Please upload WAV, MP3, MPEG, WebM, or AAC."
         )
 
     is_allowed_mime = (
-        content_type in {"audio/wav", "audio/x-wav", "audio/mp3", "audio/mpeg", "video/mpeg", "audio/webm", "application/octet-stream"}
-        or (content_type.startswith("audio/") and not any(d in content_type for d in ["ogg", "flac", "m4a", "aac"]))
+        content_type in {"audio/wav", "audio/x-wav", "audio/mp3", "audio/mpeg", "video/mpeg", "audio/webm", "audio/aac", "audio/aacp", "audio/x-aac", "application/octet-stream"}
+        or (content_type.startswith("audio/") and not any(d in content_type for d in ["ogg", "flac", "m4a"]))
     )
 
     if file_ext not in allowed_exts and not is_allowed_mime:
-        raise HTTPException(status_code=400, detail="Only WAV, MP3, and MPEG/MPG audio files are accepted")
+        raise HTTPException(status_code=400, detail="Only WAV, MP3, MPEG, WebM, and AAC audio files are accepted")
 
     stamp = int(time.time() * 1000)
     file_name = audio.filename or f"upload_{stamp}{file_ext or '.wav'}"
@@ -343,19 +343,19 @@ async def predict_batch(
 
     from Preproccesing.acoustic_inference import run_acoustic_inference
 
-    disallowed_exts = {".ogg", ".flac", ".m4a", ".aac"}
-    allowed_exts = {".wav", ".mp3", ".mpg", ".mpeg", ".webm"}
+    disallowed_exts = {".ogg", ".flac", ".m4a"}
+    allowed_exts = {".wav", ".mp3", ".mpg", ".mpeg", ".webm", ".aac"}
 
     results = []
     for file in audio:
         file_ext = Path(file.filename or "").suffix.lower()
         content_type = (file.content_type or "").lower()
 
-        if file_ext in disallowed_exts or any(d in content_type for d in ["ogg", "flac", "m4a", "aac"]):
+        if file_ext in disallowed_exts or any(d in content_type for d in ["ogg", "flac", "m4a"]):
             results.append({
                 "fileName": file.filename or "unknown",
                 "success": False,
-                "error": "Disallowed format (OGG/FLAC/M4A/AAC). Please use WAV, MP3, or MPEG/MPG."
+                "error": "Disallowed format (OGG/FLAC/M4A). Please use WAV, MP3, MPEG, WebM, or AAC."
             })
             continue
 

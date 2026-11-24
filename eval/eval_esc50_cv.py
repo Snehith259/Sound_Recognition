@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MODEL_CONFIG = {
     "resnet18": (ResNet18Transfer, "log_mel"),
     "vgg16": (VGG16Transfer, "log_mel"),
-    "sresnet": (SResNetFast, "mfcc"),
+    "sresnet": (SResNetFast, "log_mel"),
     "cnngru": (CNNGRUFast, "log_mel"),
 }
 

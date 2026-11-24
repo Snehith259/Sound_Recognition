@@ -36,7 +36,7 @@ CHECKPOINT_DIR = ROOT / "checkpoints"
 MODEL_CONFIG = {
     "resnet18": (ResNet18Transfer, "log_mel", "esc50_resnet18_v1.pt", True),
     "vgg16": (VGG16Transfer, "log_mel", "esc50_vgg16_v1.pt", True),
-    "sresnet": (SResNetFast, "mfcc", "esc50_sresnet_linear_v09.pt", False),
+    "sresnet": (SResNetFast, "log_mel", "esc50_sresnet_linear_v09.pt", True),
     "cnngru": (CNNGRUFast, "log_mel", "esc50_cnngru_recurrent_v08.pt", False),
 }
 

@@ -407,7 +407,7 @@ def load_model_checkpoint(model_name: str) -> Optional[Dict[str, Any]]:
     files = {
         "resnet18": ("esc50_resnet18_v1.pt", "log_mel"),
         "vgg16": ("esc50_vgg16_v1.pt", "log_mel"),
-        "sresnet": ("esc50_sresnet_linear_v09.pt", "mfcc"),
+        "sresnet": ("esc50_sresnet_linear_v09.pt", "log_mel"),
         "cnngru": ("esc50_cnngru_recurrent_v08.pt", "log_mel"),
     }
     filename, feat_type = files[matched_key]
@@ -415,17 +415,17 @@ def load_model_checkpoint(model_name: str) -> Optional[Dict[str, Any]]:
     if not ckpt_path.exists():
         return None
 
-    from Preproccesing.train_models import ResNet18Transfer, VGG16Transfer, SResNetFast, CNNGRUFast
+    from Preproccesing.train_models import ResNet18Transfer, VGG16Transfer, SResNetFast, CNNGRUFast, SResNetTransfer
     classes = {
         "resnet18": ResNet18Transfer,
         "vgg16": VGG16Transfer,
-        "sresnet": SResNetFast,
+        "sresnet": SResNetTransfer,
         "cnngru": CNNGRUFast,
     }
     data = torch.load(ckpt_path, map_location="cpu", weights_only=False)
     if "state_dict" not in data:
         raise RuntimeError(f"Checkpoint '{filename}' has no state_dict.")
-    if matched_key in {"resnet18", "vgg16"}:
+    if matched_key in {"resnet18", "vgg16", "sresnet"}:
         model = classes[matched_key](num_classes=50, pretrained=False)
     else:
         model = classes[matched_key](num_classes=50)
@@ -473,7 +473,7 @@ def load_audio_waveform(
                 try:
                     y, sr = librosa.load(io.BytesIO(audio_input), sr=target_sr, mono=True)
                 except Exception as err:
-                    raise ValueError("Audio could not be decoded as WAV, MP3, MPEG, or WebM.") from err
+                    raise ValueError("Audio could not be decoded as WAV, MP3, MPEG, WebM, or AAC.") from err
     else:
         # Load from file path
         try:
@@ -492,7 +492,7 @@ def load_audio_waveform(
                 try:
                     y, sr = librosa.load(str(audio_input), sr=target_sr, mono=True)
                 except Exception as err:
-                    raise ValueError("Audio could not be decoded as WAV, MP3, MPEG, or WebM.") from err
+                    raise ValueError("Audio could not be decoded as WAV, MP3, MPEG, WebM, or AAC.") from err
 
     y = np.asarray(y, dtype=np.float32)
 

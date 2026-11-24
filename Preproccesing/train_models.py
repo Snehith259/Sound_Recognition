@@ -148,33 +148,42 @@ class VGG16Transfer(nn.Module):
         return self.head(feats)
 
 
-class SResNetFast(nn.Module):
-    """Compact convolutional classifier for MFCC input (40, 216); it has no residual blocks."""
-    def __init__(self, num_classes: int = 50):
+class SResNetTransfer(nn.Module):
+    """Upgraded Squeezed Residual Network for 1-channel Log-Mel spectrograms.
+    Combines an ImageNet-pretrained Residual Backbone with a Squeezed Bottleneck Residual Head.
+    """
+    def __init__(self, in_channels: int = 1, num_classes: int = 50, pretrained: bool = True):
         super().__init__()
-        self.net = nn.Sequential(
-            nn.Conv2d(1, 32, 3, stride=1, padding=1, bias=False),
-            nn.BatchNorm2d(32),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(32, 64, 3, stride=2, padding=1, bias=False),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(64, 128, 3, stride=2, padding=1, bias=False),
-            nn.BatchNorm2d(128),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(128, 256, 3, stride=2, padding=1, bias=False),
-            nn.BatchNorm2d(256),
-            nn.ReLU(inplace=True),
+        weights = tv_models.ResNet18_Weights.IMAGENET1K_V1 if (pretrained and hasattr(tv_models, "ResNet18_Weights")) else None
+        base = tv_models.resnet18(weights=weights)
+
+        orig_conv = base.conv1.weight.data
+        new_conv = orig_conv.mean(dim=1, keepdim=True)
+        base.conv1 = nn.Conv2d(in_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        base.conv1.weight.data = new_conv
+
+        self.backbone = nn.Sequential(
+            base.conv1, base.bn1, base.relu, base.maxpool,
+            base.layer1, base.layer2, base.layer3, base.layer4,
             nn.AdaptiveAvgPool2d((1, 1)),
-            nn.Flatten(),
+            nn.Flatten()
+        )
+        self.head = nn.Sequential(
             nn.Dropout(0.3),
-            nn.Linear(256, 128),
-            nn.ReLU(inplace=True),
+            nn.Linear(512, 128),
+            nn.BatchNorm1d(128),
+            nn.SiLU(),
+            nn.Dropout(0.2),
             nn.Linear(128, num_classes)
         )
 
     def forward(self, x):
-        return self.net(x)
+        feats = self.backbone(x)
+        return self.head(feats)
+
+
+# Backward-compatible alias
+SResNetFast = SResNetTransfer
 
 
 class CNNGRUFast(nn.Module):
@@ -397,43 +406,50 @@ def train_and_export_all():
     results["vgg16"] = {**metrics, "latencyMs": lat_ms, "sizeMb": round(ckpt_path.stat().st_size/1e6, 2), "paramsM": round(param_count/1e6, 2)}
 
     # ══════════════════════════════════════════════════════════
-    # Model 3: SResNet (MFCC)
+    # Model 3: SResNet (Pretrained Squeezed Residual Network)
     # ══════════════════════════════════════════════════════════
-    print("\n[Step 4/5] Training SResNet (Linear MFCC)...", flush=True)
+    print("\n[Step 4/5] Training SResNet (Pretrained Squeezed Residual Log-Mel)...", flush=True)
     t0 = time.time()
-    sr_model = SResNetFast(num_classes=50)
-    opt = torch.optim.AdamW(sr_model.parameters(), lr=2e-3, weight_decay=1e-3)
-    crit = nn.CrossEntropyLoss(label_smoothing=0.1)
-    loader = DataLoader(TensorDataset(X_tr_mfcc, y_tr_mfcc), batch_size=32, shuffle=True)
+    sr_model = SResNetTransfer(num_classes=50, pretrained=True)
+
+    F_tr_sr = extract_features_batched(sr_model.backbone, X_tr_mel)
+    F_va_sr = extract_features_batched(sr_model.backbone, X_va_mel)
+    F_te_sr = extract_features_batched(sr_model.backbone, X_te_mel)
+
+    opt = torch.optim.AdamW(sr_model.head.parameters(), lr=2e-3, weight_decay=1e-3)
+    crit = nn.CrossEntropyLoss(label_smoothing=0.08)
+    sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=50)
+    loader = DataLoader(TensorDataset(F_tr_sr, y_tr_mel), batch_size=32, shuffle=True)
 
     best_va_acc = 0.0
-    best_state = None
-    for ep in range(30):
-        sr_model.train()
+    best_head = None
+    for ep in range(50):
+        sr_model.head.train()
         for bx, by in loader:
             opt.zero_grad()
-            loss = crit(sr_model(bx), by)
+            loss = crit(sr_model.head(bx), by)
             loss.backward()
             opt.step()
-        sr_model.eval()
+        sched.step()
+        sr_model.head.eval()
         with torch.no_grad():
-            va_preds = sr_model(X_va_mfcc).argmax(dim=1)
-            va_acc = (va_preds == y_va_mfcc).float().mean().item() * 100.0
+            va_preds = sr_model.head(F_va_sr).argmax(dim=1)
+            va_acc = (va_preds == y_va_mel).float().mean().item() * 100.0
             if va_acc > best_va_acc:
                 best_va_acc = va_acc
-                best_state = {k: v.clone() for k, v in sr_model.state_dict().items()}
+                best_head = {k: v.clone() for k, v in sr_model.head.state_dict().items()}
 
-    sr_model.load_state_dict(best_state)
+    sr_model.head.load_state_dict(best_head)
     sr_model.eval()
 
     with torch.no_grad():
         t_lat = time.time()
-        te_logits = sr_model(X_te_mfcc)
-        lat_ms = round((time.time() - t_lat) / len(X_te_mfcc) * 1000, 2)
-        va_logits = sr_model(X_va_mfcc)
+        te_logits = sr_model.head(F_te_sr)
+        lat_ms = round((time.time() - t_lat) / len(F_te_sr) * 1000, 2)
+        va_logits = sr_model.head(F_va_sr)
 
-    metrics = compute_metrics(te_logits, y_te_mfcc)
-    temp = calibrate_temperature(va_logits, y_va_mfcc)
+    metrics = compute_metrics(te_logits, y_te_mel)
+    temp = calibrate_temperature(va_logits, y_va_mel)
     elapsed = round(time.time() - t0, 1)
 
     ckpt_path = CHECKPOINTS_DIR / "esc50_sresnet_linear_v09.pt"
@@ -441,7 +457,7 @@ def train_and_export_all():
     torch.save({
         "format": "soundsense-v2",
         "model_name": "sresnet",
-        "feature_type": "mfcc",
+        "feature_type": "log_mel",
         "num_classes": 50,
         "temperature": temp,
         "parameters": param_count,

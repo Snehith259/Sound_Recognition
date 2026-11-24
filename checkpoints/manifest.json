@@ -23,8 +23,8 @@
     "sresnet": {
       "filename": "esc50_sresnet_linear_v09.pt",
       "available": true,
-      "sha256": "3c80a224274556e9c4c863f871f573916bc4cfdcbf4cbf245a0a24f141468cdd",
-      "sizeBytes": 1724753
+      "sha256": "aeaa85e9bc09eef0699698db20c995f3efb1931853f5f18f5f1701c2458ce22d",
+      "sizeBytes": 45054772
     },
     "cnngru": {
       "filename": "esc50_cnngru_recurrent_v08.pt",

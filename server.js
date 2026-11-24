@@ -58,16 +58,16 @@ const upload = multer({
   fileFilter: (_req, file, cb) => {
     const ext = path.extname(file.originalname || '').toLowerCase();
     const mime = (file.mimetype || '').toLowerCase();
-    const disallowedExts = /\.(ogg|flac|m4a|aac)$/i;
-    if (disallowedExts.test(ext) || mime.includes('ogg') || mime.includes('flac') || mime.includes('m4a') || mime.includes('aac')) {
-      return cb(new Error('OGG, FLAC, and M4A files are not accepted. Please upload WAV, MP3, or MPEG/MPG.'), false);
+    const disallowedExts = /\.(ogg|flac|m4a)$/i;
+    if (disallowedExts.test(ext) || mime.includes('ogg') || mime.includes('flac') || mime.includes('m4a')) {
+      return cb(new Error('OGG, FLAC, and M4A files are not accepted. Please upload WAV, MP3, MPEG, WebM, or AAC.'), false);
     }
-    const allowed = /\.(wav|mp3|mpg|mpeg|mpga|mpe|webm)$/i;
-    const allowedMimes = ['audio/wav', 'audio/x-wav', 'audio/mp3', 'audio/mpeg', 'video/mpeg', 'audio/webm'];
+    const allowed = /\.(wav|mp3|mpg|mpeg|mpga|mpe|webm|aac)$/i;
+    const allowedMimes = ['audio/wav', 'audio/x-wav', 'audio/mp3', 'audio/mpeg', 'video/mpeg', 'audio/webm', 'audio/aac', 'audio/aacp', 'audio/x-aac'];
     if (allowed.test(ext) || allowedMimes.includes(mime)) {
       cb(null, true);
     } else {
-      cb(new Error('Only WAV, MP3, and MPEG/MPG audio files are accepted'), false);
+      cb(new Error('Only WAV, MP3, MPEG, WebM, and AAC audio files are accepted'), false);
     }
   },
 });

@@ -1183,15 +1183,15 @@ function isAudioFile(file) {
   if (!file) return false;
   const name = (file.name || '').toLowerCase();
   // Disallow removed formats (OGG, FLAC, M4A)
-  if (/\.(ogg|flac|m4a|aac)$/i.test(name)) return false;
-  // Retain allowed audio formats: WAV, MP3, MPEG / MPG
-  if (/\.(wav|mp3|mpg|mpeg|mpga|mpe)$/i.test(name)) return true;
+  if (/\.(ogg|flac|m4a)$/i.test(name)) return false;
+  // Retain allowed audio formats: WAV, MP3, MPEG / MPG, WebM, AAC
+  if (/\.(wav|mp3|mpg|mpeg|mpga|mpe|webm|aac)$/i.test(name)) return true;
   if (file.type) {
     const type = file.type.toLowerCase();
-    if (type.includes('ogg') || type.includes('flac') || type.includes('m4a') || type.includes('mp4') || type.includes('aac')) {
+    if (type.includes('ogg') || type.includes('flac') || type.includes('m4a') || type.includes('mp4')) {
       return false;
     }
-    if (type === 'audio/wav' || type === 'audio/x-wav' || type === 'audio/mp3' || type === 'audio/mpeg' || type === 'video/mpeg') {
+    if (type === 'audio/wav' || type === 'audio/x-wav' || type === 'audio/mp3' || type === 'audio/mpeg' || type === 'video/mpeg' || type === 'audio/webm' || type === 'audio/aac' || type === 'audio/aacp' || type === 'audio/x-aac') {
       return true;
     }
   }
@@ -3697,7 +3697,7 @@ function renderCheckpoints(checkpoints) {
       <h3 class="ckpt-name">${escapeHtml(ckpt.name || 'Model Checkpoint')}</h3>
       <p class="ckpt-desc">${escapeHtml(ckpt.description || 'ESC-50 Deep Learning Model Checkpoint')}</p>
       <div class="ckpt-meta">
-        <span class="ckpt-meta-item">Acc: <strong>${Number.isFinite(ckpt.accuracy) ? ckpt.accuracy + '%' : 'Not evaluated'}</strong></span>
+        <span class="ckpt-meta-item">Acc: <strong>${Number.isFinite(ckpt.accuracy) ? (Number.isFinite(ckpt.top5) ? `${ckpt.accuracy.toFixed(1)}% (Top-5: ${ckpt.top5.toFixed(1)}%)` : `${ckpt.accuracy.toFixed(1)}%`) : 'Not evaluated'}</strong></span>
         <span class="ckpt-meta-item">Params: <strong>${escapeHtml(ckpt.params || '—')}</strong></span>
         <span class="ckpt-meta-item">Size: <strong>${Number.isFinite(ckpt.fileSizeMB) ? ckpt.fileSizeMB + ' MB' : '—'}</strong></span>
         <span class="ckpt-meta-item">Type: <strong>${escapeHtml(ckpt.modelType || 'resnet18')}</strong></span>
@@ -3974,9 +3974,14 @@ async function loadAnalyticsData() {
   for (const modelKey of Object.keys(MODEL_INFO)) {
     const item = perfByModel.get(modelKey);
     const accuracy = Number.isFinite(item?.accuracy) ? item.accuracy : null;
+    const top5 = Number.isFinite(item?.top5Accuracy) ? item.top5Accuracy : null;
     const accuracyText = accuracy == null ? 'Not evaluated' : `${accuracy.toFixed(1)}%`;
+    const fullAccuracyText = accuracy == null
+      ? 'Not evaluated'
+      : (top5 != null ? `${accuracy.toFixed(1)}% (Top-5: ${top5.toFixed(1)}%)` : `${accuracy.toFixed(1)}%`);
+
     document.querySelectorAll(`.m-val[data-model-key="${modelKey}"]`).forEach(el => {
-      el.textContent = accuracyText;
+      el.textContent = accuracy == null ? 'Not evaluated' : (top5 != null ? `${accuracy.toFixed(1)}% / ${top5.toFixed(1)}%` : `${accuracy.toFixed(1)}%`);
       delete el.dataset.raw;
     });
     const row = document.querySelector(`.perf-row[data-model-key="${modelKey}"]`);
@@ -3985,25 +3990,33 @@ async function loadAnalyticsData() {
       const fill = row.querySelector('.perf-fill');
       const label = row.querySelector('.perf-pct');
       if (fill) fill.dataset.w = accuracy == null ? '0' : String(accuracy);
-      if (label) label.textContent = accuracyText;
+      if (label) label.textContent = fullAccuracyText;
     }
     const tableRow = document.querySelector(`.spec-table tr[data-model-key="${modelKey}"]`);
     if (tableRow) {
       const accuracyCell = tableRow.querySelector('[data-model-metric="accuracy"]');
       const latencyCell = tableRow.querySelector('[data-model-metric="latency"]');
-      if (accuracyCell) accuracyCell.textContent = accuracyText;
+      if (accuracyCell) {
+        if (modelKey === 'ast') {
+          accuracyCell.innerHTML = `<strong class="col-highlight">${fullAccuracyText}</strong>`;
+        } else {
+          accuracyCell.textContent = fullAccuracyText;
+        }
+      }
       if (latencyCell) latencyCell.textContent = Number.isFinite(item?.latency) ? `${item.latency.toFixed(1)} ms` : '—';
     }
     const modelInfo = MODEL_INFO[modelKey];
-    modelInfo.accuracy = accuracyText;
-    modelInfo.latency = Number.isFinite(item?.latency) ? item.latency : null;
+    if (modelInfo) {
+      modelInfo.accuracy = fullAccuracyText;
+      modelInfo.latency = Number.isFinite(item?.latency) ? item.latency : null;
+    }
   }
   const perfChip = document.getElementById('perf-chip');
   if (perfChip) {
     const isCv = perf.some(item => String(item.evaluatedOn || '').toLowerCase().includes('cross-validation'));
     const astPerf = perfByModel.get('ast');
     perfChip.textContent = astPerf && Number.isFinite(astPerf.accuracy)
-      ? `AST deployed: ${astPerf.accuracy.toFixed(1)}% fold-1 test`
+      ? `AST deployed: ${astPerf.accuracy.toFixed(1)}% Top-1 (${astPerf.top5Accuracy ? astPerf.top5Accuracy.toFixed(1) + '% Top-5' : 'fold-1 test'})`
       : 'Awaiting evaluation report';
   }
 
@@ -4176,12 +4189,14 @@ function drawModelPerformanceChart(perfList) {
     ctx.fillStyle = isLight ? '#090d16' : '#ffffff';
     ctx.font = 'bold 11px Space Grotesk, monospace';
     ctx.textAlign = 'left';
-    ctx.fillText(`${m.accuracy}%`, barX + chartW + 8, y + 15);
+    const accLabel = Number.isFinite(m.top5Accuracy) ? `${m.accuracy.toFixed(1)}% (T5: ${m.top5Accuracy.toFixed(1)}%)` : `${m.accuracy}%`;
+    ctx.fillText(accLabel, barX + chartW + 8, y + 15);
 
     // Latency
     ctx.fillStyle = isLight ? '#64748b' : 'rgba(148, 163, 184, 0.85)';
     ctx.font = '10px Inter, sans-serif';
-    ctx.fillText(`(${Number.isFinite(m.latency) ? `${m.latency.toFixed(1)}ms` : 'latency —'})`, barX + chartW + 52, y + 15);
+    const latOffset = Number.isFinite(m.top5Accuracy) ? 120 : 52;
+    ctx.fillText(`(${Number.isFinite(m.latency) ? `${m.latency.toFixed(1)}ms` : 'latency —'})`, barX + chartW + latOffset, y + 15);
   });
 
   ctx.textAlign = 'start';
@@ -5553,11 +5568,11 @@ console.log(await res.json());`
   function isAllowedAudio(f) {
     if (!f) return false;
     var name = (f.name || '').toLowerCase();
-    if (/\.(ogg|flac|m4a|aac)$/i.test(name)) return false;
-    if (/\.(wav|mp3|mpg|mpeg|mpga|mpe|webm)$/i.test(name)) return true;
+    if (/\.(ogg|flac|m4a)$/i.test(name)) return false;
+    if (/\.(wav|mp3|mpg|mpeg|mpga|mpe|webm|aac)$/i.test(name)) return true;
     if (f.type) {
       var t = f.type.toLowerCase();
-      if (t.includes('ogg') || t.includes('flac') || t.includes('m4a') || t.includes('aac')) return false;
+      if (t.includes('ogg') || t.includes('flac') || t.includes('m4a')) return false;
       if (t.startsWith('audio/') || t.includes('mpeg')) return true;
     }
     return false;

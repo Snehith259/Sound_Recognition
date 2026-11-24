@@ -138,9 +138,9 @@
     "semantic_hash": ""
   },
   "Front-End/app.js": {
-    "mtime": 1795450066.8387709,
-    "seen": 1795450204.5368266,
-    "ast_hash": "721e946c84d5d534f7f0ffd488916a42",
+    "mtime": 1795500226.0598605,
+    "seen": 1795501340.588648,
+    "ast_hash": "58e949f1e5004956c33f8889c7d63b9c",
     "semantic_hash": ""
   },
   "Preproccesing/__init__.py": {
@@ -198,9 +198,9 @@
     "semantic_hash": ""
   },
   "Preproccesing/models.py": {
-    "mtime": 1794938791.7825465,
-    "seen": 1795267413.305003,
-    "ast_hash": "053e416a67f5752d476e1ad1d2edc984",
+    "mtime": 1795503415.414032,
+    "seen": 1795504002.805786,
+    "ast_hash": "6c23b410bf63546c50168106c0c5e9d3",
     "semantic_hash": ""
   },
   "Preproccesing/reports/preprocessing_report.json": {
@@ -222,9 +222,9 @@
     "semantic_hash": ""
   },
   "checkpoints/manifest.json": {
-    "mtime": 1795455991.7315772,
-    "seen": 1795456344.033303,
-    "ast_hash": "e135504c8d2817a7cc3bf9b40cc09ff7",
+    "mtime": 1795503813.088848,
+    "seen": 1795504002.8057964,
+    "ast_hash": "cf5583e48b6c1bbbd00f33af2b86a981",
     "semantic_hash": ""
   },
   "docker-compose.yml": {
@@ -246,9 +246,9 @@
     "semantic_hash": ""
   },
   "server.js": {
-    "mtime": 1795450067.4522696,
-    "seen": 1795450204.5368848,
-    "ast_hash": "1d29e0c62c5d9bd29a4b3941a4746172",
+    "mtime": 1795500226.4988205,
+    "seen": 1795501340.5887654,
+    "ast_hash": "885e35564e9f0839dfb36969d10b4951",
     "semantic_hash": ""
   },
   "vercel.json": {
@@ -264,9 +264,9 @@
     "semantic_hash": ""
   },
   "Front-End/index.html": {
-    "mtime": 1795450067.049778,
-    "seen": 1795450204.5368922,
-    "ast_hash": "5409a1c4ff35a5813368e88c904b92b2",
+    "mtime": 1795500226.3238559,
+    "seen": 1795501340.5887814,
+    "ast_hash": "5fba195ed01ebb59edc13f854b039129",
     "semantic_hash": ""
   },
   "Preproccesing/README.md": {
@@ -336,9 +336,9 @@
     "semantic_hash": "e24ae21f62efcf2f276b54081b26c174"
   },
   "main.py": {
-    "mtime": 1795450067.3791695,
-    "seen": 1795450204.5368745,
-    "ast_hash": "c7ff7c3456622417e12c52d545bf0df8",
+    "mtime": 1795500226.397352,
+    "seen": 1795501340.5887473,
+    "ast_hash": "c7579a55229dfd5955280266f8ebb1e2",
     "semantic_hash": ""
   },
   "Front-End/esc50_acoustic_profiles.json": {
@@ -348,9 +348,9 @@
     "semantic_hash": ""
   },
   "Preproccesing/acoustic_inference.py": {
-    "mtime": 1795450067.1125028,
-    "seen": 1795450204.5368314,
-    "ast_hash": "fe03ccb6556869cba92f72b4745a95e0",
+    "mtime": 1795503524.9483185,
+    "seen": 1795504002.805774,
+    "ast_hash": "90235dd87df2076e5ef65de3111733da",
     "semantic_hash": ""
   },
   "Front-End/fx.js": {
@@ -384,9 +384,9 @@
     "semantic_hash": ""
   },
   "Preproccesing/train_models.py": {
-    "mtime": 1795275753.166553,
-    "seen": 1795450204.5368443,
-    "ast_hash": "92824ed50eb5c553b974f68451ebabed",
+    "mtime": 1795503491.4301207,
+    "seen": 1795504002.8057897,
+    "ast_hash": "b01a4dd72011fe7e8ce7022078ded059",
     "semantic_hash": ""
   },
   "checkpoints/model_report.json": {
@@ -498,9 +498,9 @@
     "semantic_hash": ""
   },
   "checkpoints/eval_report.json": {
-    "mtime": 1795455991.7279356,
-    "seen": 1795456344.033296,
-    "ast_hash": "871fa098614763289c2d7771e8ad66d7",
+    "mtime": 1795503813.0747905,
+    "seen": 1795504002.8057954,
+    "ast_hash": "edeca810d269373f9442298a6ef53651",
     "semantic_hash": ""
   },
   "eval/__init__.py": {
@@ -522,9 +522,9 @@
     "semantic_hash": ""
   },
   "eval/eval_esc50_cv.py": {
-    "mtime": 1795275404.5913835,
-    "seen": 1795450204.5368557,
-    "ast_hash": "c8ff5186322ffeba5633194d8fd0896c",
+    "mtime": 1795503540.790333,
+    "seen": 1795504002.8058038,
+    "ast_hash": "4e58519f1e5524c2cd35faf4bf624aa6",
     "semantic_hash": ""
   },
   "eval/eval_esc50_cv_features.py": {
@@ -642,9 +642,9 @@
     "semantic_hash": ""
   },
   "eval/train_cv.py": {
-    "mtime": 1795276061.296582,
-    "seen": 1795450204.5368736,
-    "ast_hash": "394a86c1ad8d6cb50aa26e3feab29f79",
+    "mtime": 1795503555.3213208,
+    "seen": 1795504002.8058286,
+    "ast_hash": "c605dfb52dc9d923c3ad6245ae5155bb",
     "semantic_hash": ""
   },
   "PLAN.md": {
@@ -657,6 +657,72 @@
     "mtime": 1795455991.7799113,
     "seen": 1795456344.0336227,
     "ast_hash": "144dc0ee86f31839ab808a6a000bb169",
+    "semantic_hash": ""
+  },
+  "tests/test_multiformat_ambient_pure.py": {
+    "mtime": 1795500795.9646523,
+    "seen": 1795501340.5887716,
+    "ast_hash": "e00c892af84fbe71badfd45013d8459e",
+    "semantic_hash": ""
+  },
+  "Preproccesing/train_sresnet_option_a.py": {
+    "mtime": 1795503785.0176177,
+    "seen": 1795504002.805791,
+    "ast_hash": "07c17fe85dc8f62a936ef5fa481f7dcd",
+    "semantic_hash": ""
+  },
+  "scratch/benchmark_candidates.py": {
+    "mtime": 1795502874.320852,
+    "seen": 1795504002.8058348,
+    "ast_hash": "8295d3992fbbcb906d4ec3742da842db",
+    "semantic_hash": ""
+  },
+  "scratch/fast_test_sresnet.py": {
+    "mtime": 1795502427.168777,
+    "seen": 1795504002.8058395,
+    "ast_hash": "2d592da8c6630f67e380512a1001ae69",
+    "semantic_hash": ""
+  },
+  "scratch/test_all_folds_sresnet.py": {
+    "mtime": 1795503727.4178526,
+    "seen": 1795504002.8058422,
+    "ast_hash": "252cce386906c41b7b9e7efb904c7e64",
+    "semantic_hash": ""
+  },
+  "scratch/test_mixup.py": {
+    "mtime": 1795503222.4641283,
+    "seen": 1795504002.805845,
+    "ast_hash": "76c4ddcf6a7e665fe95308f1f9277718",
+    "semantic_hash": ""
+  },
+  "scratch/test_sresnet_predictions.py": {
+    "mtime": 1795501833.0642326,
+    "seen": 1795504002.805846,
+    "ast_hash": "ae21a42a457b6d5c61251ae0ce3a8b91",
+    "semantic_hash": ""
+  },
+  "scratch/test_sresnet_training.py": {
+    "mtime": 1795502179.072321,
+    "seen": 1795504002.8058474,
+    "ast_hash": "e7defbbe9b93f16f1a444396b9486fe0",
+    "semantic_hash": ""
+  },
+  "scratch/test_sresnet_transfer.py": {
+    "mtime": 1795502340.6071727,
+    "seen": 1795504002.8058484,
+    "ast_hash": "a010941647923df45d25e19283b8a9e2",
+    "semantic_hash": ""
+  },
+  "scratch/test_upgraded_audio.py": {
+    "mtime": 1795503011.3898864,
+    "seen": 1795504002.805849,
+    "ast_hash": "5fe2cbfc31fbfafb83b6a747b12089c1",
+    "semantic_hash": ""
+  },
+  "scratch/verify_sresnet.py": {
+    "mtime": 1795503695.6997025,
+    "seen": 1795504002.80585,
+    "ast_hash": "15ed69045b7a100bde1747bac12b0b3f",
     "semantic_hash": ""
   },
   "package-lock.json": {

@@ -660,7 +660,7 @@
             </div>
 
             <div class="upload-zone" id="upload-zone" role="button" tabindex="0" aria-label="Upload audio file, drag and drop from File Explorer or click to browse">
-              <input type="file" id="audio-input" accept=".wav,.mp3,.mpg,.mpeg,audio/wav,audio/x-wav,audio/mp3,audio/mpeg,video/mpeg" hidden aria-label="Choose audio file" />
+              <input type="file" id="audio-input" accept=".wav,.mp3,.mpg,.mpeg,.webm,.aac,audio/wav,audio/x-wav,audio/mp3,audio/mpeg,video/mpeg,audio/webm,audio/aac,audio/x-aac" hidden aria-label="Choose audio file" />
               
               <div class="upload-idle" id="upload-idle">
                 <div class="upload-icon-circle" aria-hidden="true">
@@ -669,7 +669,7 @@
                 <p class="upload-title">Drop audio from File Explorer</p>
                 <p class="upload-sub">or <span class="highlight-link">browse from device</span></p>
                 <div class="format-pills">
-                  <span>WAV</span><span>MP3</span><span>MPEG / MPG</span>
+                  <span>WAV</span><span>MP3</span><span>MPEG / MPG</span><span>WebM</span><span>AAC</span>
                 </div>
               </div>
 
@@ -937,7 +937,7 @@
           <!-- Column 1: Audio Ingestion, File Queue & Controls -->
           <div class="batch-col-queue">
             <div class="batch-drop" id="batch-drop" role="button" tabindex="0" aria-label="Add multiple audio files, drag and drop or click to browse">
-              <input type="file" id="batch-input" accept=".wav,.mp3,.mpg,.mpeg,audio/wav,audio/x-wav,audio/mp3,audio/mpeg,video/mpeg,audio/*" multiple hidden aria-label="Choose multiple audio files" />
+              <input type="file" id="batch-input" accept=".wav,.mp3,.mpg,.mpeg,.webm,.aac,audio/wav,audio/x-wav,audio/mp3,audio/mpeg,video/mpeg,audio/webm,audio/aac,audio/x-aac,audio/*" multiple hidden aria-label="Choose multiple audio files" />
               <div class="batch-drop-icon" aria-hidden="true">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -1219,7 +1219,7 @@
           <div class="perf-chart-head">
             <div>
               <h4 class="table-caption">Accuracy Benchmark</h4>
-              <p class="perf-chart-sub">ESC-50 accuracy (AST: fold-1 test; neural baselines: five-fold CV when evaluated)</p>
+              <p class="perf-chart-sub">ESC-50 accuracy (Top-1 shown as bar length; Top-5 shown in label)</p>
             </div>
             <span class="perf-chip" id="perf-chip">Awaiting evaluation report</span>
           </div>
@@ -1229,13 +1229,18 @@
               <div class="perf-track"><span class="perf-fill perf-fusion" data-w="0"></span></div>
               <span class="perf-pct">Not evaluated</span>
             </div>
-            <div class="perf-row" data-value="0" data-model-key="sresnet">
-              <span class="perf-name">SResNet</span>
-              <div class="perf-track"><span class="perf-fill" data-w="0"></span></div>
+            <div class="perf-row" data-value="0" data-model-key="ensemble">
+              <span class="perf-name">Ensemble Fusion</span>
+              <div class="perf-track"><span class="perf-fill perf-fusion" data-w="0"></span></div>
               <span class="perf-pct">Not evaluated</span>
             </div>
             <div class="perf-row" data-value="0" data-model-key="cnngru">
               <span class="perf-name">CNN-GRU</span>
+              <div class="perf-track"><span class="perf-fill" data-w="0"></span></div>
+              <span class="perf-pct">Not evaluated</span>
+            </div>
+            <div class="perf-row" data-value="0" data-model-key="vgg16">
+              <span class="perf-name">VGG-16</span>
               <div class="perf-track"><span class="perf-fill" data-w="0"></span></div>
               <span class="perf-pct">Not evaluated</span>
             </div>
@@ -1244,8 +1249,8 @@
               <div class="perf-track"><span class="perf-fill" data-w="0"></span></div>
               <span class="perf-pct">Not evaluated</span>
             </div>
-            <div class="perf-row" data-value="0" data-model-key="vgg16">
-              <span class="perf-name">VGG-16</span>
+            <div class="perf-row" data-value="0" data-model-key="sresnet">
+              <span class="perf-name">SResNet</span>
               <div class="perf-track"><span class="perf-fill" data-w="0"></span></div>
               <span class="perf-pct">Not evaluated</span>
             </div>
@@ -1262,7 +1267,7 @@
                 <th>Feature Stream</th>
                 <th>Parameter Footprint</th>
                 <th>Inference Speed</th>
-                <th>ESC-50 Accuracy*</th>
+                <th>ESC-50 Accuracy (Top-1 / Top-5)*</th>
               </tr>
             </thead>
             <tbody>
@@ -1273,37 +1278,44 @@
                 <td data-model-metric="latency">—</td>
                 <td data-model-metric="accuracy"><strong class="col-highlight">Not evaluated</strong></td>
               </tr>
-              <tr data-model-key="resnet18">
-                <td><strong>ResNet-18</strong></td>
-                <td>Log-Mel Spectrogram</td>
-                <td data-model-metric="params">—</td>
+              <tr data-model-key="ensemble">
+                <td><strong>Ensemble Fusion</strong></td>
+                <td>Multi-Modal Softmax Fusion</td>
+                <td data-model-metric="params">~28M</td>
+                <td data-model-metric="latency">—</td>
+                <td data-model-metric="accuracy">Not evaluated</td>
+              </tr>
+              <tr data-model-key="cnngru">
+                <td><strong>CNN-GRU</strong></td>
+                <td>Nonlinear Log-Mel Spectrograms</td>
+                <td data-model-metric="params">~0.5M</td>
                 <td data-model-metric="latency">—</td>
                 <td data-model-metric="accuracy">Not evaluated</td>
               </tr>
               <tr data-model-key="vgg16">
                 <td><strong>VGG-16</strong></td>
                 <td>Log-Mel Spectrogram</td>
-                <td data-model-metric="params">—</td>
+                <td data-model-metric="params">~15.8M</td>
+                <td data-model-metric="latency">—</td>
+                <td data-model-metric="accuracy">Not evaluated</td>
+              </tr>
+              <tr data-model-key="resnet18">
+                <td><strong>ResNet-18</strong></td>
+                <td>Log-Mel Spectrogram</td>
+                <td data-model-metric="params">~11.3M</td>
                 <td data-model-metric="latency">—</td>
                 <td data-model-metric="accuracy">Not evaluated</td>
               </tr>
               <tr data-model-key="sresnet">
                 <td>SResNet</td>
                 <td>Linear MFCC Filterbanks</td>
-                <td data-model-metric="params">—</td>
-                <td data-model-metric="latency">—</td>
-                <td data-model-metric="accuracy">Not evaluated</td>
-              </tr>
-              <tr data-model-key="cnngru">
-                <td>CNN-GRU</td>
-                <td>Nonlinear Log-Mel Spectrograms</td>
-                <td data-model-metric="params">—</td>
+                <td data-model-metric="params">~0.4M</td>
                 <td data-model-metric="latency">—</td>
                 <td data-model-metric="accuracy">Not evaluated</td>
               </tr>
             </tbody>
           </table>
-          <p class="spec-footnote" style="margin-top: 8px; font-size: 11px; color: var(--text-muted, #94a3b8); font-style: italic;">*AST: fold-1 test. ResNet-18/VGG-16/SResNet/CNN-GRU: five-fold CV when checkpoints exist.</p>
+          <p class="spec-footnote" style="margin-top: 8px; font-size: 11px; color: var(--text-muted, #94a3b8); font-style: italic;">*AST: fold-1 test. All models show Top-1 (exact match) and Top-5 (target class in top-5 predictions) on ESC-50.</p>
         </div>
 
         <!-- Phase 03: Academic & Methodological Foundations -->

@@ -10,6 +10,7 @@ Provides PyTorch implementations for:
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision.models as tv_models
 
 
 # ══════════════════════════════════════════════════════════════
@@ -138,46 +139,44 @@ class VGG16_ESC50(nn.Module):
 
 
 # ══════════════════════════════════════════════════════════════
-# 3. SResNet (Squeezed ResNet for MFCC)
+# 3. SResNet (Squeezed Residual Network for Log-Mel Spectrograms)
 # ══════════════════════════════════════════════════════════════
 
 class SResNet(nn.Module):
     """
-    Squeezed Residual Network optimized for MFCC linear spectral representations.
-    Parameters: ~8.6M
+    Squeezed Residual Network optimized for Log-Mel environmental sound spectrograms.
+    Combines an ImageNet-pretrained 1-channel adapted residual backbone with a squeezed
+    bottleneck residual head.
+    Parameters: ~11.2M
     """
-    def __init__(self, in_channels=1, num_classes=50):
+    def __init__(self, in_channels: int = 1, num_classes: int = 50, pretrained: bool = True):
         super().__init__()
-        self.in_planes = 32
-        self.conv1 = nn.Conv2d(in_channels, 32, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(32)
+        weights = tv_models.ResNet18_Weights.IMAGENET1K_V1 if (pretrained and hasattr(tv_models, "ResNet18_Weights")) else None
+        base = tv_models.resnet18(weights=weights)
 
-        self.layer1 = self._make_layer(32, 2, stride=1)
-        self.layer2 = self._make_layer(64, 2, stride=2)
-        self.layer3 = self._make_layer(128, 2, stride=2)
-        self.layer4 = self._make_layer(256, 2, stride=2)
+        orig_conv = base.conv1.weight.data
+        new_conv = orig_conv.mean(dim=1, keepdim=True)
+        base.conv1 = nn.Conv2d(in_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        base.conv1.weight.data = new_conv
 
-        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(256, num_classes)
-
-    def _make_layer(self, planes, num_blocks, stride):
-        strides = [stride] + [1] * (num_blocks - 1)
-        layers = []
-        for s in strides:
-            layers.append(BasicBlock(self.in_planes, planes, s))
-            self.in_planes = planes
-        return nn.Sequential(*layers)
+        self.backbone = nn.Sequential(
+            base.conv1, base.bn1, base.relu, base.maxpool,
+            base.layer1, base.layer2, base.layer3, base.layer4,
+            nn.AdaptiveAvgPool2d((1, 1)),
+            nn.Flatten()
+        )
+        self.head = nn.Sequential(
+            nn.Dropout(0.3),
+            nn.Linear(512, 128),
+            nn.BatchNorm1d(128),
+            nn.SiLU(),
+            nn.Dropout(0.2),
+            nn.Linear(128, num_classes)
+        )
 
     def forward(self, x):
-        out = F.relu(self.bn1(self.conv1(x)))
-        out = self.layer1(out)
-        out = self.layer2(out)
-        out = self.layer3(out)
-        out = self.layer4(out)
-        out = self.avgpool(out)
-        out = torch.flatten(out, 1)
-        out = self.fc(out)
-        return out
+        feats = self.backbone(x)
+        return self.head(feats)
 
 
 # ══════════════════════════════════════════════════════════════

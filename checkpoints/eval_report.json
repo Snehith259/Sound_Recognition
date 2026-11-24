@@ -2886,15 +2886,15 @@
       "checkpoint": {
         "filename": "esc50_sresnet_linear_v09.pt",
         "available": true,
-        "sha256": "3c80a224274556e9c4c863f871f573916bc4cfdcbf4cbf245a0a24f141468cdd",
-        "sizeBytes": 1724753
+        "sha256": "aeaa85e9bc09eef0699698db20c995f3efb1931853f5f18f5f1701c2458ce22d",
+        "sizeBytes": 45054772
       },
       "available": true,
       "metrics": {
-        "top1": 0.3467,
-        "top5": 0.7337,
-        "macroF1": 0.3375,
-        "latencyMs": 3.02
+        "top1": 0.7267,
+        "top5": 0.9167000000000001,
+        "macroF1": 0.7009000000000001,
+        "latencyMs": 0.0
       },
       "evaluation": "ESC-50 fold-1 test (diagnostic baseline; not five-fold CV)",
       "external": {
