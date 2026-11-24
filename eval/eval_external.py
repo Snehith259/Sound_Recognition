@@ -24,16 +24,32 @@ from eval.metrics import binary_ood_metrics, classification_metrics
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "eval" / "external_manifest.csv"
 REPORT_DIR = ROOT / "eval" / "reports"
-MODEL_NAMES = ["resnet18", "vgg16", "sresnet", "cnngru", "ensemble"]
+MODEL_NAMES = ["ast", "resnet18", "vgg16", "sresnet", "cnngru", "ensemble"]
 
 
 def _encode(audio_bytes: bytes, fmt: str) -> tuple[bytes, str, str]:
     if fmt == "wav":
         return audio_bytes, "audio/wav", ".wav"
-    output_format = "mp3" if fmt == "mp3" else "webm"
-    codec = "libmp3lame" if fmt == "mp3" else "libopus"
+    if fmt == "aac":
+        output_format = "adts"
+        codec = "aac"
+        mime = "audio/aac"
+        ext = ".aac"
+        sr = "22050"
+    elif fmt == "mp3":
+        output_format = "mp3"
+        codec = "libmp3lame"
+        mime = "audio/mpeg"
+        ext = ".mp3"
+        sr = "22050"
+    else:
+        output_format = "webm"
+        codec = "libopus"
+        mime = "audio/webm"
+        ext = ".webm"
+        sr = "48000"
     proc = subprocess.run(
-        ["ffmpeg", "-v", "error", "-i", "pipe:0", "-vn", "-ac", "1", "-ar", "22050", "-c:a", codec, "-b:a", "128k", "-f", output_format, "pipe:1"],
+        ["ffmpeg", "-v", "error", "-i", "pipe:0", "-vn", "-ac", "1", "-ar", sr, "-c:a", codec, "-b:a", "128k", "-f", output_format, "pipe:1"],
         input=audio_bytes,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -42,7 +58,7 @@ def _encode(audio_bytes: bytes, fmt: str) -> tuple[bytes, str, str]:
     )
     if proc.returncode != 0 or not proc.stdout:
         raise RuntimeError(f"Could not encode {fmt}: {proc.stderr.decode(errors='replace')[-300:]}")
-    return proc.stdout, "audio/mpeg" if fmt == "mp3" else "audio/webm", ".mp3" if fmt == "mp3" else ".webm"
+    return proc.stdout, mime, ext
 
 
 def _eval_model(row: dict[str, str], model: str, fmt: str, index: int, threshold: float | None) -> dict[str, Any]:
@@ -138,7 +154,7 @@ def run(split: str = "dev", models: list[str] | None = None, formats: list[str] 
         indices = np.sort(rng.choice(len(manifest), size=limit, replace=False))
         manifest = [manifest[int(index)] for index in indices]
     selected_models = models or MODEL_NAMES
-    selected_formats = formats or ["wav", "mp3", "webm"]
+    selected_formats = formats or ["wav", "mp3", "webm", "aac"]
     if split == "final":
         print("Running the held-out final split once; do not use these results to tune thresholds.")
 
@@ -175,7 +191,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--split", choices=["dev", "final"], default="dev")
     parser.add_argument("--models", nargs="+", choices=MODEL_NAMES)
-    parser.add_argument("--formats", nargs="+", choices=["wav", "mp3", "webm"], default=["wav", "mp3", "webm"])
+    parser.add_argument("--formats", nargs="+", choices=["wav", "mp3", "webm", "aac"], default=["wav", "mp3", "webm", "aac"])
     parser.add_argument("--threshold", type=float, default=0.5)
     parser.add_argument("--limit", type=int, help="Evaluate a deterministic representative subset")
     args = parser.parse_args()

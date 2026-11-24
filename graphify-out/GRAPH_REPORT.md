@@ -1,17 +1,17 @@
 # Graph Report - Sound_Recognition  (2026-11-24)
 
 ## Corpus Check
-- 102 files · ~133,130 words
+- 105 files · ~198,109 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 6020 file(s) not represented in the graph (top: .npy 5994, .csv 18, (none) 3)
 
 ## Summary
-- 1010 nodes · 1956 edges · 71 communities (43 shown, 28 thin omitted)
-- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 65 edges (avg confidence: 0.89)
+- 1013 nodes · 1967 edges · 62 communities (41 shown, 21 thin omitted)
+- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 61 edges (avg confidence: 0.88)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `acc35bfb`
+- Built from commit: `0d4d3488`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -32,7 +32,7 @@
 - Render Cloud Deployment Config
 - Docker Compose Service Orchestration
 - DMFF & Acoustic Feature Verification
-- typing
+- run_acoustic_inference
 - renderTrainingChart
 - Interactive Particle Visualizer
 - train_cv.py
@@ -57,40 +57,30 @@
 - dataset_loader.py
 - audio_processor.py
 - loadTaxonomyCategory
-- eval_signal_gates.py
+- test_online_sounds.py
 - test_system_integration.py
-- eval_robustness.py
+- Resample_files_SR.py
 - loadAnalyticsData
 - displayClassificationResults
-- json
-- evaluate_external
-- run
+- CNNGRUFast
 - numpy
-- verify_and_report.py
 - benchmark_all_models_multiformat.py
-- eval_esc50_cv.py
 - fast_test_sresnet.py
 - pathlib
 - download_checkpoints.py
 - test_mixup.py
 - ResNet18_ESC50
-- eval_external.py
 - time
-- get_audio_duration
-- VGG16Transfer
-- extract_features_batched
-- SqueezeNetAudio
-- onResize
 
 ## God Nodes (most connected - your core abstractions)
-1. `run_acoustic_inference()` - 41 edges
+1. `run_acoustic_inference()` - 43 edges
 2. `classification_metrics()` - 17 edges
 3. `loadAudioFile()` - 17 edges
 4. `SoundSense — Truthful High-Accuracy Recovery Plan` - 17 edges
-5. `load_model_checkpoint()` - 16 edges
-6. `extract_log_mel_spectrogram()` - 13 edges
-7. `switchView()` - 13 edges
-8. `model_status()` - 12 edges
+5. `extract_log_mel_spectrogram()` - 13 edges
+6. `switchView()` - 13 edges
+7. `model_status()` - 12 edges
+8. `load_model_checkpoint()` - 12 edges
 9. `train_model()` - 12 edges
 10. `load_audio_waveform()` - 11 edges
 
@@ -99,12 +89,12 @@
   PLAN.md → Preproccesing/acoustic_inference.py
 - `A7. Verification tests` --references--> `run_acoustic_inference()`  [INFERRED]
   PLAN.md → Preproccesing/acoustic_inference.py
-- `A3. Add a clean AST evaluator` --references--> `classification_metrics()`  [INFERRED]
-  PLAN.md → eval/metrics.py
-- `Mel Spectrogram Acoustic Heatmap` --conceptually_related_to--> `Dual-Modal Feature Fusion (DMFF)`  [INFERRED]
-  Audio_Basics_HandsOn/mel_spectrogram.png → Preproccesing/README.md
-- `MFCC Feature Representation Plot` --conceptually_related_to--> `Dual-Modal Feature Fusion (DMFF)`  [INFERRED]
-  Audio_Basics_HandsOn/mfcc_features.png → Preproccesing/README.md
+- `10. Ordered execution checklist` --references--> `run_acoustic_inference()`  [INFERRED]
+  PLAN.md → Preproccesing/acoustic_inference.py
+- `A2. Add the AST engine to `Preproccesing/acoustic_inference.py`` --references--> `run_acoustic_inference()`  [INFERRED]
+  PLAN.md → Preproccesing/acoustic_inference.py
+- `A5. Backend defaults and parity` --references--> `modelKey()`  [INFERRED]
+  PLAN.md → Front-End/app.js
 
 ## Import Cycles
 - 2-file cycle: `Preproccesing/__init__.py -> Preproccesing/dataset_splits.py -> Preproccesing/__init__.py`
@@ -119,7 +109,7 @@
 ## Hyperedges (group relationships)
 - **Dual-Modal Acoustic Processing Flow** — preproccesing_readme_dmff_architecture, preproccesing_readme_recurrence_plot, preproccesing_readme_paa_dimension, preproccesing_readme_esc50_dataset [EXTRACTED 0.95]
 
-## Communities (71 total, 28 thin omitted)
+## Communities (62 total, 21 thin omitted)
 
 ### Community 0 - "Front-End UI & State Controller"
 Cohesion: 0.01
@@ -150,8 +140,8 @@ Cohesion: 0.14
 Nodes (16): animateArchMetrics(), animateBenchmarkBars(), animateMetricValue(), closeAccountMenu(), closeAuthModal(), fitAccountMenuPopover(), initActiveView(), openAuthModal() (+8 more)
 
 ### Community 7 - "soundfile"
-Cohesion: 0.18
-Nodes (4): explore_audio(), list_audio_files(), resample_file(), split_audio()
+Cohesion: 0.14
+Nodes (4): explore_audio(), check_audio_durations(), get_audio_duration(), split_audio()
 
 ### Community 8 - "main.py"
 Cohesion: 0.06
@@ -181,13 +171,17 @@ Nodes (9): services, soundsense-app, build, container_name, environment, ports, 
 Cohesion: 0.29
 Nodes (7): Mel Spectrogram Acoustic Heatmap, MFCC Feature Representation Plot, Dual-Modal Feature Fusion (DMFF), ESC-50 Acoustic Dataset, Piecewise Aggregate Approximation (PAA), Threshold-Free Recurrence Plot (RP), Dual-Modal Verification Diagnostic Plot
 
-### Community 16 - "typing"
-Cohesion: 0.17
-Nodes (5): run(), binary_ood_metrics(), classification_metrics(), AcousticClassifierNet, get_acoustic_classifier()
+### Community 16 - "run_acoustic_inference"
+Cohesion: 0.05
+Nodes (33): check_format_parity(), evaluate_external(), evaluate_fold1(), get_git_commit(), wilson_interval(), evaluate(), _load_wav(), _encode() (+25 more)
 
 ### Community 17 - "renderTrainingChart"
 Cohesion: 0.67
 Nodes (3): drawCurve(), renderTrainingChart(), updateTrainingUI()
+
+### Community 18 - "Interactive Particle Visualizer"
+Cohesion: 0.38
+Nodes (3): debouncedResize(), NodeParticle, onResize()
 
 ### Community 19 - "train_cv.py"
 Cohesion: 0.15
@@ -222,40 +216,36 @@ Cohesion: 0.67
 Nodes (3): formatApiCode(), formatApiJson(), updateApiExplorer()
 
 ### Community 27 - "render"
-Cohesion: 0.13
-Nodes (19): addFiles(), animate(), classifyOne(), csvCell(), downloadCsv(), esc(), fmtSize(), isAllowedAudio() (+11 more)
+Cohesion: 0.12
+Nodes (20): addFiles(), animate(), classifyOne(), csvCell(), downloadCsv(), esc(), fmtSize(), isAllowedAudio() (+12 more)
 
 ### Community 33 - "drawFrame"
 Cohesion: 0.40
 Nodes (5): drawFrame(), loop(), readLevel(), resize(), roundRectPath()
 
 ### Community 36 - "acoustic_inference.py"
-Cohesion: 0.11
-Nodes (9): calibrate_temperature(), CNNGRUFast, compute_metrics(), extract_features_batched(), load_split_features(), ResNet18Transfer, SResNetTransfer, train_and_export_all() (+1 more)
+Cohesion: 0.10
+Nodes (10): calibrate_temperature(), compute_metrics(), extract_features_batched(), load_split_features(), ResNet18Transfer, SResNetTransfer, train_and_export_all(), VGG16Transfer (+2 more)
+
+### Community 37 - "os"
+Cohesion: 0.19
+Nodes (3): extract_mel_feature_vector(), cross_correlation_similarity(), extract_mel_sequence()
 
 ### Community 38 - "dataset_loader.py"
-Cohesion: 0.20
-Nodes (3): ESC50MultiModalDataset, get_dataloaders(), test_pytorch_dataloader()
+Cohesion: 0.13
+Nodes (4): ESC50MultiModalDataset, get_dataloaders(), test_pytorch_dataloader(), verify_feature_integrity()
 
 ### Community 39 - "audio_processor.py"
-Cohesion: 0.15
+Cohesion: 0.16
 Nodes (6): detect_active_segment(), load_and_resample(), peak_normalize(), piecewise_aggregate_approximation(), save_audio(), process_single_audio()
 
 ### Community 40 - "loadTaxonomyCategory"
 Cohesion: 0.33
 Nodes (5): encodeWAV(), generateSyntheticAudioBlob(), generateSyntheticAudioForCategory(), loadTaxonomyCategory(), renderTaxonomyGrid()
 
-### Community 41 - "eval_signal_gates.py"
-Cohesion: 0.18
-Nodes (6): _gate(), run(), compute_signal_metrics(), extract_acoustic_feature_vector(), load_audio_waveform(), _mlp_probabilities()
-
 ### Community 43 - "test_system_integration.py"
 Cohesion: 0.09
-Nodes (27): modelKey(), 10. Ordered execution checklist, 4. Plan A — deploy AST as the production model, A0. Preserve the current working tree, A1. Add a reproducible AST weight bootstrap, A2. Add the AST engine to `Preproccesing/acoustic_inference.py`, A3. Add a clean AST evaluator, A5. Backend defaults and parity (+19 more)
-
-### Community 44 - "eval_robustness.py"
-Cohesion: 0.43
-Nodes (4): run(), _snr_noise(), _variants(), _wav_bytes()
+Nodes (25): build_report(), complete_external(), _read(), _write_markdown(), write_report(), 10. Ordered execution checklist, 4. Plan A — deploy AST as the production model, A0. Preserve the current working tree (+17 more)
 
 ### Community 45 - "loadAnalyticsData"
 Cohesion: 0.50
@@ -265,53 +255,45 @@ Nodes (5): applyTheme(), drawClassDistributionChart(), drawModelPerformanceChart
 Cohesion: 0.50
 Nodes (4): animateCounter(), step(), displayClassificationResults(), easeOutQuad()
 
-### Community 49 - "json"
-Cohesion: 0.33
-Nodes (6): build_report(), complete_external(), _read(), _write_markdown(), write_report(), A4. Update `eval/report.py`
-
-### Community 50 - "evaluate_external"
-Cohesion: 0.26
-Nodes (5): check_format_parity(), evaluate_external(), evaluate_fold1(), get_git_commit(), wilson_interval()
-
 ### Community 56 - "benchmark_all_models_multiformat.py"
-Cohesion: 0.27
-Nodes (4): extract_mel_feature_vector(), ensure_test_corpus(), run_full_evaluation(), simulate_microphone_capture()
+Cohesion: 0.20
+Nodes (5): generate_feature_visualization(), ensure_test_corpus(), run_full_evaluation(), simulate_microphone_capture(), test_anti_faking_guarantee()
 
 ### Community 58 - "fast_test_sresnet.py"
 Cohesion: 0.12
 Nodes (3): run_batch_preprocessing(), SResNet, SResNetBackbone
 
 ### Community 59 - "pathlib"
-Cohesion: 0.15
-Nodes (4): extract_features(), SResNetAudio, test_model(), run_tests()
+Cohesion: 0.17
+Nodes (4): extract_features(), SqueezeNetAudio, SResNetAudio, test_model()
 
 ### Community 60 - "download_checkpoints.py"
-Cohesion: 0.27
+Cohesion: 0.33
 Nodes (3): download_ast_weights(), retrieve_cloud_weights(), _sha256()
 
-### Community 63 - "eval_external.py"
-Cohesion: 0.52
-Nodes (4): _encode(), _eval_model(), run(), _summarize()
+### Community 64 - "time"
+Cohesion: 0.24
+Nodes (3): build_test_suite(), run_multi_file_benchmark(), test_api_predict_concurrency()
 
 ## Knowledge Gaps
 - **14 isolated node(s):** `Piecewise Aggregate Approximation (PAA)`, `ESC-50 Acoustic Dataset`, `Mel Spectrogram Acoustic Heatmap`, `MFCC Feature Representation Plot`, `Dual-Modal Verification Diagnostic Plot` (+9 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 524 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **28 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **21 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `modelKey()` connect `test_system_integration.py` to `Front-End UI & State Controller`, `render`?**
-  _High betweenness centrality (0.264) - this node is a cross-community bridge._
+- **Why does `A5. Backend defaults and parity` connect `test_system_integration.py` to `render`?**
+  _High betweenness centrality (0.290) - this node is a cross-community bridge._
 - **Are the 6 inferred relationships involving `run_acoustic_inference()` (e.g. with `predict()` and `predict_batch()`) actually correct?**
   _`run_acoustic_inference()` has 6 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `Piecewise Aggregate Approximation (PAA)`, `ESC-50 Acoustic Dataset`, `Mel Spectrogram Acoustic Heatmap` to the rest of the system?**
   _14 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Front-End UI & State Controller` be split into smaller, more focused modules?**
   _Cohesion score 0.011111111111111112 - nodes in this community are weakly interconnected._
+- **Why does `modelKey()` connect `render` to `Front-End UI & State Controller`, `test_system_integration.py`?**
+  _High betweenness centrality (0.289) - this node is a cross-community bridge._
 - **Should `Audio Processing & Spectrogram Synthesis` be split into smaller, more focused modules?**
   _Cohesion score 0.12535612535612536 - nodes in this community are weakly interconnected._
 - **Should `models` be split into smaller, more focused modules?**
   _Cohesion score 0.06896551724137931 - nodes in this community are weakly interconnected._
-- **Should `Node.js Server & Package Dependencies` be split into smaller, more focused modules?**
-  _Cohesion score 0.05641025641025641 - nodes in this community are weakly interconnected._

@@ -699,11 +699,11 @@ def run_acoustic_inference(
     if metrics["rms"] < silence_rms_threshold:
         return _build_silence_result(metrics, model_name, t_start)
     if (
-        metrics["flatness_raw"] < 0.003
-        and metrics["spectral_peak_ratio"] > 0.25
+        metrics["flatness_raw"] < 0.0005
+        and metrics["spectral_peak_ratio"] > 0.45
         and metrics["dominant_frequency_frame_count"] >= 3
         and metrics["dominant_frequency_median_hz"] > 30.0
-        and metrics["dominant_frequency_spread_hz"] < 20.0
+        and metrics["dominant_frequency_spread_hz"] < 5.0
     ):
         return _build_tone_result(metrics, model_name, t_start)
 
@@ -770,11 +770,11 @@ def run_acoustic_inference(
         for idx in order[:5]
     ]
 
-    # Low softmax alone has not been validated as an OOD detector here. Keep it
-    # as a class score and let the user's confidence threshold flag uncertainty.
-    is_out_of_scope = False
+    below_thresh = (
+        top_prob < max(0.0, min(1.0, confidence_threshold))
+        if confidence_threshold is not None else False
+    )
     ood_score = float(1.0 - top_prob)
-
     elapsed_ms = round((time.time() - t_infer) * 1000, 1)
 
     result: Dict[str, Any] = {
@@ -787,23 +787,43 @@ def run_acoustic_inference(
         "classProbabilities": [float(p) for p in probs],
         "oodScore": round(max(0.0, min(1.0, ood_score)), 4),
         "confidenceType": confidence_type,
-        "belowConfidenceThreshold": (
-            top_prob < max(0.0, min(1.0, confidence_threshold))
-            if confidence_threshold is not None else False
-        ),
+        "belowConfidenceThreshold": below_thresh,
         "confidenceThreshold": (
             max(0.0, min(1.0, confidence_threshold))
             if confidence_threshold is not None else None
         ),
     }
 
-    result.update({
-        "isOutOfScope": False,
-        "category": ESC50_CATEGORIES[top_id],
-        "explanation": None,
-        "confidence": round(top_prob, 4),
-        "predictions": predictions,
-    })
+    if below_thresh:
+        ood_cat = {
+            "id": -1,
+            "name": "Not in ESC-50 Classes (Low Confidence)",
+            "emoji": "❓",
+            "group": "Out of Domain",
+            "description": (
+                f"Model confidence ({round(top_prob * 100, 1)}%) is below the requested "
+                f"threshold ({round(confidence_threshold * 100, 1)}%). Sound does not reliably match "
+                f"any ESC-50 category."
+            ),
+        }
+        result.update({
+            "isOutOfScope": True,
+            "category": ood_cat,
+            "explanation": ood_cat["description"],
+            "confidence": round(top_prob, 4),
+            "predictions": [
+                {"category": ood_cat, "confidence": round(top_prob, 4)},
+                *predictions[:4],
+            ],
+        })
+    else:
+        result.update({
+            "isOutOfScope": False,
+            "category": ESC50_CATEGORIES[top_id],
+            "explanation": None,
+            "confidence": round(top_prob, 4),
+            "predictions": predictions,
+        })
     return result
 
 

@@ -348,9 +348,9 @@
     "semantic_hash": ""
   },
   "Preproccesing/acoustic_inference.py": {
-    "mtime": 1795504070.5729108,
-    "seen": 1795504507.8020847,
-    "ast_hash": "90235dd87df2076e5ef65de3111733da",
+    "mtime": 1795505485.8065245,
+    "seen": 1795506274.2462227,
+    "ast_hash": "63d7fc9a44fc5d431c3c729d027306de",
     "semantic_hash": ""
   },
   "Front-End/fx.js": {
@@ -408,9 +408,9 @@
     "semantic_hash": ""
   },
   "scratch/online_sounds_benchmark.json": {
-    "mtime": 1795456289.714186,
-    "seen": 1795456344.0334907,
-    "ast_hash": "30c10f38d92d5b6a1f5c974a00f9b8ef",
+    "mtime": 1795506033.249338,
+    "seen": 1795506274.2462986,
+    "ast_hash": "069407c962a464b8645f3475ee403af5",
     "semantic_hash": ""
   },
   "scratch/test_file_types.py": {
@@ -420,9 +420,9 @@
     "semantic_hash": ""
   },
   "tests/test_online_sounds.py": {
-    "mtime": 1795450118.5801897,
-    "seen": 1795450204.536888,
-    "ast_hash": "2e2d45906370b684b4124d1fc61420f0",
+    "mtime": 1795505997.0645306,
+    "seen": 1795506274.246315,
+    "ast_hash": "05411eff0ad074fa171b68ad0acc4bab",
     "semantic_hash": ""
   },
   "scratch/online_sounds/audio_01.ogg": {
@@ -534,9 +534,9 @@
     "semantic_hash": ""
   },
   "eval/eval_external.py": {
-    "mtime": 1795274790.997548,
-    "seen": 1795450204.5368576,
-    "ast_hash": "8118c0ba1fd1a294711d36092bee214a",
+    "mtime": 1795506158.746607,
+    "seen": 1795506274.2462585,
+    "ast_hash": "7686b285bbc46f47fc124503a026cb17",
     "semantic_hash": ""
   },
   "eval/eval_legacy_mlp_external.py": {
@@ -558,9 +558,9 @@
     "semantic_hash": ""
   },
   "eval/eval_signal_gates.py": {
-    "mtime": 1795275821.1744938,
-    "seen": 1795450204.5368607,
-    "ast_hash": "c2bcc90df60af7dd15b02097828ccd64",
+    "mtime": 1795505498.487122,
+    "seen": 1795506274.2462637,
+    "ast_hash": "d9497b8b99f89712c4c53cf4cbddecc8",
     "semantic_hash": ""
   },
   "eval/fetch_ast.py": {
@@ -618,9 +618,9 @@
     "semantic_hash": ""
   },
   "eval/reports/external_dev.json": {
-    "mtime": 1795275725.1298428,
-    "seen": 1795450204.53687,
-    "ast_hash": "03f561de68908a4f36d790928aed8b72",
+    "mtime": 1795506105.7629428,
+    "seen": 1795506274.2462766,
+    "ast_hash": "6d9496b742accccbe84eda622eda335f",
     "semantic_hash": ""
   },
   "eval/reports/legacy_mlp_external_dev.json": {
@@ -636,9 +636,9 @@
     "semantic_hash": ""
   },
   "eval/reports/signal_gates_dev.json": {
-    "mtime": 1795276260.914163,
-    "seen": 1795450204.5368726,
-    "ast_hash": "b01a3b74f68351b2619a4455521bbdac",
+    "mtime": 1795505506.7164207,
+    "seen": 1795506274.2462804,
+    "ast_hash": "eaeafba760e9bb76e6a63be394da5c44",
     "semantic_hash": ""
   },
   "eval/train_cv.py": {
@@ -723,6 +723,24 @@
     "mtime": 1795503695.6997025,
     "seen": 1795504002.80585,
     "ast_hash": "15ed69045b7a100bde1747bac12b0b3f",
+    "semantic_hash": ""
+  },
+  "eval/reports/signal_gates_final.json": {
+    "mtime": 1795504819.19388,
+    "seen": 1795506274.246282,
+    "ast_hash": "e7cf1eb90386282b586d3c2740ae03a6",
+    "semantic_hash": ""
+  },
+  "scratch/eval_all_external.py": {
+    "mtime": 1795505009.5294073,
+    "seen": 1795506274.2462935,
+    "ast_hash": "fcabee1b645224da5b77575400d93940",
+    "semantic_hash": ""
+  },
+  "scratch/external_dataset_benchmark.json": {
+    "mtime": 1795505919.912964,
+    "seen": 1795506274.2462962,
+    "ast_hash": "38c7f9eb9efc884101d61f5d5a01dacb",
     "semantic_hash": ""
   },
   "package-lock.json": {

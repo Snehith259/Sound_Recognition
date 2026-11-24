@@ -18,10 +18,10 @@ from Preproccesing.acoustic_inference import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-TONE_FLATNESS_THRESHOLD = 0.003
-TONE_PEAK_RATIO_THRESHOLD = 0.25
+TONE_FLATNESS_THRESHOLD = 0.0005
+TONE_PEAK_RATIO_THRESHOLD = 0.45
 TONE_MIN_FREQUENCY_HZ = 30.0
-TONE_FREQUENCY_SPREAD_THRESHOLD_HZ = 20.0
+TONE_FREQUENCY_SPREAD_THRESHOLD_HZ = 5.0
 
 
 def _gate(audio: np.ndarray, sample_rate: int, label: str, source: str, in_scope: bool | None) -> dict[str, Any]:

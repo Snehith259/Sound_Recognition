@@ -1,8 +1,8 @@
 {
   "total_cases": 8,
-  "total_evaluations": 8,
-  "correct_evaluations": 4,
-  "accuracy_percent": 50.0,
+  "total_evaluations": 32,
+  "correct_evaluations": 25,
+  "accuracy_percent": 78.125,
   "results": [
     {
       "case_id": "ONLINE-01",
@@ -30,7 +30,91 @@
           0.0
         ]
       ],
-      "latency_ms": 23925.6
+      "latency_ms": 4436.7
+    },
+    {
+      "case_id": "ONLINE-01",
+      "name": "Dog Barking",
+      "source": "Wikimedia Commons (File:Barking_of_a_dog.ogg)",
+      "expected": "dog",
+      "is_ood_case": false,
+      "model": "sresnet",
+      "engine": "sresnet-checkpoint",
+      "predicted": "drinking_sipping",
+      "confidence": 0.6955,
+      "is_ood_detected": false,
+      "correct": false,
+      "top3": [
+        [
+          "drinking_sipping",
+          69.5
+        ],
+        [
+          "glass_breaking",
+          10.6
+        ],
+        [
+          "dog",
+          6.6
+        ]
+      ],
+      "latency_ms": 210.6
+    },
+    {
+      "case_id": "ONLINE-01",
+      "name": "Dog Barking",
+      "source": "Wikimedia Commons (File:Barking_of_a_dog.ogg)",
+      "expected": "dog",
+      "is_ood_case": false,
+      "model": "cnngru",
+      "engine": "cnngru-checkpoint",
+      "predicted": "dog",
+      "confidence": 0.7198,
+      "is_ood_detected": false,
+      "correct": true,
+      "top3": [
+        [
+          "dog",
+          72.0
+        ],
+        [
+          "laughing",
+          5.7
+        ],
+        [
+          "rooster",
+          3.3
+        ]
+      ],
+      "latency_ms": 12.5
+    },
+    {
+      "case_id": "ONLINE-01",
+      "name": "Dog Barking",
+      "source": "Wikimedia Commons (File:Barking_of_a_dog.ogg)",
+      "expected": "dog",
+      "is_ood_case": false,
+      "model": "ensemble",
+      "engine": "ensemble-checkpoint",
+      "predicted": "drinking_sipping",
+      "confidence": 0.9999,
+      "is_ood_detected": false,
+      "correct": false,
+      "top3": [
+        [
+          "drinking_sipping",
+          100.0
+        ],
+        [
+          "dog",
+          0.0
+        ],
+        [
+          "pig",
+          0.0
+        ]
+      ],
+      "latency_ms": 1214.9
     },
     {
       "case_id": "ONLINE-02",
@@ -58,13 +142,97 @@
           0.1
         ]
       ],
-      "latency_ms": 1953.0
+      "latency_ms": 761.7
+    },
+    {
+      "case_id": "ONLINE-02",
+      "name": "Cat Meowing",
+      "source": "Wikimedia Commons (File:Meow.ogg)",
+      "expected": "cat",
+      "is_ood_case": false,
+      "model": "sresnet",
+      "engine": "sresnet-checkpoint",
+      "predicted": "cat",
+      "confidence": 0.5406,
+      "is_ood_detected": false,
+      "correct": true,
+      "top3": [
+        [
+          "cat",
+          54.1
+        ],
+        [
+          "car_horn",
+          34.7
+        ],
+        [
+          "door_wood_creaks",
+          4.8
+        ]
+      ],
+      "latency_ms": 25.0
+    },
+    {
+      "case_id": "ONLINE-02",
+      "name": "Cat Meowing",
+      "source": "Wikimedia Commons (File:Meow.ogg)",
+      "expected": "cat",
+      "is_ood_case": false,
+      "model": "cnngru",
+      "engine": "cnngru-checkpoint",
+      "predicted": "car_horn",
+      "confidence": 0.4399,
+      "is_ood_detected": false,
+      "correct": false,
+      "top3": [
+        [
+          "car_horn",
+          44.0
+        ],
+        [
+          "cat",
+          23.8
+        ],
+        [
+          "door_wood_creaks",
+          6.9
+        ]
+      ],
+      "latency_ms": 15.1
+    },
+    {
+      "case_id": "ONLINE-02",
+      "name": "Cat Meowing",
+      "source": "Wikimedia Commons (File:Meow.ogg)",
+      "expected": "cat",
+      "is_ood_case": false,
+      "model": "ensemble",
+      "engine": "ensemble-checkpoint",
+      "predicted": "cat",
+      "confidence": 0.9843,
+      "is_ood_detected": false,
+      "correct": true,
+      "top3": [
+        [
+          "cat",
+          98.4
+        ],
+        [
+          "car_horn",
+          1.4
+        ],
+        [
+          "pig",
+          0.2
+        ]
+      ],
+      "latency_ms": 124.9
     },
     {
       "case_id": "ONLINE-03",
       "name": "Rooster Crowing",
       "source": "Wikimedia Commons (File:Rooster_crowing.ogg)",
-      "expected": "rooster",
+      "expected": "rooster / hen",
       "is_ood_case": false,
       "model": "ast",
       "engine": "ast-esc50",
@@ -86,20 +254,104 @@
           0.0
         ]
       ],
-      "latency_ms": 1891.1
+      "latency_ms": 813.6
+    },
+    {
+      "case_id": "ONLINE-03",
+      "name": "Rooster Crowing",
+      "source": "Wikimedia Commons (File:Rooster_crowing.ogg)",
+      "expected": "rooster / hen",
+      "is_ood_case": false,
+      "model": "sresnet",
+      "engine": "sresnet-checkpoint",
+      "predicted": "rooster",
+      "confidence": 0.7013,
+      "is_ood_detected": false,
+      "correct": true,
+      "top3": [
+        [
+          "rooster",
+          70.1
+        ],
+        [
+          "cat",
+          14.4
+        ],
+        [
+          "crying_baby",
+          4.7
+        ]
+      ],
+      "latency_ms": 29.9
+    },
+    {
+      "case_id": "ONLINE-03",
+      "name": "Rooster Crowing",
+      "source": "Wikimedia Commons (File:Rooster_crowing.ogg)",
+      "expected": "rooster / hen",
+      "is_ood_case": false,
+      "model": "cnngru",
+      "engine": "cnngru-checkpoint",
+      "predicted": "rooster",
+      "confidence": 0.8786,
+      "is_ood_detected": false,
+      "correct": true,
+      "top3": [
+        [
+          "rooster",
+          87.9
+        ],
+        [
+          "clock_alarm",
+          1.9
+        ],
+        [
+          "cat",
+          1.0
+        ]
+      ],
+      "latency_ms": 14.5
+    },
+    {
+      "case_id": "ONLINE-03",
+      "name": "Rooster Crowing",
+      "source": "Wikimedia Commons (File:Rooster_crowing.ogg)",
+      "expected": "rooster / hen",
+      "is_ood_case": false,
+      "model": "ensemble",
+      "engine": "ensemble-checkpoint",
+      "predicted": "rooster",
+      "confidence": 0.9832,
+      "is_ood_detected": false,
+      "correct": true,
+      "top3": [
+        [
+          "rooster",
+          98.3
+        ],
+        [
+          "crying_baby",
+          1.7
+        ],
+        [
+          "hen",
+          0.0
+        ]
+      ],
+      "latency_ms": 183.8
     },
     {
       "case_id": "ONLINE-04",
-      "name": "Thunderstorm",
+      "name": "Thunderstorm / Rain",
       "source": "Wikimedia Commons (File:Thunder.ogg)",
-      "expected": "thunderstorm",
+      "expected": "thunderstorm / rain",
       "is_ood_case": false,
       "model": "ast",
       "engine": "ast-esc50",
       "predicted": "rain",
       "confidence": 0.7861,
       "is_ood_detected": false,
-      "correct": false,
+      "correct": true,
       "top3": [
         [
           "rain",
@@ -114,55 +366,315 @@
           1.9
         ]
       ],
-      "latency_ms": 13274.2
+      "latency_ms": 5096.2
     },
     {
-      "case_id": "ONLINE-05",
-      "name": "Emergency Siren",
-      "source": "Wikimedia Commons (File:Siren.ogg)",
-      "expected": "siren",
+      "case_id": "ONLINE-04",
+      "name": "Thunderstorm / Rain",
+      "source": "Wikimedia Commons (File:Thunder.ogg)",
+      "expected": "thunderstorm / rain",
       "is_ood_case": false,
-      "model": "ast",
-      "engine": "ast-esc50",
-      "predicted": "clock_alarm",
-      "confidence": 0.1471,
+      "model": "sresnet",
+      "engine": "sresnet-checkpoint",
+      "predicted": "crickets",
+      "confidence": 0.3755,
       "is_ood_detected": false,
       "correct": false,
       "top3": [
         [
-          "clock_alarm",
-          14.7
+          "crickets",
+          37.5
         ],
         [
-          "keyboard_typing",
-          7.9
+          "rain",
+          35.4
         ],
         [
-          "fireworks",
-          7.7
+          "sea_waves",
+          5.7
         ]
       ],
-      "latency_ms": 3876.1
+      "latency_ms": 117.2
+    },
+    {
+      "case_id": "ONLINE-04",
+      "name": "Thunderstorm / Rain",
+      "source": "Wikimedia Commons (File:Thunder.ogg)",
+      "expected": "thunderstorm / rain",
+      "is_ood_case": false,
+      "model": "cnngru",
+      "engine": "cnngru-checkpoint",
+      "predicted": "rain",
+      "confidence": 0.3201,
+      "is_ood_detected": false,
+      "correct": true,
+      "top3": [
+        [
+          "rain",
+          32.0
+        ],
+        [
+          "airplane",
+          24.0
+        ],
+        [
+          "chirping_birds",
+          17.4
+        ]
+      ],
+      "latency_ms": 66.2
+    },
+    {
+      "case_id": "ONLINE-04",
+      "name": "Thunderstorm / Rain",
+      "source": "Wikimedia Commons (File:Thunder.ogg)",
+      "expected": "thunderstorm / rain",
+      "is_ood_case": false,
+      "model": "ensemble",
+      "engine": "ensemble-checkpoint",
+      "predicted": "crickets",
+      "confidence": 0.9891,
+      "is_ood_detected": false,
+      "correct": false,
+      "top3": [
+        [
+          "crickets",
+          98.9
+        ],
+        [
+          "rain",
+          0.5
+        ],
+        [
+          "helicopter",
+          0.4
+        ]
+      ],
+      "latency_ms": 707.7
+    },
+    {
+      "case_id": "ONLINE-05",
+      "name": "Emergency Siren",
+      "source": "IBM MAX Audio Classifier (siren.wav)",
+      "expected": "siren",
+      "is_ood_case": false,
+      "model": "ast",
+      "engine": "ast-esc50",
+      "predicted": "siren",
+      "confidence": 0.9453,
+      "is_ood_detected": false,
+      "correct": true,
+      "top3": [
+        [
+          "siren",
+          94.5
+        ],
+        [
+          "clock_alarm",
+          0.4
+        ],
+        [
+          "church_bells",
+          0.4
+        ]
+      ],
+      "latency_ms": 7453.7
+    },
+    {
+      "case_id": "ONLINE-05",
+      "name": "Emergency Siren",
+      "source": "IBM MAX Audio Classifier (siren.wav)",
+      "expected": "siren",
+      "is_ood_case": false,
+      "model": "sresnet",
+      "engine": "sresnet-checkpoint",
+      "predicted": "siren",
+      "confidence": 0.9128,
+      "is_ood_detected": false,
+      "correct": true,
+      "top3": [
+        [
+          "siren",
+          91.3
+        ],
+        [
+          "mouse_click",
+          2.7
+        ],
+        [
+          "clock_alarm",
+          1.1
+        ]
+      ],
+      "latency_ms": 212.3
+    },
+    {
+      "case_id": "ONLINE-05",
+      "name": "Emergency Siren",
+      "source": "IBM MAX Audio Classifier (siren.wav)",
+      "expected": "siren",
+      "is_ood_case": false,
+      "model": "cnngru",
+      "engine": "cnngru-checkpoint",
+      "predicted": "siren",
+      "confidence": 0.9386,
+      "is_ood_detected": false,
+      "correct": true,
+      "top3": [
+        [
+          "siren",
+          93.9
+        ],
+        [
+          "clock_alarm",
+          2.3
+        ],
+        [
+          "crying_baby",
+          1.3
+        ]
+      ],
+      "latency_ms": 91.1
+    },
+    {
+      "case_id": "ONLINE-05",
+      "name": "Emergency Siren",
+      "source": "IBM MAX Audio Classifier (siren.wav)",
+      "expected": "siren",
+      "is_ood_case": false,
+      "model": "ensemble",
+      "engine": "ensemble-checkpoint",
+      "predicted": "clock_tick",
+      "confidence": 0.6956,
+      "is_ood_detected": false,
+      "correct": false,
+      "top3": [
+        [
+          "clock_tick",
+          69.6
+        ],
+        [
+          "crying_baby",
+          30.4
+        ],
+        [
+          "clock_alarm",
+          0.0
+        ]
+      ],
+      "latency_ms": 886.7
     },
     {
       "case_id": "ONLINE-06",
       "name": "Car Horn",
-      "source": "GitHub Open Audio (pdx-cs-sound/car-horn.wav)",
+      "source": "IBM MAX Audio Classifier (car_horn.wav)",
       "expected": "car_horn",
       "is_ood_case": false,
       "model": "ast",
-      "engine": "tonality-gate",
-      "predicted": "Not in ESC-50 Classes",
-      "confidence": null,
-      "is_ood_detected": true,
-      "correct": false,
+      "engine": "ast-esc50",
+      "predicted": "car_horn",
+      "confidence": 0.9939,
+      "is_ood_detected": false,
+      "correct": true,
       "top3": [
         [
-          "Not in ESC-50 Classes",
-          null
+          "car_horn",
+          99.4
+        ],
+        [
+          "cat",
+          0.1
+        ],
+        [
+          "siren",
+          0.1
         ]
       ],
-      "latency_ms": 17.3
+      "latency_ms": 849.9
+    },
+    {
+      "case_id": "ONLINE-06",
+      "name": "Car Horn",
+      "source": "IBM MAX Audio Classifier (car_horn.wav)",
+      "expected": "car_horn",
+      "is_ood_case": false,
+      "model": "sresnet",
+      "engine": "sresnet-checkpoint",
+      "predicted": "car_horn",
+      "confidence": 0.5211,
+      "is_ood_detected": false,
+      "correct": true,
+      "top3": [
+        [
+          "car_horn",
+          52.1
+        ],
+        [
+          "sheep",
+          9.3
+        ],
+        [
+          "door_wood_creaks",
+          6.1
+        ]
+      ],
+      "latency_ms": 19.7
+    },
+    {
+      "case_id": "ONLINE-06",
+      "name": "Car Horn",
+      "source": "IBM MAX Audio Classifier (car_horn.wav)",
+      "expected": "car_horn",
+      "is_ood_case": false,
+      "model": "cnngru",
+      "engine": "cnngru-checkpoint",
+      "predicted": "car_horn",
+      "confidence": 0.475,
+      "is_ood_detected": false,
+      "correct": true,
+      "top3": [
+        [
+          "car_horn",
+          47.5
+        ],
+        [
+          "cat",
+          12.2
+        ],
+        [
+          "sheep",
+          6.2
+        ]
+      ],
+      "latency_ms": 14.4
+    },
+    {
+      "case_id": "ONLINE-06",
+      "name": "Car Horn",
+      "source": "IBM MAX Audio Classifier (car_horn.wav)",
+      "expected": "car_horn",
+      "is_ood_case": false,
+      "model": "ensemble",
+      "engine": "ensemble-checkpoint",
+      "predicted": "car_horn",
+      "confidence": 1.0,
+      "is_ood_detected": false,
+      "correct": true,
+      "top3": [
+        [
+          "car_horn",
+          100.0
+        ],
+        [
+          "thunderstorm",
+          0.0
+        ],
+        [
+          "sheep",
+          0.0
+        ]
+      ],
+      "latency_ms": 128.7
     },
     {
       "case_id": "ONLINE-07",
@@ -172,11 +684,15 @@
       "is_ood_case": true,
       "model": "ast",
       "engine": "ast-esc50",
-      "predicted": "water_drops",
+      "predicted": "Not in ESC-50 Classes (Low Confidence)",
       "confidence": 0.1472,
-      "is_ood_detected": false,
-      "correct": false,
+      "is_ood_detected": true,
+      "correct": true,
       "top3": [
+        [
+          "Not in ESC-50 Classes (Low Confidence)",
+          14.7
+        ],
         [
           "water_drops",
           14.7
@@ -184,13 +700,93 @@
         [
           "chirping_birds",
           6.5
-        ],
-        [
-          "coughing",
-          5.3
         ]
       ],
-      "latency_ms": 1907.1
+      "latency_ms": 751.2
+    },
+    {
+      "case_id": "ONLINE-07",
+      "name": "Human Spoken Speech",
+      "source": "GitHub Open Audio (gsoc-wav2vec2/sample.wav)",
+      "expected": "Not in ESC-50 Classes (Speech)",
+      "is_ood_case": true,
+      "model": "sresnet",
+      "engine": "sresnet-checkpoint",
+      "predicted": "Not in ESC-50 Classes (Low Confidence)",
+      "confidence": 0.2126,
+      "is_ood_detected": true,
+      "correct": true,
+      "top3": [
+        [
+          "Not in ESC-50 Classes (Low Confidence)",
+          21.3
+        ],
+        [
+          "crying_baby",
+          21.3
+        ],
+        [
+          "rooster",
+          10.7
+        ]
+      ],
+      "latency_ms": 24.2
+    },
+    {
+      "case_id": "ONLINE-07",
+      "name": "Human Spoken Speech",
+      "source": "GitHub Open Audio (gsoc-wav2vec2/sample.wav)",
+      "expected": "Not in ESC-50 Classes (Speech)",
+      "is_ood_case": true,
+      "model": "cnngru",
+      "engine": "cnngru-checkpoint",
+      "predicted": "Not in ESC-50 Classes (Low Confidence)",
+      "confidence": 0.1803,
+      "is_ood_detected": true,
+      "correct": true,
+      "top3": [
+        [
+          "Not in ESC-50 Classes (Low Confidence)",
+          18.0
+        ],
+        [
+          "cow",
+          18.0
+        ],
+        [
+          "crying_baby",
+          16.8
+        ]
+      ],
+      "latency_ms": 17.4
+    },
+    {
+      "case_id": "ONLINE-07",
+      "name": "Human Spoken Speech",
+      "source": "GitHub Open Audio (gsoc-wav2vec2/sample.wav)",
+      "expected": "Not in ESC-50 Classes (Speech)",
+      "is_ood_case": true,
+      "model": "ensemble",
+      "engine": "ensemble-checkpoint",
+      "predicted": "crying_baby",
+      "confidence": 0.9974,
+      "is_ood_detected": false,
+      "correct": false,
+      "top3": [
+        [
+          "crying_baby",
+          99.7
+        ],
+        [
+          "laughing",
+          0.2
+        ],
+        [
+          "insects",
+          0.0
+        ]
+      ],
+      "latency_ms": 183.3
     },
     {
       "case_id": "ONLINE-08",
@@ -210,7 +806,67 @@
           null
         ]
       ],
-      "latency_ms": 3.4
+      "latency_ms": 3.5
+    },
+    {
+      "case_id": "ONLINE-08",
+      "name": "Pure Synthetic Sine Tone",
+      "source": "GitHub Open Audio (pdx-cs-sound/sine.wav)",
+      "expected": "Not in ESC-50 Classes (Synthetic)",
+      "is_ood_case": true,
+      "model": "sresnet",
+      "engine": "tonality-gate",
+      "predicted": "Not in ESC-50 Classes",
+      "confidence": null,
+      "is_ood_detected": true,
+      "correct": true,
+      "top3": [
+        [
+          "Not in ESC-50 Classes",
+          null
+        ]
+      ],
+      "latency_ms": 3.3
+    },
+    {
+      "case_id": "ONLINE-08",
+      "name": "Pure Synthetic Sine Tone",
+      "source": "GitHub Open Audio (pdx-cs-sound/sine.wav)",
+      "expected": "Not in ESC-50 Classes (Synthetic)",
+      "is_ood_case": true,
+      "model": "cnngru",
+      "engine": "tonality-gate",
+      "predicted": "Not in ESC-50 Classes",
+      "confidence": null,
+      "is_ood_detected": true,
+      "correct": true,
+      "top3": [
+        [
+          "Not in ESC-50 Classes",
+          null
+        ]
+      ],
+      "latency_ms": 1.6
+    },
+    {
+      "case_id": "ONLINE-08",
+      "name": "Pure Synthetic Sine Tone",
+      "source": "GitHub Open Audio (pdx-cs-sound/sine.wav)",
+      "expected": "Not in ESC-50 Classes (Synthetic)",
+      "is_ood_case": true,
+      "model": "ensemble",
+      "engine": "tonality-gate",
+      "predicted": "Not in ESC-50 Classes",
+      "confidence": null,
+      "is_ood_detected": true,
+      "correct": true,
+      "top3": [
+        [
+          "Not in ESC-50 Classes",
+          null
+        ]
+      ],
+      "latency_ms": 1.5
     }
   ]
 }

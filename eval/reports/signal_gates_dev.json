@@ -1,11 +1,11 @@
 {
-  "createdAt": "2026-11-21T15:51:00.916787+00:00",
+  "createdAt": "2026-11-24T07:31:46.716440+00:00",
   "split": "dev",
   "silenceThresholdDbfs": -58.0,
-  "toneFlatnessThreshold": 0.003,
-  "toneSpectralPeakRatioThreshold": 0.25,
+  "toneFlatnessThreshold": 0.0005,
+  "toneSpectralPeakRatioThreshold": 0.45,
   "toneMinimumFrequencyHz": 30.0,
-  "toneFrequencySpreadThresholdHz": 20.0,
+  "toneFrequencySpreadThresholdHz": 5.0,
   "externalSummary": {
     "n": 69,
     "gateCounts": {

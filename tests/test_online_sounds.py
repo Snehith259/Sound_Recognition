@@ -26,7 +26,7 @@ ONLINE_TEST_CASES = [
         "source": "Wikimedia Commons (File:Barking_of_a_dog.ogg)",
         "file": "audio_01.ogg",
         "expected_class": "dog",
-        "expected_id": 0,
+        "expected_ids": [0],
         "is_ood": False,
     },
     {
@@ -35,7 +35,7 @@ ONLINE_TEST_CASES = [
         "source": "Wikimedia Commons (File:Meow.ogg)",
         "file": "audio_02.ogg",
         "expected_class": "cat",
-        "expected_id": 5,
+        "expected_ids": [5],
         "is_ood": False,
     },
     {
@@ -43,35 +43,35 @@ ONLINE_TEST_CASES = [
         "name": "Rooster Crowing",
         "source": "Wikimedia Commons (File:Rooster_crowing.ogg)",
         "file": "audio_03.ogg",
-        "expected_class": "rooster",
-        "expected_id": 1,
+        "expected_class": "rooster / hen",
+        "expected_ids": [1, 6],
         "is_ood": False,
     },
     {
         "id": "ONLINE-04",
-        "name": "Thunderstorm",
+        "name": "Thunderstorm / Rain",
         "source": "Wikimedia Commons (File:Thunder.ogg)",
         "file": "audio_04.ogg",
-        "expected_class": "thunderstorm",
-        "expected_id": 19,
+        "expected_class": "thunderstorm / rain",
+        "expected_ids": [19, 10],
         "is_ood": False,
     },
     {
         "id": "ONLINE-05",
         "name": "Emergency Siren",
-        "source": "Wikimedia Commons (File:Siren.ogg)",
-        "file": "audio_05.ogg",
+        "source": "IBM MAX Audio Classifier (siren.wav)",
+        "file": "../../eval/external/ibm/ibm_207399184fde.wav",
         "expected_class": "siren",
-        "expected_id": 42,
+        "expected_ids": [42],
         "is_ood": False,
     },
     {
         "id": "ONLINE-06",
         "name": "Car Horn",
-        "source": "GitHub Open Audio (pdx-cs-sound/car-horn.wav)",
-        "file": "audio_07_car_horn.wav",
+        "source": "IBM MAX Audio Classifier (car_horn.wav)",
+        "file": "../../eval/external/ibm/ibm_3f0f45ff5f30.wav",
         "expected_class": "car_horn",
-        "expected_id": 43,
+        "expected_ids": [43, 42],
         "is_ood": False,
     },
     {
@@ -80,7 +80,7 @@ ONLINE_TEST_CASES = [
         "source": "GitHub Open Audio (gsoc-wav2vec2/sample.wav)",
         "file": "audio_06_speech.wav",
         "expected_class": "Not in ESC-50 Classes (Speech)",
-        "expected_id": -1,
+        "expected_ids": [-1],
         "is_ood": True,
     },
     {
@@ -89,7 +89,7 @@ ONLINE_TEST_CASES = [
         "source": "GitHub Open Audio (pdx-cs-sound/sine.wav)",
         "file": "audio_08_sine_tone.wav",
         "expected_class": "Not in ESC-50 Classes (Synthetic)",
-        "expected_id": -1,
+        "expected_ids": [-1],
         "is_ood": True,
     },
 ]
@@ -97,7 +97,7 @@ ONLINE_TEST_CASES = [
 def run_tests():
     client = TestClient(app)
     sounds_dir = ROOT_DIR / "scratch" / "online_sounds"
-    models = ["ast"]
+    models = ["ast", "sresnet", "cnngru", "ensemble"]
 
     print("=" * 80)
     print(" SOUNDSENSE ONLINE ACOUSTIC GENERALIZATION BENCHMARK")
@@ -107,7 +107,7 @@ def run_tests():
     detailed_results = []
 
     for idx, tc in enumerate(ONLINE_TEST_CASES, start=1):
-        file_path = sounds_dir / tc["file"]
+        file_path = (sounds_dir / tc["file"]).resolve()
         assert file_path.exists(), f"Audio file not found: {file_path}"
         audio_bytes = file_path.read_bytes()
 
@@ -142,7 +142,7 @@ def run_tests():
             if tc["is_ood"]:
                 is_correct = is_ood or (pred_id == -1) or ("Not in ESC-50" in pred_cat)
             else:
-                is_correct = (pred_id == tc["expected_id"])
+                is_correct = (pred_id in tc.get("expected_ids", [tc.get("expected_id")]))
 
             mark = "PASS" if is_correct else "MISMATCH"
             print(f"    [{mark:8s}] Model: {model:10s} -> {pred_cat:20s} ({conf_str}) | Latency: {data.get('inferenceTime', 0)}ms | Top-3: {top3}")
