@@ -19,5 +19,12 @@
     "password": "NeuralDevSecret2026!",
     "role": "developer",
     "createdAt": "2026-11-24T08:38:30.960721+00:00"
+  },
+  "trivikram@gmail.com": {
+    "name": "Viction",
+    "email": "trivikram@gmail.com",
+    "password": "soundsense",
+    "role": "developer",
+    "createdAt": "2026-11-24T10:58:49.046213+00:00"
   }
 }
