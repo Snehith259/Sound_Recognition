@@ -46,6 +46,8 @@ scratch/multiformat_corpus/
 # Graphify caches
 graphify-out/cache/
 graphify-out/2026-*/
+graphify-out/*.lock
+*.lock
 
 # Cloudflare tunnel binary
 cloudflared.exe
