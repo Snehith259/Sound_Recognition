@@ -25,7 +25,7 @@ WORKDIR $HOME/app
 # Install Python dependencies with CPU-optimized PyTorch
 COPY --chown=user:user requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir torch torchaudio torchvision --index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir -r requirements.txt
 
 # Copy application files
@@ -33,6 +33,9 @@ COPY --chown=user:user . $HOME/app
 
 # Ensure uploads directory is writeable
 RUN mkdir -p $HOME/app/uploads
+
+# Pre-fetch AST weights so the container is 100% self-contained and boots instantaneously
+RUN python -m eval.fetch_ast || true
 
 # Expose default Hugging Face Spaces port
 EXPOSE 7860

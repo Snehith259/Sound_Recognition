@@ -218,12 +218,25 @@ let backendOnline = false;
 let _lastPerfList = [];
 
 /* Resolves the FastAPI/Express backend base URL regardless of how the
-   frontend is served (Live Server, file://, or the backend itself). */
+   frontend is served (Live Server, file://, direct backend, or cloud hosting). */
 function resolveApiBase() {
-  const port = window.location.port;
-  const servedFromBackend = (port === '3001' || port === '8000' || port === '3000') && window.location.protocol.startsWith('http');
-  if (servedFromBackend) return window.location.origin;
   if (window.activeBackendBase) return window.activeBackendBase;
+
+  const hostname = window.location.hostname;
+  const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0' || window.location.protocol === 'file:';
+
+  // Remote production hosting (e.g. Hugging Face Spaces, Render, Railway, custom domain)
+  if (!isLocal && window.location.protocol.startsWith('http')) {
+    return window.location.origin;
+  }
+
+  // Local backend server directly (port 3001, 8000, 3000, 7860)
+  const port = window.location.port;
+  if (port === '3001' || port === '8000' || port === '3000' || port === '7860') {
+    return window.location.origin;
+  }
+
+  // Local static dev server fallback (e.g. VS Code Live Server on 5500)
   return 'http://localhost:3001';
 }
 
@@ -1927,13 +1940,19 @@ async function executeClassification() {
     let backendErrorDetail = null;
 
     const apiBase = resolveApiBase();
-    const candidateUrls = Array.from(new Set([
+    const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
+    const candidateUrls = [
       `${apiBase}/api/predict`,
-      'http://localhost:3001/api/predict',
-      'http://127.0.0.1:3001/api/predict',
-      'http://localhost:3000/api/predict',
-      'http://127.0.0.1:3000/api/predict',
-    ]));
+      '/api/predict'
+    ];
+    if (isLocalHost) {
+      candidateUrls.push(
+        'http://localhost:3001/api/predict',
+        'http://127.0.0.1:3001/api/predict',
+        'http://localhost:8000/api/predict',
+        'http://127.0.0.1:8000/api/predict'
+      );
+    }
 
     for (const url of candidateUrls) {
       try {
@@ -2879,19 +2898,23 @@ async function loadTaxonomyCategory(cat) {
   const filename = CANONICAL_ESC50_FILES[cat.id] || `1-100032-A-${cat.id}.wav`;
 
   let file = null;
+  const isLocalSampleHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
   const candidatePaths = [
+    getApiUrl(`/api/sample/${cat.id}`),
+    `/api/sample/${cat.id}`,
     `samples/${filename}`,
     `samples/${cat.id}.wav`,
     `./samples/${filename}`,
     `./samples/${cat.id}.wav`,
     `/samples/${filename}`,
-    `/api/sample/${cat.id}`,
-    `http://localhost:3001/api/sample/${cat.id}`,
     `/audio/esc50/${filename}`,
     `/ESC-50/wav_files/${filename}`,
     `ESC-50/wav_files/${filename}`,
     `../ESC-50/wav_files/${filename}`,
   ];
+  if (isLocalSampleHost) {
+    candidatePaths.push(`http://localhost:3001/api/sample/${cat.id}`);
+  }
 
   for (const p of candidatePaths) {
     try {
@@ -3630,16 +3653,27 @@ async function loadTrainingData() {
  * Live Server and file:// as well as when served by the backend itself.
  */
 async function checkBackendStatus() {
+  const hostname = window.location.hostname;
+  const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0' || window.location.protocol === 'file:';
   const port = window.location.port;
-  const isAltPort = !['3001', '8000', '3000'].includes(port);
-  const bases = [
-    'http://localhost:3001',
-    'http://127.0.0.1:3001',
-    'http://localhost:8000',
-    'http://127.0.0.1:8000',
-    'http://localhost:3000',
-  ];
-  if (!isAltPort) bases.unshift(window.location.origin);
+  const isAltLocalPort = isLocal && !['3001', '8000', '3000', '7860'].includes(port);
+
+  const bases = [];
+  if (!isAltLocalPort && window.location.protocol.startsWith('http')) {
+    bases.push(window.location.origin);
+  }
+  if (isLocal) {
+    bases.push(
+      'http://localhost:3001',
+      'http://127.0.0.1:3001',
+      'http://localhost:8000',
+      'http://127.0.0.1:8000',
+      'http://localhost:3000'
+    );
+  } else {
+    const resolved = resolveApiBase();
+    if (!bases.includes(resolved)) bases.push(resolved);
+  }
   backendOnline = false;
 
   for (const base of bases) {
@@ -4774,14 +4808,19 @@ async function submitDeveloperLogin(rawUser, rawPass) {
   let authToken = null;
   let errorDetail = 'Invalid developer credentials. Access denied.';
 
-  const apiEndpoints = Array.from(new Set([
+  const isLocalAuth = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
+  const apiEndpoints = [
     getApiUrl('/api/auth/login'),
-    'http://localhost:3001/api/auth/login',
-    'http://127.0.0.1:3001/api/auth/login',
-    'http://localhost:8000/api/auth/login',
-    'http://127.0.0.1:8000/api/auth/login',
     '/api/auth/login'
-  ]));
+  ];
+  if (isLocalAuth) {
+    apiEndpoints.push(
+      'http://localhost:3001/api/auth/login',
+      'http://127.0.0.1:3001/api/auth/login',
+      'http://localhost:8000/api/auth/login',
+      'http://127.0.0.1:8000/api/auth/login'
+    );
+  }
 
   let reachedServer = false;
   for (const endpoint of apiEndpoints) {
@@ -4900,14 +4939,19 @@ async function submitDeveloperRegistration() {
     authRegErrorMsg.style.display = 'none';
   }
 
-  const candidateEndpoints = Array.from(new Set([
+  const isLocalReg = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
+  const candidateEndpoints = [
     getApiUrl('/api/auth/register'),
-    'http://localhost:3001/api/auth/register',
-    'http://127.0.0.1:3001/api/auth/register',
-    'http://localhost:8000/api/auth/register',
-    'http://127.0.0.1:8000/api/auth/register',
-    '/api/auth/register',
-  ]));
+    '/api/auth/register'
+  ];
+  if (isLocalReg) {
+    candidateEndpoints.push(
+      'http://localhost:3001/api/auth/register',
+      'http://127.0.0.1:3001/api/auth/register',
+      'http://localhost:8000/api/auth/register',
+      'http://127.0.0.1:8000/api/auth/register'
+    );
+  }
 
   let regSuccess = false;
   let regUser = null;
@@ -5985,15 +6029,20 @@ console.log(await res.json());`
     fd.append(CONFIG.modelField, modelKey());
 
     // Multi-candidate endpoints across live ports (3001, 8000) so static dev servers (e.g. port 5500) never throw HTTP 405
-    var primaryUrl = typeof getApiUrl === 'function' ? getApiUrl('/api/predict') : 'http://localhost:3001/api/predict';
-    var candidateUrls = Array.from(new Set([
+    var primaryUrl = typeof getApiUrl === 'function' ? getApiUrl('/api/predict') : '/api/predict';
+    var isLocalBatchHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
+    var candidateUrls = [
       primaryUrl,
-      'http://localhost:3001/api/predict',
-      'http://127.0.0.1:3001/api/predict',
-      'http://localhost:8000/api/predict',
-      'http://127.0.0.1:8000/api/predict',
       '/api/predict'
-    ]));
+    ];
+    if (isLocalBatchHost) {
+      candidateUrls.push(
+        'http://localhost:3001/api/predict',
+        'http://127.0.0.1:3001/api/predict',
+        'http://localhost:8000/api/predict',
+        'http://127.0.0.1:8000/api/predict'
+      );
+    }
 
     function tryCandidate(urls, index) {
       if (index >= urls.length) {

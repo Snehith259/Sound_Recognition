@@ -1,11 +1,14 @@
 services:
   - type: web
     name: soundsense-recognition
-    env: docker
+    env: python
     plan: free
-    dockerfilePath: ./Dockerfile
+    buildCommand: "pip install --no-cache-dir torch torchaudio torchvision --index-url https://download.pytorch.org/whl/cpu && pip install --no-cache-dir -r requirements.txt"
+    startCommand: "python main.py"
     envVars:
       - key: PORT
         value: 10000
+      - key: PYTHON_VERSION
+        value: 3.11.9
       - key: RELOAD
         value: "false"

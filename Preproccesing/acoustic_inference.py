@@ -140,11 +140,18 @@ def _load_ast_engine() -> Dict[str, Any]:
         try:
             feature_extractor = AutoFeatureExtractor.from_pretrained(AST_MODEL_ID, **kwargs)
             model = AutoModelForAudioClassification.from_pretrained(AST_MODEL_ID, **kwargs)
-        except Exception as err:
-            raise FileNotFoundError(
-                f"AST checkpoint not installed or failed to load offline: {err}. "
-                "Run `python -m eval.fetch_ast` to bootstrap weights."
-            ) from err
+        except Exception as offline_err:
+            try:
+                # If offline cache is absent (e.g. freshly deployed container without pre-baked cache),
+                # fetch directly from Hugging Face Hub.
+                kwargs["local_files_only"] = False
+                feature_extractor = AutoFeatureExtractor.from_pretrained(AST_MODEL_ID, **kwargs)
+                model = AutoModelForAudioClassification.from_pretrained(AST_MODEL_ID, **kwargs)
+            except Exception as online_err:
+                raise FileNotFoundError(
+                    f"AST checkpoint not installed offline ({offline_err}) and online download failed: {online_err}. "
+                    "Run `python -m eval.fetch_ast` to bootstrap weights."
+                ) from online_err
 
         model.eval()
 
@@ -213,6 +220,8 @@ def _ast_probabilities(y: np.ndarray, sr: int) -> Tuple[np.ndarray, int]:
 
     accumulated /= max(1, len(starts))
     accumulated /= max(float(accumulated.sum()), 1e-12)
+    import gc
+    gc.collect()
     return accumulated.astype(np.float32), len(starts)
 
 
@@ -290,7 +299,7 @@ def model_status() -> Dict[str, Any]:
         / AST_REVISION
     )
     ast_model_file = ast_snapshot_dir / "model.safetensors"
-    ast_present = ast_model_file.is_file()
+    ast_present = ast_model_file.is_file() or (_AST_ENGINE is not None)
     checkpoints["ast"] = {
         "filename": f"hf:{AST_MODEL_ID}",
         "available": ast_present,

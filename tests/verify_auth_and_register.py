@@ -1,4 +1,5 @@
 import sys
+import time
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -20,7 +21,7 @@ assert res_bad.status_code == 401
 print("  OK: Invalid password properly denied with 401")
 
 print("\n=== 3. Test Create Account (Registration) ===")
-reg_email = "new_engineer_test@soundsense.ai"
+reg_email = f"new_engineer_{int(time.time())}@soundsense.ai"
 res_reg = client.post("/api/auth/register", json={
     "name": "Sarah Connor",
     "email": reg_email,

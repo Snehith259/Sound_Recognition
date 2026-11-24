@@ -48,6 +48,7 @@ UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 async def lifespan(_: FastAPI):
     """Load the ESC-50 model in the background so the first upload is fast."""
     def _warm():
+        time.sleep(2.0)
         try:
             from Preproccesing.acoustic_inference import warm_up_engine
             warm_up_engine()

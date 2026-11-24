@@ -18,7 +18,7 @@ ESC-50
 Audio_Basics_HandsOn
 
 # Model checkpoints cache (preserve active classifier pt)
-checkpoints/.cache
+# checkpoints/.cache
 checkpoints/*.bin
 
 # Temp & user files
