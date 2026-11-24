@@ -26,5 +26,12 @@
     "password": "soundsense",
     "role": "developer",
     "createdAt": "2026-11-24T10:58:49.046213+00:00"
+  },
+  "rohan@gmail.com": {
+    "name": "rohan",
+    "email": "rohan@gmail.com",
+    "password": "rohan123",
+    "role": "developer",
+    "createdAt": "2026-11-24T15:07:15.902939+00:00"
   }
 }

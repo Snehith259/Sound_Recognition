@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-23T17:46:31.723881+00:00",
+  "generatedAt": "2026-11-24T16:46:19.624379+00:00",
   "source": "SoundSense evaluation harness",
   "evaluation": "Metrics appear only after the corresponding harness run completes.",
   "trainingRuns": 0,
@@ -2830,28 +2830,18 @@
       "checkpoint": {
         "filename": "esc50_resnet18_v1.pt",
         "available": true,
-        "sha256": "2669c6684bcf4677cb80e4142ce48d4040516481204949cb971f4d6467b4c96d",
+        "sha256": "b79df05481ccbe4bb15bc02b6ba72c7d1385786ed09a952e5876e5124f2e7c22",
         "sizeBytes": 45344067
       },
       "available": true,
       "metrics": {
-        "top1": 0.5879,
-        "top5": 0.8844,
-        "macroF1": 0.5882000000000001,
-        "latencyMs": 6.45
+        "top1": 0.7613,
+        "top5": 0.9698,
+        "macroF1": 0.7562000000000001,
+        "latencyMs": 7.67
       },
       "evaluation": "ESC-50 fold-1 test (diagnostic baseline; not five-fold CV)",
-      "external": {
-        "n": 0,
-        "failedRequests": 1,
-        "inScopeCount": 0,
-        "outOfScopeCount": 0,
-        "top1": null,
-        "oodRejectionRate": null,
-        "falseRejectionRate": null,
-        "meanConfidenceInScope": null,
-        "meanLatencyMs": null
-      }
+      "external": {}
     },
     "vgg16": {
       "displayName": "VGG-16",
@@ -2869,17 +2859,7 @@
         "latencyMs": 50.41
       },
       "evaluation": "ESC-50 fold-1 test (diagnostic baseline; not five-fold CV)",
-      "external": {
-        "n": 0,
-        "failedRequests": 1,
-        "inScopeCount": 0,
-        "outOfScopeCount": 0,
-        "top1": null,
-        "oodRejectionRate": null,
-        "falseRejectionRate": null,
-        "meanConfidenceInScope": null,
-        "meanLatencyMs": null
-      }
+      "external": {}
     },
     "sresnet": {
       "displayName": "SResNet",
@@ -2897,17 +2877,7 @@
         "latencyMs": 0.0
       },
       "evaluation": "ESC-50 fold-1 test (diagnostic baseline; not five-fold CV)",
-      "external": {
-        "n": 0,
-        "failedRequests": 1,
-        "inScopeCount": 0,
-        "outOfScopeCount": 0,
-        "top1": null,
-        "oodRejectionRate": null,
-        "falseRejectionRate": null,
-        "meanConfidenceInScope": null,
-        "meanLatencyMs": null
-      }
+      "external": {}
     },
     "cnngru": {
       "displayName": "CNN-GRU",
@@ -2925,40 +2895,20 @@
         "latencyMs": 2.03
       },
       "evaluation": "ESC-50 fold-1 test (diagnostic baseline; not five-fold CV)",
-      "external": {
-        "n": 0,
-        "failedRequests": 1,
-        "inScopeCount": 0,
-        "outOfScopeCount": 0,
-        "top1": null,
-        "oodRejectionRate": null,
-        "falseRejectionRate": null,
-        "meanConfidenceInScope": null,
-        "meanLatencyMs": null
-      }
+      "external": {}
     },
     "ensemble": {
       "displayName": "Ensemble Fusion",
       "checkpoint": {},
       "available": true,
       "metrics": {
-        "top1": 0.7161,
-        "top5": 0.9296,
-        "macroF1": 0.7137,
-        "latencyMs": 61.91
+        "top1": 0.7412060301507537,
+        "top5": 0.9899497487437184,
+        "macroF1": 0.7363,
+        "latencyMs": 62.0
       },
       "evaluation": "ESC-50 fold-1 test (diagnostic baseline; not five-fold CV)",
-      "external": {
-        "n": 0,
-        "failedRequests": 1,
-        "inScopeCount": 0,
-        "outOfScopeCount": 0,
-        "top1": null,
-        "oodRejectionRate": null,
-        "falseRejectionRate": null,
-        "meanConfidenceInScope": null,
-        "meanLatencyMs": null
-      }
+      "external": {}
     }
   }
 }

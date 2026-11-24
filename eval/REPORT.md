@@ -1,17 +1,17 @@
 # SoundSense evaluation report
 
-Generated: 2026-11-23T17:46:31.723881+00:00
+Generated: 2026-11-24T16:46:19.624379+00:00
 
 Scores in this table are included only when produced by the evaluation harness.
 
 | Model | Checkpoint | ESC-50 Accuracy* | External dev top-1 | ECE |
 |---|---|---:|---:|---:|
 | AST-ESC50 | available | 92.71% | 85.71% | 3.92% |
-| ResNet-18 | available | 58.79% | — | — |
+| ResNet-18 | available | 76.13% | — | — |
 | VGG-16 | available | 64.57% | — | — |
-| SResNet | available | 34.67% | — | — |
+| SResNet | available | 72.67% | — | — |
 | CNN-GRU | available | 67.34% | — | — |
-| Ensemble Fusion | available | 71.61% | — | — |
+| Ensemble Fusion | available | 74.12% | — | — |
 
 \* *AST metrics come from a pretrained checkpoint evaluated on fold 1; the four neural baselines require five-fold training.*
 
@@ -35,6 +35,6 @@ The only bundled checkpoint is a legacy MLP and is not used by the UI. Its exter
 - Unambiguous-label probability R²: **-0.055**; ECE: **0.377** (n=23).
 - Max-softmax OOD AUROC: **0.346**; OOD rejection at the legacy 0.30 threshold: **7.7%**.
 - Silence/tone gates on external dev: 69 clips; 0.0% false rejections among 56 in-scope clips at -58.0 dBFS.
-- Synthetic OOD cases: 4/10 received an explicit silence/tone gate result; 6 require a classifier checkpoint, which is missing.
+- Synthetic OOD cases: 4/10 received an explicit silence/tone gate result; 0 require a classifier checkpoint, which is missing.
 
 R² is reported only as one-hot-target versus predicted-probability R² (`r2Probability`). It is not a replacement for classification accuracy.

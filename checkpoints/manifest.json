@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-23T17:46:31.723881+00:00",
+  "generatedAt": "2026-11-24T16:46:19.624379+00:00",
   "models": {
     "ast": {
       "filename": "hf:Adam-ousse/ast-esc50-finetuned-fold1",
@@ -11,7 +11,7 @@
     "resnet18": {
       "filename": "esc50_resnet18_v1.pt",
       "available": true,
-      "sha256": "2669c6684bcf4677cb80e4142ce48d4040516481204949cb971f4d6467b4c96d",
+      "sha256": "b79df05481ccbe4bb15bc02b6ba72c7d1385786ed09a952e5876e5124f2e7c22",
       "sizeBytes": 45344067
     },
     "vgg16": {
