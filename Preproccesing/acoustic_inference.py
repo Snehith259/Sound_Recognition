@@ -424,20 +424,37 @@ def load_model_checkpoint(model_name: str) -> Optional[Dict[str, Any]]:
     if not ckpt_path.exists():
         return None
 
-    from Preproccesing.train_models import ResNet18Transfer, VGG16Transfer, SResNetFast, CNNGRUFast, SResNetTransfer
-    classes = {
+    from Preproccesing.train_models import (
+        ResNet18Transfer,
+        VGG16Transfer,
+        SResNetTransfer,
+        CNNGRUFast,
+        ResNet18V2,
+        VGG16V2,
+        SResNetV2,
+        CNNGRUV2,
+    )
+    data = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+    if "state_dict" not in data:
+        raise RuntimeError(f"Checkpoint '{filename}' has no state_dict.")
+    arch_version = int(data.get("arch_version") or (2 if str(data.get("format", "")).endswith("-v2") else 1))
+    classes_v1 = {
         "resnet18": ResNet18Transfer,
         "vgg16": VGG16Transfer,
         "sresnet": SResNetTransfer,
         "cnngru": CNNGRUFast,
     }
-    data = torch.load(ckpt_path, map_location="cpu", weights_only=False)
-    if "state_dict" not in data:
-        raise RuntimeError(f"Checkpoint '{filename}' has no state_dict.")
+    classes_v2 = {
+        "resnet18": ResNet18V2,
+        "vgg16": VGG16V2,
+        "sresnet": SResNetV2,
+        "cnngru": CNNGRUV2,
+    }
+    cls = (classes_v2 if arch_version == 2 else classes_v1)[matched_key]
     if matched_key in {"resnet18", "vgg16", "sresnet"}:
-        model = classes[matched_key](num_classes=50, pretrained=False)
+        model = cls(num_classes=50, pretrained=False)
     else:
-        model = classes[matched_key](num_classes=50)
+        model = cls(num_classes=50)
     model.load_state_dict(data["state_dict"], strict=True)
     model.eval()
     entry = {
@@ -445,6 +462,7 @@ def load_model_checkpoint(model_name: str) -> Optional[Dict[str, Any]]:
         "feat_type": feat_type,
         "filename": filename,
         "arch_key": matched_key,
+        "arch_version": arch_version,
         "temperature": float(data.get("temperature", 1.0)),
         "metrics": data.get("metrics", {}),
     }
@@ -772,7 +790,24 @@ def run_acoustic_inference(
                 tensors.append(torch.from_numpy(feat).unsqueeze(0).unsqueeze(0).float())
             batch_by_feat[feat_type] = torch.cat(tensors, dim=0)
 
-        ensemble_weights = {"sresnet": 0.30, "vgg16": 0.32, "resnet18": 0.28, "cnngru": 0.10}
+        ensemble_cfg_path = CHECKPOINTS_DIR / "ensemble_config.json"
+        ensemble_cfg: Dict[str, Any] = {}
+        if ensemble_cfg_path.is_file():
+            try:
+                ensemble_cfg = json.loads(ensemble_cfg_path.read_text(encoding="utf-8"))
+            except Exception:
+                ensemble_cfg = {}
+
+        all_v2 = all(entry.get("arch_version", 1) == 2 for entry in entries)
+        if is_multi_ensemble and ensemble_cfg.get("archVersion") == (2 if all_v2 else 1):
+            ensemble_weights = ensemble_cfg.get("weights") or {"sresnet": 0.34, "vgg16": 0.28, "resnet18": 0.26, "cnngru": 0.12}
+            ens_temp = max(0.05, min(20.0, float(ensemble_cfg.get("temperature", 1.0))))
+            use_log_fusion = ensemble_cfg.get("fusion") == "weighted_log_prob"
+        else:
+            ensemble_weights = {"sresnet": 0.34, "vgg16": 0.28, "resnet18": 0.26, "cnngru": 0.12} if all_v2 else {"sresnet": 0.30, "vgg16": 0.32, "resnet18": 0.28, "cnngru": 0.10}
+            ens_temp = 1.0
+            use_log_fusion = all_v2
+
         per_model_probs = []
         model_weights = []
         for entry in entries:
@@ -780,7 +815,7 @@ def run_acoustic_inference(
             with torch.no_grad():
                 logits = entry["model"](tx_batch)
             raw_temp = float(entry.get("temperature", 1.0))
-            temperature = max(0.2, raw_temp) if raw_temp > 0 else 1.0
+            temperature = max(0.05, min(20.0, raw_temp)) if raw_temp > 0 else 1.0
             window_probs = torch.softmax(logits / temperature, dim=1).numpy()
             agg_probs = np.sum(window_probs * win_weights[:, None], axis=0)
             agg_probs /= np.sum(agg_probs)
@@ -789,8 +824,15 @@ def run_acoustic_inference(
 
         w_arr = np.asarray(model_weights, dtype=np.float64)
         w_arr /= np.sum(w_arr)
-        probs = np.sum([w * p for w, p in zip(w_arr, per_model_probs)], axis=0)
-        probs /= np.sum(probs)
+        if is_multi_ensemble and use_log_fusion:
+            fused_logits = np.sum([w * np.log(np.clip(p, 1e-12, 1.0)) for w, p in zip(w_arr, per_model_probs)], axis=0)
+            scaled = fused_logits / ens_temp
+            scaled -= np.max(scaled)
+            probs = np.exp(scaled)
+            probs /= np.sum(probs)
+        else:
+            probs = np.sum([w * p for w, p in zip(w_arr, per_model_probs)], axis=0)
+            probs /= np.sum(probs)
         model_entry = {"arch_key": "ensemble" if is_multi_ensemble else entries[0]["arch_key"]}
         engine_name = f"{model_entry['arch_key']}-checkpoint"
         confidence_type = "temperature_scaled_softmax_score"

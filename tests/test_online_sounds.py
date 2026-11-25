@@ -60,7 +60,7 @@ ONLINE_TEST_CASES = [
         "id": "ONLINE-05",
         "name": "Emergency Siren",
         "source": "IBM MAX Audio Classifier (siren.wav)",
-        "file": "../../eval/external/ibm/ibm_207399184fde.wav",
+        "file": "../../../eval/external/ibm/ibm_207399184fde.wav",
         "expected_class": "siren",
         "expected_ids": [42],
         "is_ood": False,
@@ -69,7 +69,7 @@ ONLINE_TEST_CASES = [
         "id": "ONLINE-06",
         "name": "Car Horn",
         "source": "IBM MAX Audio Classifier (car_horn.wav)",
-        "file": "../../eval/external/ibm/ibm_3f0f45ff5f30.wav",
+        "file": "../../../eval/external/ibm/ibm_3f0f45ff5f30.wav",
         "expected_class": "car_horn",
         "expected_ids": [43, 42],
         "is_ood": False,
@@ -96,7 +96,7 @@ ONLINE_TEST_CASES = [
 
 def run_tests():
     client = TestClient(app)
-    sounds_dir = ROOT_DIR / "scratch" / "online_sounds"
+    sounds_dir = ROOT_DIR / "tests" / "fixtures" / "online_sounds"
     models = ["ast", "sresnet", "cnngru", "ensemble"]
 
     print("=" * 80)
@@ -186,7 +186,7 @@ def run_tests():
     print("=" * 80)
 
     # Save to JSON artifact
-    out_json = ROOT_DIR / "scratch" / "online_sounds_benchmark.json"
+    out_json = ROOT_DIR / "eval" / "reports" / "online_sounds_benchmark.json"
     with open(out_json, "w", encoding="utf-8") as f:
         json.dump({
             "total_cases": len(ONLINE_TEST_CASES),

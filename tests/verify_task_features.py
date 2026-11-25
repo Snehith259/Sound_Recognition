@@ -50,7 +50,7 @@ for p in perf:
     print(f"     - {p['model']}: {p['accuracy']:.1f}% Top-1, {top5_str} (latency: {p.get('latency')} ms)")
 
 print("\n=== 4. Testing Batch Inference /api/batch-predict ===")
-real_clip_path = Path("Audio_Basics_HandsOn/1-137-A-32.wav")
+real_clip_path = Path("Front-End/samples/1-137-A-32.wav")
 assert real_clip_path.exists(), "Sample audio file missing"
 with open(real_clip_path, "rb") as f:
     real_data = f.read()

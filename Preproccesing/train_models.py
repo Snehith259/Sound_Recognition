@@ -34,6 +34,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import TensorDataset, DataLoader
+import torchaudio.functional as AF
 import torchvision.models as tv_models
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
@@ -215,6 +216,175 @@ class CNNGRUFast(nn.Module):
 
 
 # ══════════════════════════════════════════════════════════════
+# V2 Architectures (3-Channel Delta Spectrograms + Diverse Backbones)
+# ══════════════════════════════════════════════════════════════
+
+def log_mel_to_imagenet_3ch(x: torch.Tensor) -> torch.Tensor:
+    """Convert (B, 1, 128, T) [0, 1] Log-Mel into ImageNet-normalized [Mel, Delta, Delta-Delta]."""
+    mel = x.squeeze(1)  # (B, 128, T)
+    centered = mel * 2.0 - 1.0
+    delta1 = AF.compute_deltas(centered).clamp(-1.0, 1.0) * 0.5 + 0.5
+    delta2 = AF.compute_deltas(delta1 * 2.0 - 1.0).clamp(-1.0, 1.0) * 0.5 + 0.5
+    rgb = torch.stack([mel, delta1, delta2], dim=1)  # (B, 3, 128, T)
+    mean = rgb.new_tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1)
+    std = rgb.new_tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1)
+    return (rgb - mean) / std
+
+
+def _require_weights(enum_cls: Any, pretrained: bool) -> Any:
+    if not pretrained:
+        return None
+    if not hasattr(enum_cls, "IMAGENET1K_V1"):
+        raise RuntimeError(f"Required pretrained weights IMAGENET1K_V1 unavailable on {enum_cls}")
+    return enum_cls.IMAGENET1K_V1
+
+
+class ResNet18V2(nn.Module):
+    """3-channel ImageNet ResNet-18 adapted for [Log-Mel, Delta, Delta-Delta]."""
+    def __init__(self, num_classes: int = 50, pretrained: bool = True):
+        super().__init__()
+        weights = _require_weights(tv_models.ResNet18_Weights, pretrained)
+        base = tv_models.resnet18(weights=weights)
+        self.backbone = nn.Sequential(
+            base.conv1, base.bn1, base.relu, base.maxpool,
+            base.layer1, base.layer2, base.layer3, base.layer4,
+            nn.AdaptiveAvgPool2d((1, 1)),
+            nn.Flatten(),
+        )
+        self.head = nn.Sequential(
+            nn.Dropout(0.3),
+            nn.Linear(512, 256),
+            nn.BatchNorm1d(256),
+            nn.SiLU(),
+            nn.Dropout(0.2),
+            nn.Linear(256, num_classes),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.head(self.backbone(log_mel_to_imagenet_3ch(x)))
+
+
+class VGG16V2(nn.Module):
+    """3-channel ImageNet VGG-16-BN adapted for [Log-Mel, Delta, Delta-Delta]."""
+    def __init__(self, num_classes: int = 50, pretrained: bool = True):
+        super().__init__()
+        weights = _require_weights(tv_models.VGG16_BN_Weights, pretrained)
+        base = tv_models.vgg16_bn(weights=weights)
+        self.backbone = nn.Sequential(
+            base.features,
+            nn.AdaptiveAvgPool2d((2, 2)),
+            nn.Flatten(),
+        )
+        self.head = nn.Sequential(
+            nn.Dropout(0.4),
+            nn.Linear(512 * 2 * 2, 512),
+            nn.BatchNorm1d(512),
+            nn.GELU(),
+            nn.Dropout(0.3),
+            nn.Linear(512, num_classes),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.head(self.backbone(log_mel_to_imagenet_3ch(x)))
+
+
+class SResNetV2(nn.Module):
+    """ConvNeXt-Tiny backbone for the SResNet slot, eliminating ResNet-18 duplication."""
+    def __init__(self, num_classes: int = 50, pretrained: bool = True):
+        super().__init__()
+        weights = _require_weights(tv_models.ConvNeXt_Tiny_Weights, pretrained)
+        base = tv_models.convnext_tiny(weights=weights)
+        in_features = base.classifier[2].in_features
+        self.backbone = nn.Sequential(base.features, base.avgpool)
+        self.head = nn.Sequential(
+            base.classifier[0],  # LayerNorm2d
+            base.classifier[1],  # Flatten
+            nn.Dropout(0.3),
+            nn.Linear(in_features, num_classes),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.head(self.backbone(log_mel_to_imagenet_3ch(x)))
+
+
+class _SEConvBlock(nn.Module):
+    def __init__(self, in_ch: int, out_ch: int, pool: Tuple[int, int] = (2, 2)):
+        super().__init__()
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_ch, out_ch, kernel_size=3, padding=1, bias=False),
+            nn.BatchNorm2d(out_ch),
+            nn.GELU(),
+            nn.Conv2d(out_ch, out_ch, kernel_size=3, padding=1, bias=False),
+            nn.BatchNorm2d(out_ch),
+        )
+        self.skip = (
+            nn.Sequential(nn.Conv2d(in_ch, out_ch, kernel_size=1, bias=False), nn.BatchNorm2d(out_ch))
+            if in_ch != out_ch else nn.Identity()
+        )
+        reduced = max(8, out_ch // 8)
+        self.se = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(out_ch, reduced, kernel_size=1),
+            nn.GELU(),
+            nn.Conv2d(reduced, out_ch, kernel_size=1),
+            nn.Sigmoid(),
+        )
+        self.pool = nn.MaxPool2d(pool) if pool is not None else nn.Identity()
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        out = self.conv(x)
+        out = out * self.se(out)
+        out = F.gelu(out + self.skip(x))
+        return self.pool(out)
+
+
+class CNNGRUV2(nn.Module):
+    """4-stage SE-Residual CNN + 2-layer BiGRU with Attentive Statistics Pooling."""
+    def __init__(self, num_classes: int = 50, hidden_size: int = 192):
+        super().__init__()
+        self.conv = nn.Sequential(
+            _SEConvBlock(3, 32, pool=(2, 2)),
+            _SEConvBlock(32, 64, pool=(2, 2)),
+            _SEConvBlock(64, 128, pool=(2, 2)),
+            _SEConvBlock(128, 256, pool=(2, 1)),
+            nn.AdaptiveAvgPool2d((4, None)),  # (B, 256, 4, T')
+        )
+        self.gru = nn.GRU(
+            input_size=256 * 4,
+            hidden_size=hidden_size,
+            num_layers=2,
+            batch_first=True,
+            bidirectional=True,
+            dropout=0.25,
+        )
+        feat_dim = hidden_size * 2
+        self.attn = nn.Sequential(
+            nn.Linear(feat_dim, 128),
+            nn.Tanh(),
+            nn.Linear(128, 1),
+        )
+        self.fc = nn.Sequential(
+            nn.LayerNorm(feat_dim * 2),
+            nn.Dropout(0.3),
+            nn.Linear(feat_dim * 2, 256),
+            nn.GELU(),
+            nn.Dropout(0.2),
+            nn.Linear(256, num_classes),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        feat = self.conv(log_mel_to_imagenet_3ch(x))
+        B, C, F_dim, T_dim = feat.shape
+        seq = feat.permute(0, 3, 1, 2).contiguous().view(B, T_dim, C * F_dim)
+        gru_out, _ = self.gru(seq)
+        w = torch.softmax(self.attn(gru_out), dim=1)
+        mean = torch.sum(w * gru_out, dim=1)
+        var = torch.sum(w * (gru_out - mean.unsqueeze(1)) ** 2, dim=1).clamp_min(1e-6)
+        std = torch.sqrt(var)
+        return self.fc(torch.cat([mean, std], dim=1))
+
+
+# ══════════════════════════════════════════════════════════════
 # Metrics & Temperature Scaling
 # ══════════════════════════════════════════════════════════════
 
@@ -246,17 +416,20 @@ def compute_metrics(logits: torch.Tensor, targets: torch.Tensor) -> Dict[str, fl
 
 
 def calibrate_temperature(val_logits: torch.Tensor, val_targets: torch.Tensor) -> float:
-    temperature = nn.Parameter(torch.ones(1) * 1.5)
-    optimizer = torch.optim.LBFGS([temperature], lr=0.01, max_iter=50)
+    log_temperature = nn.Parameter(torch.zeros((), dtype=torch.float64))
+    logits = val_logits.detach().double().cpu()
+    targets = val_targets.detach().long().cpu()
+    optimizer = torch.optim.LBFGS([log_temperature], lr=0.05, max_iter=80)
 
     def eval_loss():
         optimizer.zero_grad()
-        loss = F.cross_entropy(val_logits / temperature, val_targets)
+        temperature = log_temperature.exp().clamp(0.05, 20.0)
+        loss = F.cross_entropy(logits / temperature, targets)
         loss.backward()
         return loss
 
     optimizer.step(eval_loss)
-    return round(float(temperature.item()), 4)
+    return round(float(log_temperature.detach().exp().clamp(0.05, 20.0).item()), 4)
 
 
 # ══════════════════════════════════════════════════════════════

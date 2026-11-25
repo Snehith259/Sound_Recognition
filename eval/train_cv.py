@@ -27,17 +27,28 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
 
+import math
 from Preproccesing.train_models import (
     CNNGRUFast,
+    CNNGRUV2,
     ResNet18Transfer,
+    ResNet18V2,
     SResNetFast,
+    SResNetV2,
     VGG16Transfer,
+    VGG16V2,
 )
 
 FEATURE_DIR = ROOT / "Preproccesing" / "processed" / "features"
 SPLIT_DIR = ROOT / "Preproccesing" / "splits"
 CHECKPOINT_DIR = ROOT / "checkpoints"
 MODEL_CONFIG = {
+    "resnet18": (ResNet18V2, "log_mel", "esc50_resnet18_v1.pt", True),
+    "vgg16": (VGG16V2, "log_mel", "esc50_vgg16_v1.pt", True),
+    "sresnet": (SResNetV2, "log_mel", "esc50_sresnet_linear_v09.pt", True),
+    "cnngru": (CNNGRUV2, "log_mel", "esc50_cnngru_recurrent_v08.pt", False),
+}
+MODEL_CONFIG_V1 = {
     "resnet18": (ResNet18Transfer, "log_mel", "esc50_resnet18_v1.pt", True),
     "vgg16": (VGG16Transfer, "log_mel", "esc50_vgg16_v1.pt", True),
     "sresnet": (SResNetFast, "log_mel", "esc50_sresnet_linear_v09.pt", True),
@@ -88,12 +99,25 @@ def _loader(x: torch.Tensor, y: torch.Tensor, batch_size: int, shuffle: bool, de
     )
 
 
-def _spec_augment(x: torch.Tensor, time_masks: int = 2, freq_masks: int = 2) -> torch.Tensor:
-    """Apply small frequency/time masks to one-channel spectrogram or MFCC batches."""
+def _time_shift(x: torch.Tensor, max_shift_frac: float = 0.25) -> torch.Tensor:
+    """Apply random circular time-roll per sample in a spectrogram batch."""
     out = x.clone()
+    width = out.shape[-1]
+    max_shift = max(1, int(width * max_shift_frac))
+    for i in range(out.shape[0]):
+        if torch.rand((), device=out.device).item() < 0.5:
+            shift = int(torch.randint(-max_shift, max_shift + 1, (1,), device=out.device).item())
+            if shift != 0:
+                out[i] = torch.roll(out[i], shifts=shift, dims=-1)
+    return out
+
+
+def _spec_augment(x: torch.Tensor, time_masks: int = 2, freq_masks: int = 2) -> torch.Tensor:
+    """Apply frequency/time masking and circular time-shift to spectrogram batches."""
+    out = _time_shift(x)
     height, width = out.shape[-2:]
-    max_freq = min(16, max(1, height // 8))
-    max_time = min(30, max(1, width // 5))
+    max_freq = min(20, max(1, height // 6))
+    max_time = min(36, max(1, width // 5))
     for sample in range(out.shape[0]):
         for _ in range(freq_masks):
             span = int(torch.randint(0, max_freq + 1, (1,), device=out.device).item())
@@ -108,10 +132,35 @@ def _spec_augment(x: torch.Tensor, time_masks: int = 2, freq_masks: int = 2) -> 
     return out
 
 
-def _new_model(model_key: str, pretrained: bool) -> torch.nn.Module:
-    cls, _feature_type, _filename, uses_pretrained = MODEL_CONFIG[model_key]
+def _soft_targets(y: torch.Tensor, num_classes: int = 50, smoothing: float = 0.05) -> torch.Tensor:
+    targets = torch.full((y.size(0), num_classes), smoothing / num_classes, device=y.device, dtype=torch.float32)
+    targets.scatter_(1, y.unsqueeze(1), 1.0 - smoothing + smoothing / num_classes)
+    return targets
+
+
+def _mixup_batch(
+    x: torch.Tensor,
+    y: torch.Tensor,
+    alpha: float = 0.4,
+    prob: float = 0.65,
+    smoothing: float = 0.05,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    targets = _soft_targets(y, num_classes=50, smoothing=smoothing)
+    if alpha > 0 and x.size(0) > 1 and float(np.random.random()) < prob:
+        lam = float(np.random.beta(alpha, alpha))
+        perm = torch.randperm(x.size(0), device=x.device)
+        x = lam * x + (1.0 - lam) * x[perm]
+        targets = lam * targets + (1.0 - lam) * targets[perm]
+    return x, targets
+
+
+def _new_model(model_key: str, pretrained: bool, arch_version: int = 2) -> torch.nn.Module:
+    cfg = MODEL_CONFIG if arch_version == 2 else MODEL_CONFIG_V1
+    cls, _feature_type, _filename, uses_pretrained = cfg[model_key]
     kwargs = {"num_classes": 50}
-    if model_key in {"resnet18", "vgg16"}:
+    if model_key in {"resnet18", "vgg16"} or (arch_version == 2 and model_key == "sresnet"):
+        kwargs["pretrained"] = bool(pretrained and uses_pretrained)
+    elif arch_version == 1 and model_key == "sresnet":
         kwargs["pretrained"] = bool(pretrained and uses_pretrained)
     return cls(**kwargs)
 
@@ -158,11 +207,27 @@ def _train_epochs(
     learning_rate: float,
     device: torch.device,
     batch_size: int,
+    uses_pretrained: bool = True,
 ) -> tuple[dict[str, torch.Tensor], int, torch.Tensor | None]:
     use_amp = device.type == "cuda"
     model.to(device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-3)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=max(1, epochs))
+    if uses_pretrained and hasattr(model, "backbone") and hasattr(model, "head"):
+        param_groups = [
+            {"params": model.backbone.parameters(), "lr": learning_rate},
+            {"params": model.head.parameters(), "lr": learning_rate * 5.0},
+        ]
+    else:
+        param_groups = [{"params": model.parameters(), "lr": learning_rate}]
+    optimizer = torch.optim.AdamW(param_groups, weight_decay=1e-3)
+    warmup_epochs = min(5, max(1, epochs // 10))
+
+    def _lr_lambda(ep: int) -> float:
+        if ep < warmup_epochs:
+            return 0.2 + 0.8 * ((ep + 1) / warmup_epochs)
+        progress = (ep - warmup_epochs) / max(1, epochs - warmup_epochs)
+        return 0.05 + 0.95 * 0.5 * (1.0 + math.cos(math.pi * min(1.0, progress)))
+
+    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=_lr_lambda)
     scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
     best_state: dict[str, torch.Tensor] | None = None
     best_score = -1.0
@@ -176,10 +241,11 @@ def _train_epochs(
         for x_batch, y_batch in train_loader:
             x_batch = _spec_augment(x_batch.to(device))
             y_batch = y_batch.to(device)
+            x_batch, soft_y = _mixup_batch(x_batch, y_batch, alpha=0.4, prob=0.65, smoothing=0.05)
             optimizer.zero_grad(set_to_none=True)
             with torch.cuda.amp.autocast(enabled=use_amp):
                 logits = model(x_batch)
-                loss = F.cross_entropy(logits, y_batch, label_smoothing=0.05)
+                loss = -(soft_y * F.log_softmax(logits, dim=1)).sum(dim=1).mean()
             scaler.scale(loss).backward()
             scaler.unscale_(optimizer)
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=5.0)
@@ -235,23 +301,25 @@ def train_model(
     device: torch.device,
     include_final: bool,
     overwrite: bool,
+    arch_version: int = 2,
 ) -> dict[str, Any]:
     if include_final and folds != [1, 2, 3, 4, 5]:
         raise ValueError("--include-final requires folds 1 through 5 in order.")
-    _cls, feature_type, final_filename, uses_pretrained = MODEL_CONFIG[model_key]
-    learning_rate = 1e-4 if uses_pretrained else 2e-3
+    cfg = MODEL_CONFIG if arch_version == 2 else MODEL_CONFIG_V1
+    _cls, feature_type, final_filename, uses_pretrained = cfg[model_key]
+    learning_rate = 1e-4 if uses_pretrained else 1.5e-3
     fold_epochs: list[int] = []
     fold_temperatures: list[float] = []
 
     for fold in folds:
-        print(f"\n[{model_key}] fold {fold}/5", flush=True)
+        print(f"\n[{model_key} v{arch_version}] fold {fold}/5", flush=True)
         _seed_everything(seed + fold)
         x_train, y_train = _load_split(f"fold_{fold}_train", feature_type)
         x_val, y_val = _load_split(f"fold_{fold}_val", feature_type)
         train_loader = _loader(x_train, y_train, batch_size, True, device)
-        model = _new_model(model_key, pretrained=True)
+        model = _new_model(model_key, pretrained=True, arch_version=arch_version)
         best_state, best_epoch, validation_logits = _train_epochs(
-            model, train_loader, x_val, y_val, epochs, patience, learning_rate, device, batch_size
+            model, train_loader, x_val, y_val, epochs, patience, learning_rate, device, batch_size, uses_pretrained
         )
         if validation_logits is None:
             raise RuntimeError(f"Validation logits missing for {model_key}, fold {fold}.")
@@ -259,7 +327,8 @@ def train_model(
         split_data = pd.read_csv(SPLIT_DIR / f"fold_{fold}_train.csv")
         train_folds = sorted(int(value) for value in split_data["fold"].unique())
         payload = {
-            "format": "soundsense-cv-v1",
+            "format": f"soundsense-cv-v{arch_version}",
+            "arch_version": arch_version,
             "model_name": model_key,
             "feature_type": feature_type,
             "num_classes": 50,
@@ -271,10 +340,11 @@ def train_model(
                 "validationFold": int(pd.read_csv(SPLIT_DIR / f"fold_{fold}_val.csv")["fold"].iloc[0]),
                 "bestEpoch": best_epoch,
                 "validationTop1": float((validation_logits.argmax(dim=1) == y_val).float().mean().item()),
-                "augmentation": "feature-space SpecAugment (2 time masks, 2 frequency masks)",
+                "augmentation": "SpecAugment + circular time-shift + Mixup (alpha=0.4)",
                 "seed": seed + fold,
                 "device": str(device),
                 "pretrainedImageNet": uses_pretrained,
+                "archVersion": arch_version,
             },
         }
         target = _checkpoint_path(model_key, fold)
@@ -291,19 +361,20 @@ def train_model(
         if len(fold_epochs) != 5:
             raise ValueError("--include-final requires all five folds to finish for that model.")
         final_epochs = max(1, int(round(float(np.mean(fold_epochs)))))
-        print(f"\n[{model_key}] final model on all five folds for {final_epochs} epochs", flush=True)
+        print(f"\n[{model_key} v{arch_version}] final model on all five folds for {final_epochs} epochs", flush=True)
         _seed_everything(seed + 1000)
         x_all, y_all = _load_split("dataset_manifest", feature_type) if (SPLIT_DIR / "dataset_manifest.csv").exists() else (None, None)
         # The master manifest is a dataset manifest; load its rows with the same strict loader.
         if x_all is None:
             raise FileNotFoundError("The master dataset manifest is required to train a final model.")
         all_loader = _loader(x_all, y_all, batch_size, True, device)
-        model = _new_model(model_key, pretrained=True)
+        model = _new_model(model_key, pretrained=True, arch_version=arch_version)
         final_state, _actual_epochs, _ = _train_epochs(
-            model, all_loader, None, None, final_epochs, patience, learning_rate, device, batch_size
+            model, all_loader, None, None, final_epochs, patience, learning_rate, device, batch_size, uses_pretrained
         )
         final_payload = {
-            "format": "soundsense-final-v1",
+            "format": f"soundsense-final-v{arch_version}",
+            "arch_version": arch_version,
             "model_name": model_key,
             "feature_type": feature_type,
             "num_classes": 50,
@@ -315,8 +386,9 @@ def train_model(
                 "temperatureSource": "mean of five validation-fold temperatures",
                 "cvMeanEpoch": float(np.mean(fold_epochs)),
                 "cvMeanTemperature": float(np.mean(fold_temperatures)),
-                "augmentation": "feature-space SpecAugment (2 time masks, 2 frequency masks)",
+                "augmentation": "SpecAugment + circular time-shift + Mixup (alpha=0.4)",
                 "pretrainedImageNet": uses_pretrained,
+                "archVersion": arch_version,
                 "warning": "This final model has no in-sample quality score; use CV and external reports.",
             },
         }
@@ -327,6 +399,7 @@ def train_model(
 
     return {
         "model": model_key,
+        "archVersion": arch_version,
         "foldCheckpoints": [str(_checkpoint_path(model_key, fold)) for fold in folds],
         "bestEpochs": fold_epochs,
         "temperatures": fold_temperatures,
@@ -338,10 +411,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", choices=[*MODEL_CONFIG, "all"], default="all")
     parser.add_argument("--folds", nargs="+", type=int, choices=[1, 2, 3, 4, 5], default=[1, 2, 3, 4, 5])
-    parser.add_argument("--epochs", type=int, default=40)
-    parser.add_argument("--patience", type=int, default=8)
+    parser.add_argument("--epochs", type=int, default=80)
+    parser.add_argument("--patience", type=int, default=20)
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--seed", type=int, default=2026)
+    parser.add_argument("--arch-version", type=int, choices=[1, 2], default=2)
     parser.add_argument("--device", choices=["auto", "cpu", "cuda"], default="auto")
     parser.add_argument("--include-final", action="store_true", help="Train deployment checkpoints after all five folds finish")
     parser.add_argument("--overwrite", action="store_true", help="Replace existing checkpoints at the target paths")
@@ -364,6 +438,7 @@ def main() -> None:
             device=device,
             include_final=args.include_final,
             overwrite=args.overwrite,
+            arch_version=args.arch_version,
         ))
     output = {
         "createdAt": time.time(),
