@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-25T04:03:54.967899+00:00",
+  "generatedAt": "2026-11-25T04:45:15.402408+00:00",
   "source": "SoundSense evaluation harness",
   "evaluation": "Metrics appear only after the corresponding harness run completes.",
   "trainingRuns": 0,
@@ -2845,7 +2845,7 @@
         "meanConfidence": 0.8432002754804937,
         "accuracyAtConfidence90": 0.9585656928461077,
         "coverageAtConfidence90": 0.6396683417085427,
-        "latencyMs": 9.98
+        "latencyMs": 10.07
       },
       "evaluation": "ESC-50 official five-fold cross-validation",
       "external": {},
@@ -2883,7 +2883,7 @@
         "meanConfidence": 0.8338210226515779,
         "accuracyAtConfidence90": 0.9638930755576558,
         "coverageAtConfidence90": 0.6101005025125629,
-        "latencyMs": 55.38
+        "latencyMs": 47.11
       },
       "evaluation": "ESC-50 official five-fold cross-validation",
       "external": {},
@@ -2959,7 +2959,7 @@
         "meanConfidence": 0.6294611740516589,
         "accuracyAtConfidence90": 0.9285334967320262,
         "coverageAtConfidence90": 0.1731356783919598,
-        "latencyMs": 3.24
+        "latencyMs": 2.93
       },
       "evaluation": "ESC-50 official five-fold cross-validation",
       "external": {},
@@ -2982,31 +2982,31 @@
       "checkpoint": {},
       "available": true,
       "metrics": {
-        "top1": 0.8543542713567838,
-        "top5": 0.9809824120603015,
-        "macroF1": 0.8495244210897461,
-        "nll": 0.5859070547997555,
-        "brier": 0.23187638243377964,
-        "ece": 0.12351518500858949,
-        "r2Probability": 0.7633914464961432,
-        "meanConfidence": 0.7373218850589192,
-        "accuracyAtConfidence90": 0.9921617435527086,
-        "coverageAtConfidence90": 0.3212437185929648,
-        "latencyMs": 78.46
+        "top1": 0.8558542713567838,
+        "top5": 0.9824849246231157,
+        "macroF1": 0.8516465690827919,
+        "nll": 0.5391293899681887,
+        "brier": 0.216595179903838,
+        "ece": 0.08307638776189905,
+        "r2Probability": 0.778984510302206,
+        "meanConfidence": 0.780857652349333,
+        "accuracyAtConfidence90": 0.991672619047619,
+        "coverageAtConfidence90": 0.46243969849246225,
+        "latencyMs": 69.97
       },
       "evaluation": "ESC-50 official five-fold cross-validation",
       "external": {},
       "cvStandardDeviation": {
-        "top1": 0.028138923635833115,
-        "top5": 0.01244731263784457,
-        "macroF1": 0.031939258087227286,
-        "nll": 0.08495707261336204,
-        "brier": 0.031016373450437562,
-        "ece": 0.01619842808092071,
-        "r2Probability": 0.03164936066371182,
-        "meanConfidence": 0.014179245397030674,
-        "accuracyAtConfidence90": 0.008918851409794789,
-        "coverageAtConfidence90": 0.04403086667206809,
+        "top1": 0.024542728165289785,
+        "top5": 0.012865920691089843,
+        "macroF1": 0.0268997035934314,
+        "nll": 0.08018568767011706,
+        "brier": 0.02961252890468783,
+        "ece": 0.019679917392378742,
+        "r2Probability": 0.030216866229273297,
+        "meanConfidence": 0.01709984602528396,
+        "accuracyAtConfidence90": 0.010440457525638968,
+        "coverageAtConfidence90": 0.031179482695485043,
         "latencyMs": 0.0
       }
     }

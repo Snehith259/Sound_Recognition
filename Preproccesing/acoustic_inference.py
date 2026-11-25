@@ -732,8 +732,14 @@ def run_acoustic_inference(
 
         window_samples = int(22050 * ANALYSIS_WINDOW_SECONDS)
         hop_samples = int(22050 * ANALYSIS_WINDOW_HOP_SECONDS)
+        short_tile_samples = int(22050 * 3.5)
         if y.size < window_samples:
-            windows = [np.pad(y, (0, window_samples - y.size))]
+            if 0 < y.size < short_tile_samples:
+                # Tile short clips (<3.5s) instead of padding with >30% silence so global pooling retains signal.
+                reps = int(np.ceil(window_samples / y.size))
+                windows = [np.tile(y, reps)[:window_samples]]
+            else:
+                windows = [np.pad(y, (0, window_samples - y.size))]
         else:
             starts = list(range(0, max(1, y.size - window_samples + 1), hop_samples))
             final_start = y.size - window_samples
@@ -743,26 +749,47 @@ def run_acoustic_inference(
                 starts = starts[:MAX_ANALYSIS_WINDOWS - 1] + [final_start]
             windows = [y[start:start + window_samples] for start in starts]
 
+        if len(windows) > 1:
+            w_rms = np.array([float(np.sqrt(np.mean(w ** 2))) if w.size else 0.0 for w in windows], dtype=np.float64)
+            max_rms = float(np.max(w_rms))
+            if max_rms > 1e-8:
+                win_weights = np.where(w_rms >= max(silence_rms_threshold, 0.15 * max_rms), w_rms / max_rms, 0.0)
+                w_sum = float(np.sum(win_weights))
+                win_weights = win_weights / w_sum if w_sum > 1e-8 else np.ones(len(windows)) / len(windows)
+            else:
+                win_weights = np.ones(len(windows)) / len(windows)
+        else:
+            win_weights = np.ones(len(windows), dtype=np.float64)
+
         from Preproccesing.feature_extractor import extract_log_mel_spectrogram, extract_mfcc
-        per_model_probs = []
-        for entry in entries:
-            window_probs = []
+        batch_by_feat: Dict[str, torch.Tensor] = {}
+        for feat_type in {entry["feat_type"] for entry in entries}:
+            tensors = []
             for window in windows:
                 peak = float(np.max(np.abs(window))) if window.size else 0.0
                 model_window = window / peak if peak > 1e-8 else window
-                if entry["feat_type"] == "mfcc":
-                    feat = extract_mfcc(model_window, sr=22050)
-                else:
-                    feat = extract_log_mel_spectrogram(model_window, sr=22050)
-                tx = torch.from_numpy(feat).unsqueeze(0).unsqueeze(0).float()
-                with torch.no_grad():
-                    logits = entry["model"](tx)
-                raw_temp = float(entry.get("temperature", 1.0))
-                temperature = max(0.2, raw_temp) if raw_temp > 0 else 1.0
-                window_probs.append(torch.softmax(logits / temperature, dim=1)[0].numpy())
-            per_model_probs.append(np.mean(window_probs, axis=0))
+                feat = extract_mfcc(model_window, sr=22050) if feat_type == "mfcc" else extract_log_mel_spectrogram(model_window, sr=22050)
+                tensors.append(torch.from_numpy(feat).unsqueeze(0).unsqueeze(0).float())
+            batch_by_feat[feat_type] = torch.cat(tensors, dim=0)
 
-        probs = np.mean(per_model_probs, axis=0)
+        ensemble_weights = {"sresnet": 0.30, "vgg16": 0.32, "resnet18": 0.28, "cnngru": 0.10}
+        per_model_probs = []
+        model_weights = []
+        for entry in entries:
+            tx_batch = batch_by_feat[entry["feat_type"]]
+            with torch.no_grad():
+                logits = entry["model"](tx_batch)
+            raw_temp = float(entry.get("temperature", 1.0))
+            temperature = max(0.2, raw_temp) if raw_temp > 0 else 1.0
+            window_probs = torch.softmax(logits / temperature, dim=1).numpy()
+            agg_probs = np.sum(window_probs * win_weights[:, None], axis=0)
+            agg_probs /= np.sum(agg_probs)
+            per_model_probs.append(agg_probs)
+            model_weights.append(ensemble_weights.get(entry["arch_key"], 0.25))
+
+        w_arr = np.asarray(model_weights, dtype=np.float64)
+        w_arr /= np.sum(w_arr)
+        probs = np.sum([w * p for w, p in zip(w_arr, per_model_probs)], axis=0)
         probs /= np.sum(probs)
         model_entry = {"arch_key": "ensemble" if is_multi_ensemble else entries[0]["arch_key"]}
         engine_name = f"{model_entry['arch_key']}-checkpoint"

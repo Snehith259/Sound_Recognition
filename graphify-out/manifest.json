@@ -222,9 +222,9 @@
     "semantic_hash": ""
   },
   "checkpoints/manifest.json": {
-    "mtime": 1795579434.9656494,
-    "seen": 1795579650.0790203,
-    "ast_hash": "0272795b8a6160e6d332aa1fc926b64b",
+    "mtime": 1795581915.4023037,
+    "seen": 1795582031.8588035,
+    "ast_hash": "8c2a4c4d2727274204f60536e05b032c",
     "semantic_hash": ""
   },
   "docker-compose.yml": {
@@ -264,9 +264,9 @@
     "semantic_hash": ""
   },
   "Front-End/index.html": {
-    "mtime": 1795579422.6013474,
-    "seen": 1795579650.0791261,
-    "ast_hash": "b45f6988405eee368c20525b52c90876",
+    "mtime": 1795581930.0110724,
+    "seen": 1795582031.8588943,
+    "ast_hash": "b5efdcfb8a6d822f37ac8852e199d1aa",
     "semantic_hash": ""
   },
   "Preproccesing/README.md": {
@@ -348,9 +348,9 @@
     "semantic_hash": ""
   },
   "Preproccesing/acoustic_inference.py": {
-    "mtime": 1795539652.1428506,
-    "seen": 1795539839.6429477,
-    "ast_hash": "0007c86dac1e40cb023bb03f125152f4",
+    "mtime": 1795581781.3588355,
+    "seen": 1795582031.8587773,
+    "ast_hash": "88f1af4a00ea856d70b4fd15402ce5ca",
     "semantic_hash": ""
   },
   "Front-End/fx.js": {
@@ -390,9 +390,9 @@
     "semantic_hash": ""
   },
   "checkpoints/model_report.json": {
-    "mtime": 1795579434.9656494,
-    "seen": 1795579650.0790215,
-    "ast_hash": "4216a8e75a973b210b0e65a76e3484ed",
+    "mtime": 1795581915.4023037,
+    "seen": 1795582031.8588045,
+    "ast_hash": "092556e5a143574f5a01c776e3dfd11e",
     "semantic_hash": ""
   },
   "tests/test_api_endpoints.py": {
@@ -498,9 +498,9 @@
     "semantic_hash": ""
   },
   "checkpoints/eval_report.json": {
-    "mtime": 1795579434.9656494,
-    "seen": 1795579650.0790186,
-    "ast_hash": "52207cecb8e02ad2daf07d7c4ad145d8",
+    "mtime": 1795581915.4023037,
+    "seen": 1795582031.858802,
+    "ast_hash": "a9b43e80ce178e4bb5f06e01f05cff59",
     "semantic_hash": ""
   },
   "eval/__init__.py": {
@@ -576,8 +576,8 @@
     "semantic_hash": ""
   },
   "eval/report.py": {
-    "mtime": 1795579419.6653135,
-    "seen": 1795579650.0790396,
+    "mtime": 1795579708.2212565,
+    "seen": 1795582031.8588219,
     "ast_hash": "9d34ba886fc5ff2e88ed4e0ed686ebb7",
     "semantic_hash": ""
   },
@@ -654,9 +654,9 @@
     "semantic_hash": ""
   },
   "eval/REPORT.md": {
-    "mtime": 1795579434.9817753,
-    "seen": 1795579650.0791306,
-    "ast_hash": "b963875dfb333d92234695e90d14052d",
+    "mtime": 1795581915.4177482,
+    "seen": 1795582031.858899,
+    "ast_hash": "3ae244487272f1b264ee2e48ace08b78",
     "semantic_hash": ""
   },
   "tests/test_multiformat_ambient_pure.py": {
@@ -804,117 +804,45 @@
     "semantic_hash": ""
   },
   "scratch/test_all_50_classes.py": {
-    "mtime": 1795579449.0598192,
-    "seen": 1795579650.0791,
+    "mtime": 1795579708.2691905,
+    "seen": 1795582031.8588681,
     "ast_hash": "1c488e73cb61dde71034b9a44f41e87c",
     "semantic_hash": ""
   },
-  "scratch/kaggle_api_check/api_check.py": {
-    "mtime": 1795571096.2201834,
-    "seen": 1795573843.6391258,
-    "ast_hash": "0f331248a90af07362d8a945a0f56125",
-    "semantic_hash": ""
-  },
-  "scratch/kaggle_api_check/kernel-metadata.json": {
-    "mtime": 1795571098.5772796,
-    "seen": 1795573843.639127,
-    "ast_hash": "c894a7e7b9c6efebdf7db4cc168ce30c",
-    "semantic_hash": ""
-  },
-  "scratch/kaggle_api_check_pulled/kernel-metadata.json": {
-    "mtime": 1795572638.959921,
-    "seen": 1795573843.639128,
-    "ast_hash": "c991659943baae6775747d196b0a31a2",
-    "semantic_hash": ""
-  },
-  "scratch/kaggle_api_check_pulled/soundsense-api-check.py": {
-    "mtime": 1795572638.950019,
-    "seen": 1795573843.6391292,
-    "ast_hash": "49ebf427aa89b806bdefa6f7adf29c49",
-    "semantic_hash": ""
-  },
-  "scratch/kaggle_gpu_check/gpu_check.py": {
-    "mtime": 1795570526.18768,
-    "seen": 1795573843.6391299,
-    "ast_hash": "16caffe4345be850f5737fc1dae22ecc",
-    "semantic_hash": ""
-  },
   "scratch/kaggle_gpu_check/kernel-metadata.json": {
-    "mtime": 1795570937.536289,
-    "seen": 1795573843.6391306,
-    "ast_hash": "ffa4bd75fd3d90e610002065a054f797",
-    "semantic_hash": ""
-  },
-  "scratch/kaggle_gpu_check_pulled/kernel-metadata.json": {
-    "mtime": 1795572622.050881,
-    "seen": 1795573843.6391315,
-    "ast_hash": "d9d9c88781fb2c7dca73ca55b261317a",
-    "semantic_hash": ""
-  },
-  "scratch/kaggle_gpu_check_pulled/soundsense-gpu-check.py": {
-    "mtime": 1795572622.0503666,
-    "seen": 1795573843.6391325,
-    "ast_hash": "ee6caaa8f4be9016e04490447182dfab",
-    "semantic_hash": ""
-  },
-  "scratch/kaggle_gpu_default_check/kernel-metadata.json": {
-    "mtime": 1795573341.9799342,
-    "seen": 1795573843.6391335,
-    "ast_hash": "fe9c8a19570e0754577964a877d665f9",
-    "semantic_hash": ""
-  },
-  "scratch/kaggle_gpu_nb_check/kernel-metadata.json": {
-    "mtime": 1795572687.968928,
-    "seen": 1795573843.6391342,
-    "ast_hash": "256906695af9797f21da2c65f515c81e",
-    "semantic_hash": ""
-  },
-  "scratch/kaggle_gpu_nb_pulled/kernel-metadata.json": {
-    "mtime": 1795573076.3274474,
-    "seen": 1795573843.639135,
-    "ast_hash": "41b6a80cf2b7547a022c82e6f044b0ef",
-    "semantic_hash": ""
-  },
-  "scratch/kaggle_ref/kernel-metadata.json": {
-    "mtime": 1795572606.4020183,
-    "seen": 1795573843.639136,
-    "ast_hash": "d2a6f6747127a55cd7e6e2472bc145fc",
-    "semantic_hash": ""
-  },
-  "scratch/kaggle_user_nb/kernel-metadata.json": {
-    "mtime": 1795572731.8706112,
-    "seen": 1795573843.6391368,
-    "ast_hash": "a4ea22bf9ab4f4db6bed3d9db705d6c3",
+    "mtime": 1795580143.0851533,
+    "seen": 1795582031.8588643,
+    "ast_hash": "93ecd5ed5effd5001ee039a7394da4fb",
     "semantic_hash": ""
   },
   "eval/reports/esc50_cv_cnngru.json": {
-    "mtime": 1795579398.0142915,
-    "seen": 1795579650.079049,
-    "ast_hash": "c4f3a6d8cdecb621db4f068b99921b6a",
+    "mtime": 1795581910.5417607,
+    "seen": 1795582031.858831,
+    "ast_hash": "7b4e7493e2b62f8aa98d2b6488890cc2",
     "semantic_hash": ""
   },
   "eval/reports/esc50_cv_ensemble.json": {
-    "mtime": 1795579398.0154016,
-    "seen": 1795579650.0790505,
-    "ast_hash": "5aa26edfcd589bc6e202022e86d57a43",
+    "mtime": 1795581910.5417607,
+    "seen": 1795582031.858832,
+    "ast_hash": "ccc89bbec218f4326071ef03de11ed58",
     "semantic_hash": ""
   },
   "eval/reports/esc50_cv_resnet18.json": {
-    "mtime": 1795579397.91146,
-    "seen": 1795579650.0790515,
-    "ast_hash": "b407500610f2a866edbe4d22b539355e",
+    "mtime": 1795581910.5018108,
+    "seen": 1795582031.8588328,
+    "ast_hash": "1c8bd3a510629eeb9fe8921ab9e8e08b",
     "semantic_hash": ""
   },
   "eval/reports/esc50_cv_sresnet.json": {
-    "mtime": 1795579398.0037417,
-    "seen": 1795579650.0790524,
+    "mtime": 1795581910.5417607,
+    "seen": 1795582031.8588343,
     "ast_hash": "b9b5a20fc750988b641bd1e45deccfc7",
     "semantic_hash": ""
   },
   "eval/reports/esc50_cv_vgg16.json": {
-    "mtime": 1795579397.98219,
-    "seen": 1795579650.0790536,
-    "ast_hash": "b04c3767012c341a88898fcc9484106f",
+    "mtime": 1795581910.5367491,
+    "seen": 1795582031.8588352,
+    "ast_hash": "07e06ff0b51e047557d7f35d2236395c",
     "semantic_hash": ""
   },
   "eval/reports/training_runs.json": {
@@ -924,9 +852,27 @@
     "semantic_hash": ""
   },
   "scratch/eval_ensemble_cv.py": {
-    "mtime": 1795579074.6830075,
-    "seen": 1795579650.0790746,
-    "ast_hash": "67fc9ca724c60dab2e47a002001c548e",
+    "mtime": 1795581781.4080424,
+    "seen": 1795582031.858857,
+    "ast_hash": "3abf413d5b38d81dadb3295c0464211d",
+    "semantic_hash": ""
+  },
+  "scratch/eval_all_external_sounds.py": {
+    "mtime": 1795580180.6596932,
+    "seen": 1795582031.8588555,
+    "ast_hash": "9fda3c0e83c21fefda78cd1b8647df01",
+    "semantic_hash": ""
+  },
+  "scratch/external_all_models_report.json": {
+    "mtime": 1795581999.8980722,
+    "seen": 1795582031.8588607,
+    "ast_hash": "2937a3494e42cbf0839e97a199926e89",
+    "semantic_hash": ""
+  },
+  "scratch/test_inference_improvements.py": {
+    "mtime": 1795581541.2152357,
+    "seen": 1795582031.8588731,
+    "ast_hash": "d57a9330692e0a5ef1c3e793931a5ff0",
     "semantic_hash": ""
   },
   "package-lock.json": {

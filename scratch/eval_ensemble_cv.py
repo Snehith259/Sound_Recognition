@@ -20,6 +20,7 @@ from eval.train_cv import _load_split, _new_model
 CV_DIR = ROOT / "checkpoints" / "cv"
 REPORT_DIR = ROOT / "eval" / "reports"
 MODELS = ["resnet18", "vgg16", "sresnet", "cnngru"]
+ENSEMBLE_WEIGHTS = {"sresnet": 0.30, "vgg16": 0.32, "resnet18": 0.28, "cnngru": 0.10}
 FIELDS = (
     "top1", "top5", "macroF1", "nll", "brier", "ece", "r2Probability",
     "meanConfidence", "accuracyAtConfidence90", "coverageAtConfidence90",
@@ -33,6 +34,7 @@ def main():
     for fold in range(1, 6):
         x_test, y_test = _load_split(f"fold_{fold}_test", "log_mel")
         per_model_probs = []
+        weights = []
         for model_key in MODELS:
             ckpt_path = CV_DIR / model_key / f"fold_{fold}.pt"
             ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=False)
@@ -46,8 +48,9 @@ def main():
             temp = max(0.2, float(ckpt.get("temperature", 1.0)))
             probs = F.softmax(torch.cat(outputs, dim=0) / temp, dim=1).numpy()
             per_model_probs.append(probs)
+            weights.append(ENSEMBLE_WEIGHTS[model_key])
 
-        ens_probs = np.mean(per_model_probs, axis=0)
+        ens_probs = np.sum([w * p for w, p in zip(weights, per_model_probs)], axis=0)
         ens_probs /= np.sum(ens_probs, axis=1, keepdims=True)
         metrics = classification_metrics(y_test.numpy(), ens_probs, class_names)
         fold_results.append({
