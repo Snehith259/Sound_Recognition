@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-24T16:46:19.624379+00:00",
+  "generatedAt": "2026-11-25T04:03:54.967899+00:00",
   "models": {
     "ast": {
       "filename": "hf:Adam-ousse/ast-esc50-finetuned-fold1",
@@ -11,26 +11,26 @@
     "resnet18": {
       "filename": "esc50_resnet18_v1.pt",
       "available": true,
-      "sha256": "b79df05481ccbe4bb15bc02b6ba72c7d1385786ed09a952e5876e5124f2e7c22",
-      "sizeBytes": 45344067
+      "sha256": "01125a2dbf5f536ae9e46e2743f741d10f61ac1c1b7f17fd778b71fb90814f8c",
+      "sizeBytes": 45341720
     },
     "vgg16": {
       "filename": "esc50_vgg16_v1.pt",
       "available": true,
-      "sha256": "46a8eca5709238d11817d6d394ac969e3f2cb2e53ddf0d4408bad3c27a8d5011",
-      "sizeBytes": 63261981
+      "sha256": "3761efad3cc068c3f3fb34609317e0797242c3e140a59bfad63fa97c33f074b6",
+      "sizeBytes": 63260507
     },
     "sresnet": {
       "filename": "esc50_sresnet_linear_v09.pt",
       "available": true,
-      "sha256": "aeaa85e9bc09eef0699698db20c995f3efb1931853f5f18f5f1701c2458ce22d",
-      "sizeBytes": 45054772
+      "sha256": "8ef695ef085bffba9f60764a15b83976bafd146b5aaf1ca3ff27cfe43969825f",
+      "sizeBytes": 45052425
     },
     "cnngru": {
       "filename": "esc50_cnngru_recurrent_v08.pt",
       "available": true,
-      "sha256": "a8033cfba8fd7ff6020bedfa773df580f339d4564240a56d742146b7dfb98f3f",
-      "sizeBytes": 2109397
+      "sha256": "d0bd4452e3c88598520cb7500f86a6baaf9332df8827c2242b35dc28301fd948",
+      "sizeBytes": 2109423
     }
   }
 }

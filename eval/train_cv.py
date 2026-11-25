@@ -12,9 +12,14 @@ import argparse
 import json
 import os
 import random
+import sys
 import time
 from pathlib import Path
 from typing import Any
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 import numpy as np
 import pandas as pd
@@ -29,7 +34,6 @@ from Preproccesing.train_models import (
     VGG16Transfer,
 )
 
-ROOT = Path(__file__).resolve().parents[1]
 FEATURE_DIR = ROOT / "Preproccesing" / "processed" / "features"
 SPLIT_DIR = ROOT / "Preproccesing" / "splits"
 CHECKPOINT_DIR = ROOT / "checkpoints"

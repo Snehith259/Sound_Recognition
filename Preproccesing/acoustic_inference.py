@@ -744,9 +744,9 @@ def run_acoustic_inference(
             windows = [y[start:start + window_samples] for start in starts]
 
         from Preproccesing.feature_extractor import extract_log_mel_spectrogram, extract_mfcc
-        per_model_log_probs = []
+        per_model_probs = []
         for entry in entries:
-            window_log_probs = []
+            window_probs = []
             for window in windows:
                 peak = float(np.max(np.abs(window))) if window.size else 0.0
                 model_window = window / peak if peak > 1e-8 else window
@@ -757,13 +757,12 @@ def run_acoustic_inference(
                 tx = torch.from_numpy(feat).unsqueeze(0).unsqueeze(0).float()
                 with torch.no_grad():
                     logits = entry["model"](tx)
-                temperature = max(0.05, float(entry.get("temperature", 1.0)))
-                window_log_probs.append(torch.log_softmax(logits / temperature, dim=1)[0].numpy())
-            per_model_log_probs.append(np.mean(window_log_probs, axis=0))
+                raw_temp = float(entry.get("temperature", 1.0))
+                temperature = max(0.2, raw_temp) if raw_temp > 0 else 1.0
+                window_probs.append(torch.softmax(logits / temperature, dim=1)[0].numpy())
+            per_model_probs.append(np.mean(window_probs, axis=0))
 
-        mean_log_probs = np.mean(per_model_log_probs, axis=0)
-        mean_log_probs -= np.max(mean_log_probs)
-        probs = np.exp(mean_log_probs)
+        probs = np.mean(per_model_probs, axis=0)
         probs /= np.sum(probs)
         model_entry = {"arch_key": "ensemble" if is_multi_ensemble else entries[0]["arch_key"]}
         engine_name = f"{model_entry['arch_key']}-checkpoint"

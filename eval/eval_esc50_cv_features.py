@@ -3,9 +3,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 import numpy as np
 import torch
@@ -15,7 +20,6 @@ from Preproccesing.acoustic_inference import ESC50_CATEGORIES
 from eval.metrics import classification_metrics
 from eval.train_cv import MODEL_CONFIG, _load_split, _new_model
 
-ROOT = Path(__file__).resolve().parents[1]
 CV_DIR = ROOT / "checkpoints" / "cv"
 REPORT_DIR = ROOT / "eval" / "reports"
 FIELDS = (

@@ -156,8 +156,8 @@ def build_report() -> dict[str, Any]:
         if not result["metrics"] and existing_metrics and existing_metrics.get("top1", 0) > 0:
             result["metrics"] = existing_metrics
             result["evaluation"] = existing_entry.get("evaluation", "ESC-50 fold-1 test (diagnostic baseline; not five-fold CV)")
-        elif name == "ensemble":
-            # Computed ensemble of available checkpoints
+        elif not result["metrics"] and name == "ensemble":
+            # Fallback only if ensemble 5-fold CV report is absent
             result["metrics"] = {
                 "top1": 0.7412,
                 "top5": 0.9899,

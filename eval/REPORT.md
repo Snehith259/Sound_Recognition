@@ -1,17 +1,17 @@
 # SoundSense evaluation report
 
-Generated: 2026-11-24T16:46:19.624379+00:00
+Generated: 2026-11-25T04:03:54.967899+00:00
 
 Scores in this table are included only when produced by the evaluation harness.
 
 | Model | Checkpoint | ESC-50 Accuracy* | External dev top-1 | ECE |
 |---|---|---:|---:|---:|
 | AST-ESC50 | available | 92.71% | 85.71% | 3.92% |
-| ResNet-18 | available | 76.13% | — | — |
-| VGG-16 | available | 64.57% | — | — |
-| SResNet | available | 72.67% | — | — |
-| CNN-GRU | available | 67.34% | — | — |
-| Ensemble Fusion | available | 74.12% | — | — |
+| ResNet-18 | available | 82.53% | — | 6.36% |
+| VGG-16 | available | 81.58% | — | 5.27% |
+| SResNet | available | 83.08% | — | 6.31% |
+| CNN-GRU | available | 63.36% | — | 6.32% |
+| Ensemble Fusion | available | 85.44% | — | 12.35% |
 
 \* *AST metrics come from a pretrained checkpoint evaluated on fold 1; the four neural baselines require five-fold training.*
 
