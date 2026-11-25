@@ -41,7 +41,7 @@ The primary deployed model is **`AST-ESC50`** ([Adam-ousse/ast-esc50-finetuned-f
 | Model | Protocol | ESC-50 Top-1 | ESC-50 Top-5 | ECE | External Dev Top-1 |
 |---|---|---:|---:|---:|---:|
 | **AST-ESC50** *(default)* | Fold-1 test (`n=398`) | **92.71%** | **98.99%** | **0.0392** | **85.71%** |
-| **Ensemble Fusion** | 5-Fold CV (`log-prob + T_ens`) | **86.13%** | **98.50%** | **0.0455** | **51.79%** |
+| **Ensemble Fusion** | 5-Fold CV (`4 CNNs`) + runtime AST blend | **86.13%** | **98.50%** | **0.0455** | **69.64%** |
 | **SResNet** | 5-Fold CV | **83.08%** | **97.20%** | 0.0631 | 37.50% |
 | **ResNet-18** | 5-Fold CV | **82.53%** | **97.30%** | 0.0636 | 48.21% |
 | **VGG-16** | 5-Fold CV | **81.58%** | **96.55%** | 0.0527 | **62.50%** |

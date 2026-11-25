@@ -1,6 +1,6 @@
 # SoundSense evaluation report
 
-Generated: 2026-11-25T14:53:07.124132+00:00
+Generated: 2026-11-25T15:58:53.322030+00:00
 
 Scores in this table are included only when produced by the evaluation harness.
 
@@ -11,7 +11,7 @@ Scores in this table are included only when produced by the evaluation harness.
 | VGG-16 | available | 81.58% | 62.50% | 5.27% |
 | SResNet | available | 83.08% | 37.50% | 6.31% |
 | CNN-GRU | available | 63.36% | 44.64% | 6.32% |
-| Ensemble Fusion | available | 86.13% | 51.79% | 4.55% |
+| Ensemble Fusion | available | 86.13% | 69.64% | 4.55% |
 
 \* *AST metrics come from a pretrained checkpoint evaluated on fold 1; the four neural baselines require five-fold training.*
 

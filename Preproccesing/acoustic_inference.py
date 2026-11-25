@@ -336,20 +336,36 @@ def model_status() -> Dict[str, Any]:
                 ast_manifest = json.load(f)
         except Exception:
             pass
+    finetuned_sf = AST_FINETUNED_DIR / "model.safetensors"
     ast_snapshot_dir = (
         AST_CACHE_DIR
         / f"models--{AST_MODEL_ID.replace('/', '--')}"
         / "snapshots"
         / AST_REVISION
     )
-    ast_model_file = ast_snapshot_dir / "model.safetensors"
+    ast_model_file = finetuned_sf if finetuned_sf.is_file() else (ast_snapshot_dir / "model.safetensors")
     ast_present = ast_model_file.is_file() or (_AST_ENGINE is not None)
+    ast_sha = None
+    ast_size = None
+    if finetuned_sf.is_file():
+        ast_size = finetuned_sf.stat().st_size
+        temp_file = AST_FINETUNED_DIR / "ast_temperature.json"
+        if temp_file.is_file():
+            try:
+                ast_sha = json.loads(temp_file.read_text(encoding="utf-8")).get("sha256")
+            except Exception:
+                ast_sha = None
+        if not ast_sha:
+            hasher = hashlib.sha256()
+            with finetuned_sf.open("rb") as stream:
+                for block in iter(lambda: stream.read(1024 * 1024), b""):
+                    hasher.update(block)
+            ast_sha = hasher.hexdigest()
     checkpoints["ast"] = {
-        "filename": f"hf:{AST_MODEL_ID}",
+        "filename": f"local:{AST_FINETUNED_DIR.name}" if finetuned_sf.is_file() else f"hf:{AST_MODEL_ID}",
         "available": ast_present,
-        "sha256": ast_manifest.get("sha256"),
-        "sizeBytes": ast_manifest.get("sizeBytes")
-        or (ast_model_file.stat().st_size if ast_present else None),
+        "sha256": ast_sha or ast_manifest.get("sha256"),
+        "sizeBytes": ast_size or ast_manifest.get("sizeBytes") or (ast_model_file.stat().st_size if ast_model_file.is_file() else None),
     }
 
     for model_name, filename in expected.items():
@@ -793,6 +809,15 @@ def run_acoustic_inference(
         if missing:
             raise FileNotFoundError(f"No trained checkpoint is available for: {', '.join(missing)}.")
 
+        # Include AST in ensemble for stronger fusion when available
+        include_ast_in_ensemble = False
+        if is_multi_ensemble:
+            try:
+                _load_ast_engine()
+                include_ast_in_ensemble = True
+            except Exception:
+                pass
+
         window_samples = int(22050 * ANALYSIS_WINDOW_SECONDS)
         hop_samples = int(22050 * ANALYSIS_WINDOW_HOP_SECONDS)
         short_tile_samples = int(22050 * 3.5)
@@ -853,6 +878,28 @@ def run_acoustic_inference(
             ens_temp = 1.0
             use_log_fusion = all_v2
 
+        # When AST is included without an AST-calibrated ensemble_config.json,
+        # blend 72% AST + 28% CNNs linearly so OOD/confident CNN errors cannot veto AST.
+        if include_ast_in_ensemble:
+            cfg_matches_ast = (
+                is_multi_ensemble
+                and bool(ensemble_cfg.get("includesAst"))
+                and ensemble_cfg.get("archVersion") == (2 if all_v2 else 1)
+            )
+            if not cfg_matches_ast:
+                ast_w = 0.72
+                cnn_total = 1.0 - ast_w
+                base_cnn_sum = max(1e-12, sum(float(ensemble_weights.get(k, 0.25)) for k in model_names))
+                ensemble_weights = {
+                    k: float(ensemble_weights.get(k, 0.25)) * cnn_total / base_cnn_sum
+                    for k in model_names
+                }
+                ensemble_weights["ast"] = ast_w
+                ens_temp = 1.0
+                use_log_fusion = False
+            else:
+                use_log_fusion = ensemble_cfg.get("fusion") == "weighted_log_prob"
+
         per_model_probs = []
         model_weights = []
         for entry in entries:
@@ -866,6 +913,12 @@ def run_acoustic_inference(
             agg_probs /= np.sum(agg_probs)
             per_model_probs.append(agg_probs)
             model_weights.append(ensemble_weights.get(entry["arch_key"], 0.25))
+
+        # Add AST probabilities to ensemble if available
+        if include_ast_in_ensemble:
+            ast_probs, _ast_wcount = _ast_probabilities(y, sr)
+            per_model_probs.append(ast_probs)
+            model_weights.append(ensemble_weights.get("ast", 0.45))
 
         w_arr = np.asarray(model_weights, dtype=np.float64)
         w_arr /= np.sum(w_arr)

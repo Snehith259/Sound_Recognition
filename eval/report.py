@@ -66,7 +66,15 @@ def build_report() -> dict[str, Any]:
 
         if name == "ast":
             ast_ext = ast_ext_final or ast_ext_dev
-            ast_metrics = ast_fold1.get("metrics", {})
+            cv_ast = _read(REPORTS / "esc50_cv_ast.json")
+            cv_ast_agg = cv_ast.get("aggregate", {})
+            cv_ast_metrics = {
+                key: item.get("mean")
+                for key, item in cv_ast_agg.items()
+                if isinstance(item, dict) and "mean" in item
+            }
+            use_cv_ast = bool(cv_ast_metrics and len(cv_ast.get("folds", [])) == 5)
+            ast_metrics = cv_ast_metrics if use_cv_ast else ast_fold1.get("metrics", {})
             ext_summary = {}
             if ast_ext:
                 ext_summary = {
@@ -88,16 +96,30 @@ def build_report() -> dict[str, Any]:
                 "checkpoint": checkpoint,
                 "available": bool(checkpoint.get("available")),
                 "metrics": ast_metrics,
-                "evaluation": "ESC-50 fold-1 test (pretrained checkpoint protocol; not five-fold CV)",
+                "evaluation": (
+                    "ESC-50 official five-fold cross-validation"
+                    if use_cv_ast
+                    else "ESC-50 fold-1 test (pretrained checkpoint protocol; not five-fold CV)"
+                ),
                 "external": ext_summary,
-                "provenance": ast_fold1.get("provenance") or ast_ext.get("provenance") or {
-                    "model": "Adam-ousse/ast-esc50-finetuned-fold1",
-                    "revision": "fb2443ee3c362d6683a8f493eab2d15598360fb6",
-                    "checkpointSha256": "f3b7ad3ffc95f5d867c7bb088da394bf048e649850535e9faa1f75276e0c6617",
-                    "windowPolicy": "5s windows, 2.5s hop, max 12, mean probabilities, no peak normalization",
-                    "inferencePath": "Preproccesing.acoustic_inference.run_acoustic_inference",
-                },
+                "provenance": (
+                    {"model": checkpoint.get("filename"), "windowPolicy": "5s windows, 2.5s hop, RMS-weighted probabilities"}
+                    if use_cv_ast
+                    else ast_fold1.get("provenance") or ast_ext.get("provenance") or {
+                        "model": "Adam-ousse/ast-esc50-finetuned-fold1",
+                        "revision": "fb2443ee3c362d6683a8f493eab2d15598360fb6",
+                        "checkpointSha256": "f3b7ad3ffc95f5d867c7bb088da394bf048e649850535e9faa1f75276e0c6617",
+                        "windowPolicy": "5s windows, 2.5s hop, max 12, mean probabilities, no peak normalization",
+                        "inferencePath": "Preproccesing.acoustic_inference.run_acoustic_inference",
+                    }
+                ),
             }
+            if use_cv_ast:
+                result["cvStandardDeviation"] = {
+                    key: item.get("std")
+                    for key, item in cv_ast_agg.items()
+                    if isinstance(item, dict) and "std" in item
+                }
             if not result["available"]:
                 result["availabilityReason"] = "AST checkpoint snapshot is absent."
             models[name] = result
