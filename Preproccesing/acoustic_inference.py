@@ -115,14 +115,28 @@ AST_MODEL_ID = os.environ.get(
     "SOUNDSENSE_AST_MODEL", "Adam-ousse/ast-esc50-finetuned-fold1"
 )
 AST_REVISION = "fb2443ee3c362d6683a8f493eab2d15598360fb6"
+AST_SHA256 = "f3b7ad3ffc95f5d867c7bb088da394bf048e649850535e9faa1f75276e0c6617"
 AST_CACHE_DIR = CHECKPOINTS_DIR / ".cache" / "huggingface"
+AST_FINETUNED_DIR = CHECKPOINTS_DIR / "ast_finetuned"
 AST_SAMPLE_RATE = 16000
 _AST_ENGINE: Optional[Dict[str, Any]] = None
 _AST_LOCK = threading.Lock()
 
 
+def _verify_file_sha256(path: Path, expected_sha256: str) -> None:
+    hasher = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            hasher.update(block)
+    actual = hasher.hexdigest().lower()
+    if actual != expected_sha256.lower():
+        raise RuntimeError(
+            f"SHA-256 verification failed for {path.name}: expected {expected_sha256}, got {actual}"
+        )
+
+
 def _load_ast_engine() -> Dict[str, Any]:
-    """Load the local ESC-50 AST checkpoint once. No network I/O."""
+    """Load the local ESC-50 AST checkpoint once, verifying SHA-256 when using the pinned model."""
     global _AST_ENGINE
     if _AST_ENGINE is not None:
         return _AST_ENGINE
@@ -132,26 +146,47 @@ def _load_ast_engine() -> Dict[str, Any]:
 
         from transformers import AutoFeatureExtractor, AutoModelForAudioClassification
 
-        kwargs = {
-            "cache_dir": str(AST_CACHE_DIR),
-            "local_files_only": True,
-            "revision": AST_REVISION,
-        }
-        try:
-            feature_extractor = AutoFeatureExtractor.from_pretrained(AST_MODEL_ID, **kwargs)
-            model = AutoModelForAudioClassification.from_pretrained(AST_MODEL_ID, **kwargs)
-        except Exception as offline_err:
+        temperature = 1.0
+        if (AST_FINETUNED_DIR / "model.safetensors").is_file():
+            feature_extractor = AutoFeatureExtractor.from_pretrained(str(AST_FINETUNED_DIR), local_files_only=True)
+            model = AutoModelForAudioClassification.from_pretrained(str(AST_FINETUNED_DIR), local_files_only=True)
+            temp_file = AST_FINETUNED_DIR / "ast_temperature.json"
+            if temp_file.is_file():
+                temperature = float(json.loads(temp_file.read_text(encoding="utf-8")).get("temperature", 1.0))
+            loaded_id = f"local:{AST_FINETUNED_DIR.name}"
+        else:
+            kwargs = {
+                "cache_dir": str(AST_CACHE_DIR),
+                "local_files_only": True,
+                "revision": AST_REVISION,
+            }
             try:
-                # If offline cache is absent (e.g. freshly deployed container without pre-baked cache),
-                # fetch directly from Hugging Face Hub.
-                kwargs["local_files_only"] = False
                 feature_extractor = AutoFeatureExtractor.from_pretrained(AST_MODEL_ID, **kwargs)
                 model = AutoModelForAudioClassification.from_pretrained(AST_MODEL_ID, **kwargs)
-            except Exception as online_err:
-                raise FileNotFoundError(
-                    f"AST checkpoint not installed offline ({offline_err}) and online download failed: {online_err}. "
-                    "Run `python -m eval.fetch_ast` to bootstrap weights."
-                ) from online_err
+            except Exception as offline_err:
+                try:
+                    # If offline cache is absent (e.g. freshly deployed container without pre-baked cache),
+                    # fetch from Hugging Face Hub and verify pinned revision.
+                    kwargs["local_files_only"] = False
+                    feature_extractor = AutoFeatureExtractor.from_pretrained(AST_MODEL_ID, **kwargs)
+                    model = AutoModelForAudioClassification.from_pretrained(AST_MODEL_ID, **kwargs)
+                except Exception as online_err:
+                    raise FileNotFoundError(
+                        f"AST checkpoint not installed offline ({offline_err}) and online download failed: {online_err}. "
+                        "Run `python -m eval.fetch_ast` to bootstrap weights."
+                    ) from online_err
+
+            if AST_MODEL_ID == "Adam-ousse/ast-esc50-finetuned-fold1":
+                sf_file = (
+                    AST_CACHE_DIR
+                    / f"models--{AST_MODEL_ID.replace('/', '--')}"
+                    / "snapshots"
+                    / AST_REVISION
+                    / "model.safetensors"
+                )
+                if sf_file.is_file():
+                    _verify_file_sha256(sf_file, AST_SHA256)
+            loaded_id = AST_MODEL_ID
 
         model.eval()
 
@@ -175,14 +210,15 @@ def _load_ast_engine() -> Dict[str, Any]:
             "model": model,
             "label_map": label_map,
             "sampling_rate": AST_SAMPLE_RATE,
-            "model_id": AST_MODEL_ID,
+            "model_id": loaded_id,
             "revision": AST_REVISION,
+            "temperature": max(0.05, min(20.0, temperature)),
         }
     return _AST_ENGINE
 
 
 def _ast_probabilities(y: np.ndarray, sr: int) -> Tuple[np.ndarray, int]:
-    """Mean class probabilities over 5 s windows. No filename or metadata use."""
+    """RMS-weighted, temperature-scaled class probabilities over 5 s windows. No filename or metadata use."""
     engine = _load_ast_engine()
     if sr != AST_SAMPLE_RATE:
         y = librosa.resample(
@@ -192,8 +228,10 @@ def _ast_probabilities(y: np.ndarray, sr: int) -> Tuple[np.ndarray, int]:
 
     window = int(AST_SAMPLE_RATE * ANALYSIS_WINDOW_SECONDS)
     hop = int(AST_SAMPLE_RATE * ANALYSIS_WINDOW_HOP_SECONDS)
+    silence_rms_threshold = 10.0 ** (SILENCE_DBFS_THRESHOLD / 20.0)
     if y.size <= window:
-        starts = [0]
+        chunks = [np.pad(y, (0, window - y.size)) if y.size < window else y]
+        win_weights = np.array([1.0], dtype=np.float64)
     else:
         starts = list(range(0, y.size - window + 1, hop))
         final_start = y.size - window
@@ -201,28 +239,34 @@ def _ast_probabilities(y: np.ndarray, sr: int) -> Tuple[np.ndarray, int]:
             starts.append(final_start)
         if len(starts) > MAX_ANALYSIS_WINDOWS:
             starts = starts[:MAX_ANALYSIS_WINDOWS - 1] + [final_start]
+        chunks = [y[s:s + window] for s in starts]
+        w_rms = np.array([float(np.sqrt(np.mean(c ** 2))) if c.size else 0.0 for c in chunks], dtype=np.float64)
+        max_rms = float(np.max(w_rms))
+        if max_rms > 1e-8:
+            win_weights = np.where(w_rms >= max(silence_rms_threshold, 0.15 * max_rms), w_rms / max_rms, 0.0)
+            w_sum = float(np.sum(win_weights))
+            win_weights = win_weights / w_sum if w_sum > 1e-8 else np.ones(len(chunks)) / len(chunks)
+        else:
+            win_weights = np.ones(len(chunks)) / len(chunks)
 
+    temp = float(engine.get("temperature", 1.0))
     accumulated = np.zeros(len(ESC50_CATEGORIES), dtype=np.float64)
-    for start in starts:
-        chunk = y[start:start + window]
-        if chunk.size < window:
-            chunk = np.pad(chunk, (0, window - chunk.size))
+    for chunk, weight in zip(chunks, win_weights):
         inputs = engine["feature_extractor"](
             chunk, sampling_rate=AST_SAMPLE_RATE, return_tensors="pt"
         )
         with torch.no_grad():
-            logits = engine["model"](**inputs).logits[0]
+            logits = engine["model"](**inputs).logits[0] / temp
         probs = torch.softmax(logits, dim=-1).numpy()
         mapped = np.zeros(len(ESC50_CATEGORIES), dtype=np.float64)
         for output_index, category_id in engine["label_map"].items():
             mapped[category_id] = probs[output_index]
-        accumulated += mapped
+        accumulated += float(weight) * mapped
 
-    accumulated /= max(1, len(starts))
     accumulated /= max(float(accumulated.sum()), 1e-12)
     import gc
     gc.collect()
-    return accumulated.astype(np.float32), len(starts)
+    return accumulated.astype(np.float32), len(chunks)
 
 
 _ENGINE_STATUS: Dict[str, Any] = {
@@ -407,7 +451,7 @@ def load_model_checkpoint(model_name: str) -> Optional[Dict[str, Any]]:
             "feat_type": "ast",
             "filename": f"hf:{AST_MODEL_ID}",
             "arch_key": "ast",
-            "temperature": 1.0,
+            "temperature": float(engine.get("temperature", 1.0)),
             "metrics": {},
         }
     if matched_key in _MODEL_CACHE:
@@ -718,8 +762,10 @@ def run_acoustic_inference(
     """
     t_start = time.time()
 
+    norm_name = re.sub(r"[^a-z0-9]", "", model_name.lower())
+    decode_sr = AST_SAMPLE_RATE if norm_name in {"ast", "astesc50"} else 22050
     # Measure the original decoded recording before padding or peak normalization.
-    y, sr = load_audio_waveform(audio_input, target_sr=22050, target_duration=None)
+    y, sr = load_audio_waveform(audio_input, target_sr=decode_sr, target_duration=None)
     metrics = compute_signal_metrics(y, sr)
 
     silence_rms_threshold = 10.0 ** (SILENCE_DBFS_THRESHOLD / 20.0)
@@ -735,7 +781,6 @@ def run_acoustic_inference(
         return _build_tone_result(metrics, model_name, t_start)
 
     t_infer = time.time()
-    norm_name = re.sub(r"[^a-z0-9]", "", model_name.lower())
     if norm_name in {"ast", "astesc50"}:
         probs, window_count = _ast_probabilities(y, sr)
         engine_name = "ast-esc50"

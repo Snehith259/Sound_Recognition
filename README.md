@@ -36,9 +36,18 @@ The primary deployed model is **`AST-ESC50`** ([Adam-ousse/ast-esc50-finetuned-f
 
 *Note on Probability R²*: In this repository, R² measures the one-hot target reconstruction versus predicted probability mass (`1 - SSE / SST`). It is a calibration and distribution diagnostic, not an alternative name for accuracy.
 
-### Research Architecture Status
+### Evaluated Architectures (from `checkpoints/eval_report.json`)
 
-The four legacy research architectures (**ResNet-18**, **VGG-16**, **SResNet**, **CNN-GRU**) and their ensemble are kept in the UI and registry marked **“Not evaluated”**. Their checkpoints are absent in this checkout; requesting them returns an explicit HTTP 503 rather than silently substituting any model.
+| Model | Protocol | ESC-50 Top-1 | ESC-50 Top-5 | ECE | External Dev Top-1 |
+|---|---|---:|---:|---:|---:|
+| **AST-ESC50** *(default)* | Fold-1 test (`n=398`) | **92.71%** | **98.99%** | **0.0392** | **85.71%** |
+| **Ensemble Fusion** | 5-Fold CV (`log-prob + T_ens`) | **86.13%** | **98.50%** | **0.0455** | **51.79%** |
+| **SResNet** | 5-Fold CV | **83.08%** | **97.20%** | 0.0631 | 37.50% |
+| **ResNet-18** | 5-Fold CV | **82.53%** | **97.30%** | 0.0636 | 48.21% |
+| **VGG-16** | 5-Fold CV | **81.58%** | **96.55%** | 0.0527 | **62.50%** |
+| **CNN-GRU** | 5-Fold CV | **63.36%** | **90.49%** | 0.0632 | 44.64% |
+
+*(Note: Requesting any model whose checkpoint file is missing on a fresh deploy returns an explicit HTTP 503 rather than silently substituting another model. To retrain the upgraded v2 CNN/ConvNeXt-Tiny architectures on a GPU, run [kaggle_train_esc50.ipynb](kaggle_train_esc50.ipynb).)*
 
 ## Key Features
 

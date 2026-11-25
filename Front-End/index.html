@@ -744,7 +744,7 @@
               <div class="select-wrap">
                 <select id="model-select" class="custom-select" aria-label="Select classification model">
                   <option value="ast" selected>AST-ESC50 (Transformer · Deployed &bull; 92.7%)</option>
-                  <option value="ensemble">Ensemble Fusion (Multi-Architecture &bull; 85.6%)</option>
+                  <option value="ensemble">Ensemble Fusion (Multi-Architecture &bull; 86.1%)</option>
                   <option value="sresnet">SResNet (Transfer Residual &bull; 83.1%)</option>
                   <option value="resnet18">ResNet-18 (Deep Residual &bull; 82.5%)</option>
                   <option value="vgg16">VGG-16 (Deep CNN &bull; 81.6%)</option>
@@ -1456,7 +1456,7 @@
               skip connections, spatial dropout, and global average pooling for high-throughput environmental sound
               classification.</p>
             <div class="arch-metrics">
-              <div class="metric"><span class="m-val" data-model-key="sresnet">72.7% / 91.7%</span><span
+              <div class="metric"><span class="m-val" data-model-key="sresnet">83.1% / 97.2%</span><span
                   class="m-lbl">ESC-50 Accuracy</span></div>
               <div class="metric"><span class="m-val">128-Mel</span><span class="m-lbl">Primary Input</span></div>
               <div class="metric"><span class="m-val">~11.2M</span><span class="m-lbl">Parameters</span></div>
@@ -1477,15 +1477,15 @@
               <span class="arch-pill pill-green">Multi-Stream &amp; Recurrent</span>
             </div>
             <h3 class="arch-name">Ensemble Fusion &amp; CNN-GRU</h3>
-            <p class="arch-desc">Ensemble combines transformer, recurrence, and convolutional representations via
-              softmax fusion (71.6% Top-1). CNN-GRU adds bidirectional recurrent units for temporal sequence dynamics
-              (67.3% Top-1).</p>
+            <p class="arch-desc">Ensemble combines four 5-fold CV neural streams via calibrated log-probability fusion
+              (86.1% Top-1). CNN-GRU adds bidirectional recurrent units for temporal sequence dynamics
+              (63.4% Top-1).</p>
             <div class="arch-metrics">
-              <div class="metric"><span class="m-val" data-model-key="ensemble">71.6% / 93.0%</span><span
+              <div class="metric"><span class="m-val" data-model-key="ensemble">86.1% / 98.5%</span><span
                   class="m-lbl">Ensemble Top-1/5</span></div>
-              <div class="metric"><span class="m-val" data-model-key="cnngru">67.3% / 90.5%</span><span
+              <div class="metric"><span class="m-val" data-model-key="cnngru">63.4% / 90.5%</span><span
                   class="m-lbl">CNN-GRU Top-1/5</span></div>
-              <div class="metric"><span class="m-val">Mel &amp; MFCC</span><span class="m-lbl">Input Types</span></div>
+              <div class="metric"><span class="m-val">128-Mel</span><span class="m-lbl">Input Types</span></div>
             </div>
           </div>
 
@@ -1504,12 +1504,12 @@
             </div>
             <h3 class="arch-name">ResNet-18 &amp; VGG-16 Baselines</h3>
             <p class="arch-desc">Standard convolutional vision architectures evaluated on audio spectrograms. VGG-16
-              features stacked 3&times;3 convolutions (64.6% Top-1); ResNet-18 utilizes 18-layer residual identity
-              mappings (58.8% Top-1).</p>
+              features stacked 3&times;3 convolutions (81.6% Top-1); ResNet-18 utilizes 18-layer residual identity
+              mappings (82.5% Top-1).</p>
             <div class="arch-metrics">
-              <div class="metric"><span class="m-val" data-model-key="vgg16">64.6% / 91.0%</span><span
+              <div class="metric"><span class="m-val" data-model-key="vgg16">81.6% / 96.6%</span><span
                   class="m-lbl">VGG-16 Top-1/5</span></div>
-              <div class="metric"><span class="m-val" data-model-key="resnet18">58.8% / 88.4%</span><span
+              <div class="metric"><span class="m-val" data-model-key="resnet18">82.5% / 97.3%</span><span
                   class="m-lbl">ResNet-18 Top-1/5</span></div>
               <div class="metric"><span class="m-val">15.8M / 11.3M</span><span class="m-lbl">Parameters</span></div>
             </div>
@@ -1532,31 +1532,31 @@
               </div>
               <span class="perf-pct">92.7% (Top-5: 99.0%)</span>
             </div>
-            <div class="perf-row" data-value="72.7" data-model-key="sresnet">
-              <span class="perf-name">SResNet</span>
-              <div class="perf-track"><span class="perf-fill" data-w="72.7" style="width: 72.7%;"></span></div>
-              <span class="perf-pct">72.7% (Top-5: 91.7%)</span>
-            </div>
-            <div class="perf-row" data-value="71.6" data-model-key="ensemble">
+            <div class="perf-row" data-value="86.1" data-model-key="ensemble">
               <span class="perf-name">Ensemble Fusion</span>
-              <div class="perf-track"><span class="perf-fill perf-fusion" data-w="71.6" style="width: 71.6%;"></span>
+              <div class="perf-track"><span class="perf-fill perf-fusion" data-w="86.1" style="width: 86.1%;"></span>
               </div>
-              <span class="perf-pct">71.6% (Top-5: 93.0%)</span>
+              <span class="perf-pct">86.1% (Top-5: 98.5%)</span>
             </div>
-            <div class="perf-row" data-value="67.3" data-model-key="cnngru">
-              <span class="perf-name">CNN-GRU</span>
-              <div class="perf-track"><span class="perf-fill" data-w="67.3" style="width: 67.3%;"></span></div>
-              <span class="perf-pct">67.3% (Top-5: 90.5%)</span>
+            <div class="perf-row" data-value="83.1" data-model-key="sresnet">
+              <span class="perf-name">SResNet</span>
+              <div class="perf-track"><span class="perf-fill" data-w="83.1" style="width: 83.1%;"></span></div>
+              <span class="perf-pct">83.1% (Top-5: 97.2%)</span>
             </div>
-            <div class="perf-row" data-value="64.6" data-model-key="vgg16">
-              <span class="perf-name">VGG-16</span>
-              <div class="perf-track"><span class="perf-fill" data-w="64.6" style="width: 64.6%;"></span></div>
-              <span class="perf-pct">64.6% (Top-5: 91.0%)</span>
-            </div>
-            <div class="perf-row" data-value="58.8" data-model-key="resnet18">
+            <div class="perf-row" data-value="82.5" data-model-key="resnet18">
               <span class="perf-name">ResNet-18</span>
-              <div class="perf-track"><span class="perf-fill" data-w="58.8" style="width: 58.8%;"></span></div>
-              <span class="perf-pct">58.8% (Top-5: 88.4%)</span>
+              <div class="perf-track"><span class="perf-fill" data-w="82.5" style="width: 82.5%;"></span></div>
+              <span class="perf-pct">82.5% (Top-5: 97.3%)</span>
+            </div>
+            <div class="perf-row" data-value="81.6" data-model-key="vgg16">
+              <span class="perf-name">VGG-16</span>
+              <div class="perf-track"><span class="perf-fill" data-w="81.6" style="width: 81.6%;"></span></div>
+              <span class="perf-pct">81.6% (Top-5: 96.6%)</span>
+            </div>
+            <div class="perf-row" data-value="63.4" data-model-key="cnngru">
+              <span class="perf-name">CNN-GRU</span>
+              <div class="perf-track"><span class="perf-fill" data-w="63.4" style="width: 63.4%;"></span></div>
+              <span class="perf-pct">63.4% (Top-5: 90.5%)</span>
             </div>
           </div>
         </div>
@@ -1582,40 +1582,40 @@
                 <td data-model-metric="latency">~735.6 ms</td>
                 <td data-model-metric="accuracy"><strong class="col-highlight">92.7% (Top-5: 99.0%)</strong></td>
               </tr>
+              <tr data-model-key="ensemble">
+                <td><strong>Ensemble Fusion</strong></td>
+                <td>Calibrated Log-Prob Fusion</td>
+                <td data-model-metric="params">~28M</td>
+                <td data-model-metric="latency">~69.9 ms</td>
+                <td data-model-metric="accuracy">86.1% (Top-5: 98.5%)</td>
+              </tr>
               <tr data-model-key="sresnet">
                 <td><strong>SResNet</strong></td>
                 <td>128-band Log-Mel Spectrogram</td>
                 <td data-model-metric="params">~11.2M</td>
-                <td data-model-metric="latency">~4.5 ms</td>
-                <td data-model-metric="accuracy">72.7% (Top-5: 91.7%)</td>
-              </tr>
-              <tr data-model-key="ensemble">
-                <td><strong>Ensemble Fusion</strong></td>
-                <td>Multi-Modal Softmax Fusion</td>
-                <td data-model-metric="params">~28M</td>
-                <td data-model-metric="latency">~61.9 ms</td>
-                <td data-model-metric="accuracy">71.6% (Top-5: 93.0%)</td>
-              </tr>
-              <tr data-model-key="cnngru">
-                <td><strong>CNN-GRU</strong></td>
-                <td>Nonlinear Log-Mel Spectrograms</td>
-                <td data-model-metric="params">~0.5M</td>
-                <td data-model-metric="latency">~2.0 ms</td>
-                <td data-model-metric="accuracy">67.3% (Top-5: 90.5%)</td>
-              </tr>
-              <tr data-model-key="vgg16">
-                <td><strong>VGG-16</strong></td>
-                <td>Log-Mel Spectrogram</td>
-                <td data-model-metric="params">~15.8M</td>
-                <td data-model-metric="latency">~50.4 ms</td>
-                <td data-model-metric="accuracy">64.6% (Top-5: 91.0%)</td>
+                <td data-model-metric="latency">~9.9 ms</td>
+                <td data-model-metric="accuracy">83.1% (Top-5: 97.2%)</td>
               </tr>
               <tr data-model-key="resnet18">
                 <td><strong>ResNet-18</strong></td>
                 <td>Log-Mel Spectrogram</td>
                 <td data-model-metric="params">~11.3M</td>
-                <td data-model-metric="latency">~6.5 ms</td>
-                <td data-model-metric="accuracy">58.8% (Top-5: 88.4%)</td>
+                <td data-model-metric="latency">~10.1 ms</td>
+                <td data-model-metric="accuracy">82.5% (Top-5: 97.3%)</td>
+              </tr>
+              <tr data-model-key="vgg16">
+                <td><strong>VGG-16</strong></td>
+                <td>Log-Mel Spectrogram</td>
+                <td data-model-metric="params">~15.8M</td>
+                <td data-model-metric="latency">~47.1 ms</td>
+                <td data-model-metric="accuracy">81.6% (Top-5: 96.6%)</td>
+              </tr>
+              <tr data-model-key="cnngru">
+                <td><strong>CNN-GRU</strong></td>
+                <td>Nonlinear Log-Mel Spectrograms</td>
+                <td data-model-metric="params">~0.5M</td>
+                <td data-model-metric="latency">~2.9 ms</td>
+                <td data-model-metric="accuracy">63.4% (Top-5: 90.5%)</td>
               </tr>
             </tbody>
           </table>

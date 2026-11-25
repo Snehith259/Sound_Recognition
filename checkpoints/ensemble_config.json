@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "archVersion": 1,
+  "fusion": "weighted_log_prob",
+  "weights": {
+    "sresnet": 0.3,
+    "vgg16": 0.32,
+    "resnet18": 0.28,
+    "cnngru": 0.1
+  },
+  "temperature": 0.872127850616535,
+  "foldTemperatures": [
+    0.8262050663336223,
+    0.8945975741316459,
+    0.8483710662916358,
+    0.8664963676303017,
+    0.9249691786954688
+  ]
+}

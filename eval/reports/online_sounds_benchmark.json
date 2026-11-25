@@ -30,7 +30,7 @@
           0.0
         ]
       ],
-      "latency_ms": 4646.2
+      "latency_ms": 4489.5
     },
     {
       "case_id": "ONLINE-01",
@@ -58,7 +58,7 @@
           7.4
         ]
       ],
-      "latency_ms": 265.6
+      "latency_ms": 713.3
     },
     {
       "case_id": "ONLINE-01",
@@ -86,7 +86,7 @@
           22.4
         ]
       ],
-      "latency_ms": 13.0
+      "latency_ms": 14.0
     },
     {
       "case_id": "ONLINE-01",
@@ -97,24 +97,24 @@
       "model": "ensemble",
       "engine": "ensemble-checkpoint",
       "predicted": "dog",
-      "confidence": 0.5086,
+      "confidence": 0.6752,
       "is_ood_detected": false,
       "correct": true,
       "top3": [
         [
           "dog",
-          50.9
+          67.5
         ],
         [
           "laughing",
-          10.6
+          10.8
         ],
         [
           "water_drops",
-          4.7
+          2.9
         ]
       ],
-      "latency_ms": 1170.3
+      "latency_ms": 1245.3
     },
     {
       "case_id": "ONLINE-02",
@@ -142,7 +142,7 @@
           0.1
         ]
       ],
-      "latency_ms": 929.4
+      "latency_ms": 898.3
     },
     {
       "case_id": "ONLINE-02",
@@ -170,7 +170,7 @@
           1.4
         ]
       ],
-      "latency_ms": 20.1
+      "latency_ms": 19.8
     },
     {
       "case_id": "ONLINE-02",
@@ -198,7 +198,7 @@
           3.5
         ]
       ],
-      "latency_ms": 13.6
+      "latency_ms": 13.8
     },
     {
       "case_id": "ONLINE-02",
@@ -209,24 +209,24 @@
       "model": "ensemble",
       "engine": "ensemble-checkpoint",
       "predicted": "cat",
-      "confidence": 0.9092,
+      "confidence": 0.9826,
       "is_ood_detected": false,
       "correct": true,
       "top3": [
         [
           "cat",
-          90.9
+          98.3
         ],
         [
           "siren",
-          1.4
+          0.4
         ],
         [
-          "car_horn",
-          0.8
+          "crying_baby",
+          0.2
         ]
       ],
-      "latency_ms": 126.7
+      "latency_ms": 118.5
     },
     {
       "case_id": "ONLINE-03",
@@ -254,7 +254,7 @@
           0.0
         ]
       ],
-      "latency_ms": 965.8
+      "latency_ms": 936.7
     },
     {
       "case_id": "ONLINE-03",
@@ -282,7 +282,7 @@
           0.0
         ]
       ],
-      "latency_ms": 26.0
+      "latency_ms": 26.4
     },
     {
       "case_id": "ONLINE-03",
@@ -310,7 +310,7 @@
           5.5
         ]
       ],
-      "latency_ms": 14.2
+      "latency_ms": 14.6
     },
     {
       "case_id": "ONLINE-03",
@@ -321,24 +321,24 @@
       "model": "ensemble",
       "engine": "ensemble-checkpoint",
       "predicted": "rooster",
-      "confidence": 0.8085,
+      "confidence": 0.9938,
       "is_ood_detected": false,
       "correct": true,
       "top3": [
         [
           "rooster",
-          80.8
+          99.4
         ],
         [
           "cat",
-          9.1
+          0.2
         ],
         [
           "hen",
-          1.7
+          0.1
         ]
       ],
-      "latency_ms": 174.1
+      "latency_ms": 175.7
     },
     {
       "case_id": "ONLINE-04",
@@ -349,24 +349,24 @@
       "model": "ast",
       "engine": "ast-esc50",
       "predicted": "rain",
-      "confidence": 0.7861,
+      "confidence": 0.7251,
       "is_ood_detected": false,
       "correct": true,
       "top3": [
         [
           "rain",
-          78.6
+          72.5
         ],
         [
           "thunderstorm",
-          9.8
+          13.2
         ],
         [
           "toilet_flush",
-          1.9
+          2.3
         ]
       ],
-      "latency_ms": 5507.2
+      "latency_ms": 5025.1
     },
     {
       "case_id": "ONLINE-04",
@@ -394,7 +394,7 @@
           9.6
         ]
       ],
-      "latency_ms": 71.7
+      "latency_ms": 97.3
     },
     {
       "case_id": "ONLINE-04",
@@ -422,7 +422,7 @@
           23.2
         ]
       ],
-      "latency_ms": 34.7
+      "latency_ms": 39.7
     },
     {
       "case_id": "ONLINE-04",
@@ -433,24 +433,24 @@
       "model": "ensemble",
       "engine": "ensemble-checkpoint",
       "predicted": "rain",
-      "confidence": 0.5438,
+      "confidence": 0.708,
       "is_ood_detected": false,
       "correct": true,
       "top3": [
         [
           "rain",
-          54.4
+          70.8
         ],
         [
           "sea_waves",
-          18.3
+          15.3
         ],
         [
           "train",
-          12.4
+          7.9
         ]
       ],
-      "latency_ms": 563.6
+      "latency_ms": 528.8
     },
     {
       "case_id": "ONLINE-05",
@@ -478,7 +478,7 @@
           0.4
         ]
       ],
-      "latency_ms": 7718.2
+      "latency_ms": 7228.9
     },
     {
       "case_id": "ONLINE-05",
@@ -506,7 +506,7 @@
           1.5
         ]
       ],
-      "latency_ms": 106.1
+      "latency_ms": 94.9
     },
     {
       "case_id": "ONLINE-05",
@@ -534,7 +534,7 @@
           0.9
         ]
       ],
-      "latency_ms": 49.0
+      "latency_ms": 52.0
     },
     {
       "case_id": "ONLINE-05",
@@ -545,24 +545,24 @@
       "model": "ensemble",
       "engine": "ensemble-checkpoint",
       "predicted": "siren",
-      "confidence": 0.7433,
+      "confidence": 0.9346,
       "is_ood_detected": false,
       "correct": true,
       "top3": [
         [
           "siren",
-          74.3
-        ],
-        [
-          "clock_alarm",
-          1.7
+          93.5
         ],
         [
           "vacuum_cleaner",
-          1.4
+          0.5
+        ],
+        [
+          "clock_alarm",
+          0.5
         ]
       ],
-      "latency_ms": 748.9
+      "latency_ms": 873.2
     },
     {
       "case_id": "ONLINE-06",
@@ -590,7 +590,7 @@
           0.1
         ]
       ],
-      "latency_ms": 940.6
+      "latency_ms": 911.1
     },
     {
       "case_id": "ONLINE-06",
@@ -618,7 +618,7 @@
           0.0
         ]
       ],
-      "latency_ms": 23.7
+      "latency_ms": 24.8
     },
     {
       "case_id": "ONLINE-06",
@@ -646,7 +646,7 @@
           5.5
         ]
       ],
-      "latency_ms": 16.7
+      "latency_ms": 14.4
     },
     {
       "case_id": "ONLINE-06",
@@ -657,24 +657,24 @@
       "model": "ensemble",
       "engine": "ensemble-checkpoint",
       "predicted": "car_horn",
-      "confidence": 0.9214,
+      "confidence": 0.9997,
       "is_ood_detected": false,
       "correct": true,
       "top3": [
         [
           "car_horn",
-          92.1
+          100.0
         ],
         [
-          "sheep",
-          5.2
+          "church_bells",
+          0.0
         ],
         [
-          "cat",
-          0.6
+          "rooster",
+          0.0
         ]
       ],
-      "latency_ms": 175.0
+      "latency_ms": 173.2
     },
     {
       "case_id": "ONLINE-07",
@@ -685,24 +685,24 @@
       "model": "ast",
       "engine": "ast-esc50",
       "predicted": "Not in ESC-50 Classes (Low Confidence)",
-      "confidence": 0.1472,
+      "confidence": 0.1476,
       "is_ood_detected": true,
       "correct": true,
       "top3": [
         [
           "Not in ESC-50 Classes (Low Confidence)",
-          14.7
+          14.8
         ],
         [
           "water_drops",
-          14.7
+          14.8
         ],
         [
           "chirping_birds",
-          6.5
+          6.4
         ]
       ],
-      "latency_ms": 922.2
+      "latency_ms": 967.6
     },
     {
       "case_id": "ONLINE-07",
@@ -730,7 +730,7 @@
           1.5
         ]
       ],
-      "latency_ms": 18.5
+      "latency_ms": 19.1
     },
     {
       "case_id": "ONLINE-07",
@@ -758,7 +758,7 @@
           6.5
         ]
       ],
-      "latency_ms": 14.7
+      "latency_ms": 14.4
     },
     {
       "case_id": "ONLINE-07",
@@ -769,24 +769,24 @@
       "model": "ensemble",
       "engine": "ensemble-checkpoint",
       "predicted": "crying_baby",
-      "confidence": 0.8353,
+      "confidence": 0.9224,
       "is_ood_detected": false,
       "correct": false,
       "top3": [
         [
           "crying_baby",
-          83.5
+          92.2
         ],
         [
           "insects",
-          7.3
+          5.4
         ],
         [
           "laughing",
-          2.4
+          0.8
         ]
       ],
-      "latency_ms": 117.2
+      "latency_ms": 119.8
     },
     {
       "case_id": "ONLINE-08",
@@ -806,7 +806,7 @@
           null
         ]
       ],
-      "latency_ms": 2.2
+      "latency_ms": 1.8
     },
     {
       "case_id": "ONLINE-08",
@@ -826,7 +826,7 @@
           null
         ]
       ],
-      "latency_ms": 2.1
+      "latency_ms": 2.3
     },
     {
       "case_id": "ONLINE-08",
@@ -846,7 +846,7 @@
           null
         ]
       ],
-      "latency_ms": 2.1
+      "latency_ms": 2.0
     },
     {
       "case_id": "ONLINE-08",
@@ -866,7 +866,7 @@
           null
         ]
       ],
-      "latency_ms": 2.1
+      "latency_ms": 2.0
     }
   ]
 }
