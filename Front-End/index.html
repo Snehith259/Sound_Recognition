@@ -342,16 +342,16 @@
               <span class="hero-stat-lbl">Sound Classes</span>
             </div>
             <div class="hero-stat">
-              <span class="hero-stat-val">4</span>
-              <span class="hero-stat-lbl">Neural Architectures</span>
+              <span class="hero-stat-val">6</span>
+              <span class="hero-stat-lbl">Acoustic Models</span>
             </div>
             <div class="hero-stat">
-              <span class="hero-stat-val">22.05 kHz</span>
-              <span class="hero-stat-lbl">Acoustic Resolution</span>
+              <span class="hero-stat-val">16 / 32 kHz</span>
+              <span class="hero-stat-lbl">Dual Sample Rates</span>
             </div>
             <div class="hero-stat">
-              <span class="hero-stat-val">—</span>
-              <span class="hero-stat-lbl">Measured Latency</span>
+              <span class="hero-stat-val">96.4%</span>
+              <span class="hero-stat-lbl">Best ESC-50 CV Top-1</span>
             </div>
           </div>
         </div>
@@ -512,8 +512,8 @@
                   </svg>
                 </div>
                 <h4 class="step-card-title">Select Inference Engine</h4>
-                <p class="step-card-desc">Choose a neural architecture (SResNet, ResNet-18, VGG-16, or CNN-GRU). A
-                  trained checkpoint is required before it can classify audio.</p>
+                <p class="step-card-desc">Run our top-performing Hybrid Ensemble (96.4% CV) in User Mode, or unlock all
+                  six V4 AudioSet-2M &amp; Transformer architectures in Developer Mode.</p>
               </div>
 
               <div class="step-card">
@@ -737,18 +737,18 @@
           <div class="card-box card-module">
             <div class="card-header">
               <span class="card-tag">Model &amp; Configuration</span>
-              <span class="card-sub-info" id="model-badge-info">AST-ESC50 (Best)</span>
+              <span class="card-sub-info" id="model-badge-info">Ensemble Fusion (Best)</span>
             </div>
             <div class="control-group">
               <label class="control-label" for="model-select">Architecture</label>
               <div class="select-wrap">
                 <select id="model-select" class="custom-select" aria-label="Select classification model">
-                  <option value="ast" selected>AST-ESC50 (Transformer · Deployed &bull; 92.7%)</option>
-                  <option value="ensemble">Ensemble Fusion (Multi-Architecture &bull; 86.1%)</option>
-                  <option value="sresnet">SResNet (Transfer Residual &bull; 83.1%)</option>
-                  <option value="resnet18">ResNet-18 (Deep Residual &bull; 82.5%)</option>
-                  <option value="vgg16">VGG-16 (Deep CNN &bull; 81.6%)</option>
-                  <option value="cnngru">CNN-GRU (Temporal Recurrent &bull; 63.4%)</option>
+                  <option value="ensemble" selected>Ensemble Fusion (Hybrid V4 + AST · Best &bull; 96.4%)</option>
+                  <option value="cnngru">CNN-GRU (MN20 + 2-Layer BiGRU · 32 kHz &bull; 95.9%)</option>
+                  <option value="sresnet">SResNet (DyMN10 Dynamic Residual · 32 kHz &bull; 95.0%)</option>
+                  <option value="ast">AST-ESC50 (Audio Spectrogram Transformer &bull; 92.7%)</option>
+                  <option value="resnet18">ResNet-18 (PANNs ResNet22 AudioSet-2M &bull; 90.5%)</option>
+                  <option value="vgg16">VGG-16 (PANNs Cnn10 AudioSet-2M &bull; 87.4%)</option>
                 </select>
                 <svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                   stroke-width="2.5" aria-hidden="true">
@@ -757,8 +757,8 @@
               </div>
               <div id="user-mode-arch-hint" class="user-mode-arch-hint">
                 <span class="badge-dot-cyan"></span>
-                <span>User mode runs the verified best model (<strong>AST-ESC50 &bull; 92.7%</strong>). Sign in to
-                  Developer Mode to unlock all 6 architectures.</span>
+                <span>User mode runs the verified best model (<strong>Ensemble Fusion &bull; 96.4% CV / 90.1%
+                    External</strong>). Sign in to Developer Mode to unlock all 6 architectures.</span>
               </div>
             </div>
             <div class="control-group no-margin" style="margin-top: 14px;">
@@ -1155,7 +1155,7 @@
             <div class="batch-model-badge" title="Active Model Architecture">
               <span class="badge-dot" aria-hidden="true"></span>
               <span class="batch-model-badge-lbl">Active:</span>
-              <span class="card-sub-info" id="batch-model-info">AST-ESC50 (Best)</span>
+              <span class="card-sub-info" id="batch-model-info">Ensemble Fusion (Best)</span>
             </div>
             <div class="batch-counter-chip" id="batch-counter-chip" hidden>
               <span id="batch-chip-count">0 files</span>
@@ -1316,57 +1316,61 @@
             <span class="nav-dev-tag unlocked" style="display: inline-block;">DEVELOPER MODE</span>
           </div>
           <h2 class="panel-heading">Neural Architecture &amp; <span class="gradient-text">Research Pipeline</span></h2>
-          <p class="panel-subtext">Engineering methodology: raw audio ingestion, shared feature extraction, four
-            classifier architectures, and evaluation reports on ESC-50.</p>
+          <p class="panel-subtext">V4 acoustic engineering: AudioSet-2M transfer backbones, Audio Spectrogram Transformer,
+            mixture-adapted 32 kHz training, calibrated hybrid fusion, and AudioSet-527 OOD verification.</p>
         </div>
 
         <!-- Phase 01: End-to-End Signal Ingestion & Dual-Modal Pipeline -->
         <div class="combined-subhead">
           <div class="subhead-title-wrap">
             <span class="subhead-badge">Phase 01</span>
-            <h3 class="subhead-title">End-to-End Audio Ingestion &amp; Feature Pipeline</h3>
+            <h3 class="subhead-title">End-to-End Audio Ingestion &amp; V4 Feature Pipeline</h3>
           </div>
-          <p class="subhead-meta">Deterministic 4-stage processing flow converting raw sound waves into multimodal
-            neural tensors</p>
+          <p class="subhead-meta">Sample-rate-faithful decoding, 32 kHz / 16 kHz spectral representations, and rule +
+            ontology gating</p>
         </div>
 
         <div class="pipeline-cards-row">
           <div class="flow-step-card">
             <div class="flow-num">01</div>
-            <h4 class="flow-step-title">Resampling &amp; Active Segment</h4>
-            <p class="flow-step-desc">Ingest multi-format audio (WAV, MP3, AAC, WebM, OGG), resample to 22.05 kHz / 16
-              kHz, normalize peaks, and isolate high-energy segments via energy VAD.</p>
-            <div class="flow-pill">22.05 kHz &bull; Peak Norm &bull; Energy VAD &bull; Multi-Format</div>
+            <h4 class="flow-step-title">Codec Parity &amp; Signal Gates</h4>
+            <p class="flow-step-desc">Decode WAV, MP3, AAC, MPEG, WebM, and OGG streams cleanly via FFmpeg PCM +
+              <code>soxr</code> resampling to 32 kHz (V4 CNNs) &amp; 16 kHz (AST), with a &lt;0.25-hop codec tail
+              guard, silence (-55 dBFS) and tonality gates.
+            </p>
+            <div class="flow-pill">32 kHz / 16 kHz &bull; soxr &bull; Codec Parity &ge;97%</div>
           </div>
 
           <div class="flow-connector" aria-hidden="true">&rarr;</div>
 
           <div class="flow-step-card">
             <div class="flow-num">02</div>
-            <h4 class="flow-step-title">Dual-Modal &amp; Recurrence Analysis</h4>
-            <p class="flow-step-desc">Extract 128-band Log-Mel spectrograms, 40 MFCCs, and 128&times;128 threshold-free
-              Recurrence Plots (RP) in parallel to capture linear spectral and nonlinear dynamics.</p>
-            <div class="flow-pill">128-Mel &bull; 40-MFCC &bull; 128x128 RP</div>
+            <h4 class="flow-step-title">AudioSet-2M Backbones</h4>
+            <p class="flow-step-desc">Extract multi-scale time-frequency representations using Kaldi 128-Mel STFT (32 kHz,
+              15 kHz cutoff) for EfficientAT (DyMN10, MN20+BiGRU) &amp; PANNs (ResNet22, Cnn10), alongside AST 16&times;16
+              transformer patch self-attention.</p>
+            <div class="flow-pill">Kaldi 128-Mel (32k) &bull; AST Patches (16k)</div>
           </div>
 
           <div class="flow-connector" aria-hidden="true">&rarr;</div>
 
           <div class="flow-step-card">
             <div class="flow-num">03</div>
-            <h4 class="flow-step-title">Transformer Patch Tokenization</h4>
-            <p class="flow-step-desc">Project 2D spectrograms into overlapping 16&times;16 acoustic patches with
-              positional embeddings and 12-layer multi-head self-attention across time and frequency.</p>
-            <div class="flow-pill">16x16 Patches &bull; 768-D &bull; 12-Layer Self-Attn</div>
+            <h4 class="flow-step-title">Mixture-Adapted V4 Heads</h4>
+            <p class="flow-step-desc">Train leak-free 5-fold residual + 2-layer BiGRU attentive heads with fold-strict
+              32 kHz power-weighted 2-sound overlapping mixes and active burst crops to excel on real-world mixed soundscapes.</p>
+            <div class="flow-pill">5-Fold Zero Leakage &bull; Power Mixes &bull; fp16Weights</div>
           </div>
 
           <div class="flow-connector" aria-hidden="true">&rarr;</div>
 
           <div class="flow-step-card">
             <div class="flow-num">04</div>
-            <h4 class="flow-step-title">Stratified 5-Fold Validation</h4>
-            <p class="flow-step-desc">Evaluate across 5 stratified folds with disjoint recording sources for strict
-              zero-leakage evaluation, backed by multi-stream confidence fusion.</p>
-            <div class="flow-pill">5 Folds &bull; Zero Leakage &bull; PyTorch</div>
+            <h4 class="flow-step-title">Hybrid Fusion &amp; OOD Veto</h4>
+            <p class="flow-step-desc">Combine temperature-scaled linear + log probabilities across all models (`hybrid`),
+              pairing top-2 mixture concentration with AudioSet-527 non-ESC-50 ontology scores to reject speech, music,
+              tones, and static.</p>
+            <div class="flow-pill">Hybrid Fusion &bull; AudioSet-527 OOD &bull; AUROC 0.85+</div>
           </div>
         </div>
 
@@ -1375,34 +1379,34 @@
           <div class="dt-head">
             <div class="dt-badge">
               <span class="status-indicator live" aria-hidden="true"></span>
-              Preprocessing Suite Telemetry
+              V4 Preprocessing &amp; Model Suite Telemetry
             </div>
-            <span class="dt-sub">Standardized ESC-50 dataset telemetry across 50 acoustic classes</span>
+            <span class="dt-sub">Official ESC-50 5-fold CV + 219-clip Mixed/Pure + 174-clip External (Dev/Final) benchmarks</span>
           </div>
           <div class="dt-grid">
             <div class="dt-stat">
               <span class="dt-val">1,998</span>
-              <span class="dt-lbl">Processed Clips (22.05 kHz)</span>
+              <span class="dt-lbl">ESC-50 Clips (5 Folds)</span>
+            </div>
+            <div class="dt-stat">
+              <span class="dt-val">32 / 16 kHz</span>
+              <span class="dt-lbl">V4 CNN / AST Input Rate</span>
             </div>
             <div class="dt-stat">
               <span class="dt-val">128 &times; 216</span>
-              <span class="dt-lbl">Log-Mel Matrices (.npy)</span>
+              <span class="dt-lbl">Archived Log-Mel (.npy)</span>
             </div>
             <div class="dt-stat">
-              <span class="dt-val">40 &times; 216</span>
-              <span class="dt-lbl">MFCC Cepstra (.npy)</span>
+              <span class="dt-val">527 + 50</span>
+              <span class="dt-lbl">AudioSet OOD + ESC Classes</span>
             </div>
             <div class="dt-stat">
-              <span class="dt-val">128 &times; 128</span>
-              <span class="dt-lbl">Threshold-Free RP (.npy)</span>
+              <span class="dt-val">96.4% CV</span>
+              <span class="dt-lbl">Hybrid Ensemble Top-1</span>
             </div>
             <div class="dt-stat">
-              <span class="dt-val">5 Folds</span>
-              <span class="dt-lbl">Disjoint Stratified Splits</span>
-            </div>
-            <div class="dt-stat">
-              <span class="dt-val">AST Active</span>
-              <span class="dt-lbl">Production Model</span>
+              <span class="dt-val">90.1% Final</span>
+              <span class="dt-lbl">Blind External Holdout</span>
             </div>
           </div>
         </div>
@@ -1411,14 +1415,14 @@
         <div class="combined-subhead">
           <div class="subhead-title-wrap">
             <span class="subhead-badge">Phase 02</span>
-            <h3 class="subhead-title">Deep Learning Acoustic Architectures &amp; Evaluation Status</h3>
+            <h3 class="subhead-title">Deep Learning Acoustic Architectures &amp; V4 Evaluation Status</h3>
           </div>
-          <p class="subhead-meta">Comparative evaluation of transformer, residual, recurrent, and convolutional
-            representations on ESC-50</p>
+          <p class="subhead-meta">Comparative evaluation across ESC-50 5-fold CV, multi-format external audio, and mixed
+            internet recordings</p>
         </div>
 
         <div class="arch-cards-grid">
-          <!-- Card 1: AST-ESC50 (Premier & Best Model) -->
+          <!-- Card 1: Ensemble Fusion (Premier & Best Model) -->
           <div class="arch-card arch-card-premier arch-card-featured">
             <div class="arch-card-top">
               <div class="arch-icon-wrap icon-indigo">
@@ -1427,46 +1431,47 @@
                     d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                 </svg>
               </div>
-              <span class="arch-pill pill-indigo">★ PREMIER MODEL</span>
+              <span class="arch-pill pill-indigo">★ BEST MODEL · USER DEFAULT</span>
             </div>
-            <h3 class="arch-name">AST-ESC50 (Audio Spectrogram Transformer)</h3>
-            <p class="arch-desc">State-of-the-art vision transformer adapted for audio. ImageNet-21k &amp; AudioSet
-              pretraining fine-tuned on ESC-50 with 16&times;16 patch self-attention. Default and exclusive model in
-              User Mode.</p>
+            <h3 class="arch-name">Ensemble Fusion (Hybrid V4 + AST)</h3>
+            <p class="arch-desc">Calibrated 5-stream hybrid linear + log-probability fusion uniting DyMN10, MN20+BiGRU,
+              ResNet22, Cnn10, and AST with AudioSet-527 OOD scoring. #1 across ESC-50 CV, mixed audio (81.7% raw), and
+              blind holdout (90.1%).</p>
             <div class="arch-metrics">
-              <div class="metric"><span class="m-val" data-model-key="ast">92.7% / 99.0%</span><span
-                  class="m-lbl">ESC-50 Accuracy</span></div>
-              <div class="metric"><span class="m-val">Log-Mel</span><span class="m-lbl">Primary Input</span></div>
-              <div class="metric"><span class="m-val">~87M</span><span class="m-lbl">Parameters</span></div>
+              <div class="metric"><span class="m-val" data-model-key="ensemble">96.4% / 99.8%</span><span
+                  class="m-lbl">ESC-50 CV Top-1/5</span></div>
+              <div class="metric"><span class="m-val">32k + 16k</span><span class="m-lbl">Hybrid Input</span></div>
+              <div class="metric"><span class="m-val">~191M</span><span class="m-lbl">Total Params</span></div>
             </div>
           </div>
 
-          <!-- Card 2: SResNet -->
+          <!-- Card 2: CNN-GRU & SResNet (EfficientAT V4) -->
           <div class="arch-card">
             <div class="arch-card-top">
-              <div class="arch-icon-wrap icon-purple">
+              <div class="arch-icon-wrap icon-green">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
                 </svg>
               </div>
-              <span class="arch-pill pill-purple">Transfer Residual</span>
+              <span class="arch-pill pill-green">EfficientAT V4 · Fast 32 kHz</span>
             </div>
-            <h3 class="arch-name">SResNet (Transfer Residual Network)</h3>
-            <p class="arch-desc">Upgraded residual backbone operating on 128-band Log-Mel spectrograms with bottleneck
-              skip connections, spatial dropout, and global average pooling for high-throughput environmental sound
-              classification.</p>
+            <h3 class="arch-name">CNN-GRU &amp; SResNet (MN20+BiGRU / DyMN10)</h3>
+            <p class="arch-desc">AudioSet-2M EfficientAT backbones adapted on 32 kHz mixtures: CNN-GRU pairs MobileNetV3-2.0
+              with a 2-layer BiGRU attentive head (95.9% CV, ~40 ms); SResNet uses Dynamic MobileNet DyMN10 sub-half
+              pooling (95.0% CV).</p>
             <div class="arch-metrics">
-              <div class="metric"><span class="m-val" data-model-key="sresnet">83.1% / 97.2%</span><span
-                  class="m-lbl">ESC-50 Accuracy</span></div>
-              <div class="metric"><span class="m-val">128-Mel</span><span class="m-lbl">Primary Input</span></div>
-              <div class="metric"><span class="m-val">~11.2M</span><span class="m-lbl">Parameters</span></div>
+              <div class="metric"><span class="m-val" data-model-key="cnngru">95.9% / 99.4%</span><span
+                  class="m-lbl">CNN-GRU Top-1/5</span></div>
+              <div class="metric"><span class="m-val" data-model-key="sresnet">95.0% / 99.6%</span><span
+                  class="m-lbl">SResNet Top-1/5</span></div>
+              <div class="metric"><span class="m-val">20.2M / 11.8M</span><span class="m-lbl">Parameters</span></div>
             </div>
           </div>
 
-          <!-- Card 3: Ensemble Fusion & CNN-GRU -->
+          <!-- Card 3: AST-ESC50 -->
           <div class="arch-card">
             <div class="arch-card-top">
-              <div class="arch-icon-wrap icon-green">
+              <div class="arch-icon-wrap icon-purple">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="10" />
                   <line x1="2" y1="12" x2="22" y2="12" />
@@ -1474,22 +1479,21 @@
                     d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
                 </svg>
               </div>
-              <span class="arch-pill pill-green">Multi-Stream &amp; Recurrent</span>
+              <span class="arch-pill pill-purple">Transformer · Dev Mode</span>
             </div>
-            <h3 class="arch-name">Ensemble Fusion &amp; CNN-GRU</h3>
-            <p class="arch-desc">Ensemble combines four 5-fold CV neural streams via calibrated log-probability fusion
-              (86.1% Top-1). CNN-GRU adds bidirectional recurrent units for temporal sequence dynamics
-              (63.4% Top-1).</p>
+            <h3 class="arch-name">AST-ESC50 (Audio Spectrogram Transformer)</h3>
+            <p class="arch-desc">Vision transformer adapted for audio (16&times;16 overlapping patch self-attention,
+              AudioSet-2M pretraining) fine-tuned on 16 kHz ESC-50 waveforms. Achieves 82.7% on blind external holdout and
+              0.852 OOD AUROC.</p>
             <div class="arch-metrics">
-              <div class="metric"><span class="m-val" data-model-key="ensemble">86.1% / 98.5%</span><span
-                  class="m-lbl">Ensemble Top-1/5</span></div>
-              <div class="metric"><span class="m-val" data-model-key="cnngru">63.4% / 90.5%</span><span
-                  class="m-lbl">CNN-GRU Top-1/5</span></div>
-              <div class="metric"><span class="m-val">128-Mel</span><span class="m-lbl">Input Types</span></div>
+              <div class="metric"><span class="m-val" data-model-key="ast">92.7% / 99.0%</span><span
+                  class="m-lbl">Fold-1 Top-1/5</span></div>
+              <div class="metric"><span class="m-val">16 kHz Mel</span><span class="m-lbl">Primary Input</span></div>
+              <div class="metric"><span class="m-val">~87M</span><span class="m-lbl">Parameters</span></div>
             </div>
           </div>
 
-          <!-- Card 4: ResNet-18 & VGG-16 -->
+          <!-- Card 4: ResNet-18 & VGG-16 (PANNs V4) -->
           <div class="arch-card">
             <div class="arch-card-top">
               <div class="arch-icon-wrap icon-cyan">
@@ -1500,18 +1504,18 @@
                   <rect x="3" y="14" width="7" height="7" />
                 </svg>
               </div>
-              <span class="arch-pill pill-cyan">Deep Convolutions</span>
+              <span class="arch-pill pill-cyan">PANNs AudioSet-2M V4</span>
             </div>
-            <h3 class="arch-name">ResNet-18 &amp; VGG-16 Baselines</h3>
-            <p class="arch-desc">Standard convolutional vision architectures evaluated on audio spectrograms. VGG-16
-              features stacked 3&times;3 convolutions (81.6% Top-1); ResNet-18 utilizes 18-layer residual identity
-              mappings (82.5% Top-1).</p>
+            <h3 class="arch-name">ResNet-18 (ResNet22) &amp; VGG-16 (Cnn10)</h3>
+            <p class="arch-desc">PANNs AudioSet-2M backbones replacing legacy ImageNet CNNs: ResNet22 brings multi-block
+              32 kHz residual skip connections (90.5% CV); Cnn10 packs 4 double-conv blocks in a 14.2 MB fp16 checkpoint
+              with 87.0% blind external Top-1.</p>
             <div class="arch-metrics">
-              <div class="metric"><span class="m-val" data-model-key="vgg16">81.6% / 96.6%</span><span
-                  class="m-lbl">VGG-16 Top-1/5</span></div>
-              <div class="metric"><span class="m-val" data-model-key="resnet18">82.5% / 97.3%</span><span
+              <div class="metric"><span class="m-val" data-model-key="resnet18">90.5% / 98.9%</span><span
                   class="m-lbl">ResNet-18 Top-1/5</span></div>
-              <div class="metric"><span class="m-val">15.8M / 11.3M</span><span class="m-lbl">Parameters</span></div>
+              <div class="metric"><span class="m-val" data-model-key="vgg16">87.4% / 98.6%</span><span
+                  class="m-lbl">VGG-16 Top-1/5</span></div>
+              <div class="metric"><span class="m-val">65.7M / 6.7M</span><span class="m-lbl">Parameters</span></div>
             </div>
           </div>
         </div>
@@ -1520,108 +1524,109 @@
         <div class="perf-chart-box">
           <div class="perf-chart-head">
             <div>
-              <h4 class="table-caption">Accuracy Benchmark</h4>
-              <p class="perf-chart-sub">ESC-50 accuracy (Top-1 shown as bar length; Top-5 shown in label)</p>
+              <h4 class="table-caption">ESC-50 Accuracy Benchmark</h4>
+              <p class="perf-chart-sub">Official ESC-50 Top-1 (bar length) and Top-5 (label) synced live from <code>/api/stats</code></p>
             </div>
-            <span class="perf-chip" id="perf-chip">AST deployed: 92.7% Top-1 (99.0% Top-5, fold-1 test)</span>
+            <span class="perf-chip" id="perf-chip">Best: Ensemble Fusion 96.4% CV Top-1 (99.8% Top-5)</span>
           </div>
           <div class="perf-bars">
-            <div class="perf-row" data-value="92.7" data-model-key="ast">
-              <span class="perf-name">AST-ESC50 (Best)</span>
-              <div class="perf-track"><span class="perf-fill perf-fusion" data-w="92.7" style="width: 92.7%;"></span>
+            <div class="perf-row" data-value="96.4" data-model-key="ensemble">
+              <span class="perf-name">Ensemble Fusion (Best)</span>
+              <div class="perf-track"><span class="perf-fill perf-fusion" data-w="96.4" style="width: 96.4%;"></span>
               </div>
+              <span class="perf-pct">96.4% (Top-5: 99.8%)</span>
+            </div>
+            <div class="perf-row" data-value="95.9" data-model-key="cnngru">
+              <span class="perf-name">CNN-GRU (MN20+BiGRU)</span>
+              <div class="perf-track"><span class="perf-fill perf-fusion" data-w="95.9" style="width: 95.9%;"></span>
+              </div>
+              <span class="perf-pct">95.9% (Top-5: 99.4%)</span>
+            </div>
+            <div class="perf-row" data-value="95.0" data-model-key="sresnet">
+              <span class="perf-name">SResNet (DyMN10 V4)</span>
+              <div class="perf-track"><span class="perf-fill" data-w="95.0" style="width: 95.0%;"></span></div>
+              <span class="perf-pct">95.0% (Top-5: 99.6%)</span>
+            </div>
+            <div class="perf-row" data-value="92.7" data-model-key="ast">
+              <span class="perf-name">AST-ESC50</span>
+              <div class="perf-track"><span class="perf-fill" data-w="92.7" style="width: 92.7%;"></span></div>
               <span class="perf-pct">92.7% (Top-5: 99.0%)</span>
             </div>
-            <div class="perf-row" data-value="86.1" data-model-key="ensemble">
-              <span class="perf-name">Ensemble Fusion</span>
-              <div class="perf-track"><span class="perf-fill perf-fusion" data-w="86.1" style="width: 86.1%;"></span>
-              </div>
-              <span class="perf-pct">86.1% (Top-5: 98.5%)</span>
+            <div class="perf-row" data-value="90.5" data-model-key="resnet18">
+              <span class="perf-name">ResNet-18 (ResNet22 V4)</span>
+              <div class="perf-track"><span class="perf-fill" data-w="90.5" style="width: 90.5%;"></span></div>
+              <span class="perf-pct">90.5% (Top-5: 98.9%)</span>
             </div>
-            <div class="perf-row" data-value="83.1" data-model-key="sresnet">
-              <span class="perf-name">SResNet</span>
-              <div class="perf-track"><span class="perf-fill" data-w="83.1" style="width: 83.1%;"></span></div>
-              <span class="perf-pct">83.1% (Top-5: 97.2%)</span>
-            </div>
-            <div class="perf-row" data-value="82.5" data-model-key="resnet18">
-              <span class="perf-name">ResNet-18</span>
-              <div class="perf-track"><span class="perf-fill" data-w="82.5" style="width: 82.5%;"></span></div>
-              <span class="perf-pct">82.5% (Top-5: 97.3%)</span>
-            </div>
-            <div class="perf-row" data-value="81.6" data-model-key="vgg16">
-              <span class="perf-name">VGG-16</span>
-              <div class="perf-track"><span class="perf-fill" data-w="81.6" style="width: 81.6%;"></span></div>
-              <span class="perf-pct">81.6% (Top-5: 96.6%)</span>
-            </div>
-            <div class="perf-row" data-value="63.4" data-model-key="cnngru">
-              <span class="perf-name">CNN-GRU</span>
-              <div class="perf-track"><span class="perf-fill" data-w="63.4" style="width: 63.4%;"></span></div>
-              <span class="perf-pct">63.4% (Top-5: 90.5%)</span>
+            <div class="perf-row" data-value="87.4" data-model-key="vgg16">
+              <span class="perf-name">VGG-16 (Cnn10 V4)</span>
+              <div class="perf-track"><span class="perf-fill" data-w="87.4" style="width: 87.4%;"></span></div>
+              <span class="perf-pct">87.4% (Top-5: 98.6%)</span>
             </div>
           </div>
         </div>
 
         <!-- Comparative Spec Table -->
         <div class="spec-table-box">
-          <h4 class="table-caption">ESC-50 Evaluation Results</h4>
+          <h4 class="table-caption">ESC-50 &amp; External Holdout Specifications</h4>
           <table class="spec-table">
             <thead>
               <tr>
                 <th>Model Architecture</th>
                 <th>Feature Stream</th>
                 <th>Parameter Footprint</th>
-                <th>Inference Speed</th>
+                <th>External Latency</th>
                 <th>ESC-50 Accuracy (Top-1 / Top-5)*</th>
               </tr>
             </thead>
             <tbody>
-              <tr class="highlight-row" data-model-key="ast">
-                <td><strong>AST-ESC50 (Best)</strong></td>
-                <td>AST Mel Spectrogram</td>
-                <td data-model-metric="params">~87M</td>
-                <td data-model-metric="latency">~735.6 ms</td>
-                <td data-model-metric="accuracy"><strong class="col-highlight">92.7% (Top-5: 99.0%)</strong></td>
-              </tr>
-              <tr data-model-key="ensemble">
-                <td><strong>Ensemble Fusion</strong></td>
-                <td>Calibrated Log-Prob Fusion</td>
-                <td data-model-metric="params">~28M</td>
-                <td data-model-metric="latency">~69.9 ms</td>
-                <td data-model-metric="accuracy">86.1% (Top-5: 98.5%)</td>
-              </tr>
-              <tr data-model-key="sresnet">
-                <td><strong>SResNet</strong></td>
-                <td>128-band Log-Mel Spectrogram</td>
-                <td data-model-metric="params">~11.2M</td>
-                <td data-model-metric="latency">~9.9 ms</td>
-                <td data-model-metric="accuracy">83.1% (Top-5: 97.2%)</td>
-              </tr>
-              <tr data-model-key="resnet18">
-                <td><strong>ResNet-18</strong></td>
-                <td>Log-Mel Spectrogram</td>
-                <td data-model-metric="params">~11.3M</td>
-                <td data-model-metric="latency">~10.1 ms</td>
-                <td data-model-metric="accuracy">82.5% (Top-5: 97.3%)</td>
-              </tr>
-              <tr data-model-key="vgg16">
-                <td><strong>VGG-16</strong></td>
-                <td>Log-Mel Spectrogram</td>
-                <td data-model-metric="params">~15.8M</td>
-                <td data-model-metric="latency">~47.1 ms</td>
-                <td data-model-metric="accuracy">81.6% (Top-5: 96.6%)</td>
+              <tr class="highlight-row" data-model-key="ensemble">
+                <td><strong>Ensemble Fusion (Best)</strong></td>
+                <td>Hybrid V4 (32 kHz) + AST (16 kHz)</td>
+                <td data-model-metric="params">~191M</td>
+                <td data-model-metric="latency">~1692.8 ms</td>
+                <td data-model-metric="accuracy"><strong class="col-highlight">96.4% (Top-5: 99.8%)</strong></td>
               </tr>
               <tr data-model-key="cnngru">
                 <td><strong>CNN-GRU</strong></td>
-                <td>Nonlinear Log-Mel Spectrograms</td>
-                <td data-model-metric="params">~0.5M</td>
-                <td data-model-metric="latency">~2.9 ms</td>
-                <td data-model-metric="accuracy">63.4% (Top-5: 90.5%)</td>
+                <td>32 kHz Kaldi Mel + 2-Layer BiGRU</td>
+                <td data-model-metric="params">~20.2M</td>
+                <td data-model-metric="latency">~39.7 ms</td>
+                <td data-model-metric="accuracy">95.9% (Top-5: 99.4%)</td>
+              </tr>
+              <tr data-model-key="sresnet">
+                <td><strong>SResNet</strong></td>
+                <td>32 kHz Kaldi Mel (DyMN10 Sub-Half)</td>
+                <td data-model-metric="params">~11.8M</td>
+                <td data-model-metric="latency">~120.2 ms</td>
+                <td data-model-metric="accuracy">95.0% (Top-5: 99.6%)</td>
+              </tr>
+              <tr data-model-key="ast">
+                <td><strong>AST-ESC50</strong></td>
+                <td>16 kHz AST Patch Spectrogram</td>
+                <td data-model-metric="params">~87M</td>
+                <td data-model-metric="latency">~735.6 ms</td>
+                <td data-model-metric="accuracy">92.7% (Top-5: 99.0%)</td>
+              </tr>
+              <tr data-model-key="resnet18">
+                <td><strong>ResNet-18</strong></td>
+                <td>32 kHz Wave STFT (ResNet22 V4)</td>
+                <td data-model-metric="params">~65.7M</td>
+                <td data-model-metric="latency">~119.9 ms</td>
+                <td data-model-metric="accuracy">90.5% (Top-5: 98.9%)</td>
+              </tr>
+              <tr data-model-key="vgg16">
+                <td><strong>VGG-16</strong></td>
+                <td>32 kHz Wave STFT (Cnn10 V4)</td>
+                <td data-model-metric="params">~6.7M</td>
+                <td data-model-metric="latency">~83.8 ms</td>
+                <td data-model-metric="accuracy">87.4% (Top-5: 98.6%)</td>
               </tr>
             </tbody>
           </table>
           <p class="spec-footnote"
-            style="margin-top: 8px; font-size: 11px; color: var(--text-muted, #94a3b8); font-style: italic;">*AST:
-            fold-1 test. All models show Top-1 (exact match) and Top-5 (target class in top-5 predictions) on ESC-50.
+            style="margin-top: 8px; font-size: 11px; color: var(--text-muted, #94a3b8); font-style: italic;">*V4
+            CNNs &amp; Hybrid Ensemble report leak-free 5-fold ESC-50 CV scores and measured external latency; AST reports
+            official Fold-1 test metrics.
           </p>
         </div>
 
@@ -1982,13 +1987,99 @@
                 <span class="telem-lbl">Recurrence Plots</span>
               </div>
               <div class="telem-item">
-                <span class="telem-val" id="tg-sr">22,050 Hz</span>
-                <span class="telem-lbl">Sample Rate</span>
+                <span class="telem-val" id="tg-sr">32 / 16 kHz</span>
+                <span class="telem-lbl">V4 / AST Sample Rate</span>
               </div>
               <div class="telem-item">
                 <span class="telem-val" id="tg-dur">5.0s</span>
-                <span class="telem-lbl">Clip Duration</span>
+                <span class="telem-lbl">Analysis Window</span>
               </div>
+            </div>
+          </div>
+
+          <!-- External Real-World & Mixed Audio Verification -->
+          <div class="card-box card-module analytics-card analytics-card-full">
+            <div class="card-header">
+              <span class="card-tag">External Real-World &amp; Mixed-Audio Benchmark</span>
+              <span class="card-sub-info" id="ext-benchmark-chip">219 Mixed/Pure + 105 Blind Final Clips (WAV / MP3 / WebM / AAC)</span>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="spec-table" id="ext-benchmark-table">
+                <thead>
+                  <tr>
+                    <th>Model</th>
+                    <th>ESC-50 CV Top-1</th>
+                    <th>Blind External Final</th>
+                    <th>Mixed+Pure Raw Top-1 (219)</th>
+                    <th>Dual-Source Both@5</th>
+                    <th>OOD AUROC (Mixed / Final)</th>
+                    <th>Format Parity</th>
+                    <th>Latency</th>
+                  </tr>
+                </thead>
+                <tbody id="ext-benchmark-body">
+                  <tr class="highlight-row">
+                    <td><strong>Ensemble Fusion</strong></td>
+                    <td><strong>96.4%</strong></td>
+                    <td><strong>90.1%</strong></td>
+                    <td><strong>81.7%</strong> (79.7% Mix)</td>
+                    <td><strong>64.0%</strong></td>
+                    <td>0.850 / 0.878</td>
+                    <td>97.2%</td>
+                    <td>~1692.8 ms</td>
+                  </tr>
+                  <tr>
+                    <td><strong>CNN-GRU (V4)</strong></td>
+                    <td>95.9%</td>
+                    <td>83.6%</td>
+                    <td>80.6% (79.0% Mix)</td>
+                    <td>52.0%</td>
+                    <td>0.822 / 0.867</td>
+                    <td>88.9%</td>
+                    <td>~39.7 ms</td>
+                  </tr>
+                  <tr>
+                    <td><strong>SResNet (V4)</strong></td>
+                    <td>95.0%</td>
+                    <td>85.5%</td>
+                    <td>76.4% (76.8% Mix)</td>
+                    <td>56.0%</td>
+                    <td>0.801 / 0.874</td>
+                    <td>97.2%</td>
+                    <td>~120.2 ms</td>
+                  </tr>
+                  <tr>
+                    <td><strong>AST-ESC50</strong></td>
+                    <td>92.7% (Fold-1)</td>
+                    <td>82.7%</td>
+                    <td>71.7% (70.3% Mix)</td>
+                    <td>53.3%</td>
+                    <td>0.833 / 0.852</td>
+                    <td>90.3%</td>
+                    <td>~735.6 ms</td>
+                  </tr>
+                  <tr>
+                    <td><strong>ResNet-18 (V4)</strong></td>
+                    <td>90.5%</td>
+                    <td>80.2%</td>
+                    <td>74.4% (71.7% Mix)</td>
+                    <td>44.0%</td>
+                    <td>0.767 / 0.811</td>
+                    <td>90.3%</td>
+                    <td>~119.9 ms</td>
+                  </tr>
+                  <tr>
+                    <td><strong>VGG-16 (V4)</strong></td>
+                    <td>87.4%</td>
+                    <td>87.0%</td>
+                    <td>70.7% (65.9% Mix)</td>
+                    <td>42.7%</td>
+                    <td>0.792 / 0.848</td>
+                    <td>97.2%</td>
+                    <td>~83.8 ms</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -1997,7 +2088,7 @@
         <div class="card-box card-module api-ref-card">
           <div class="card-header">
             <span class="card-tag">API Endpoint Reference</span>
-            <span class="card-sub-info">FastAPI (Python 3.11 / ASGI)</span>
+            <span class="card-sub-info">FastAPI (Python / ASGI)</span>
           </div>
           <table class="spec-table api-table">
             <thead>
@@ -2012,20 +2103,32 @@
               <tr>
                 <td><span class="method-badge post">POST</span></td>
                 <td><code>/api/predict</code></td>
-                <td>Audio classification &amp; OOD inference</td>
+                <td>Single-clip acoustic classification &amp; AudioSet-527 OOD inference</td>
                 <td>multipart/form-data (audio, model, threshold)</td>
               </tr>
               <tr>
                 <td><span class="method-badge post">POST</span></td>
+                <td><code>/api/predict/batch</code></td>
+                <td>Multi-file batch acoustic classification (all 6 models, WAV/MP3/WebM/AAC)</td>
+                <td>multipart/form-data (audio[], model, threshold)</td>
+              </tr>
+              <tr>
+                <td><span class="method-badge post">POST</span></td>
                 <td><code>/api/batch-predict</code></td>
-                <td>Batch multi-file acoustic classification with CSV generation</td>
-                <td>multipart/form-data (files, model, threshold)</td>
+                <td>Batch classification with per-file CSV export ledger formatting</td>
+                <td>multipart/form-data (files[], model, threshold)</td>
               </tr>
               <tr>
                 <td><span class="method-badge post">POST</span></td>
                 <td><code>/api/auth/login</code></td>
                 <td>Developer session authentication and token issuance</td>
                 <td>JSON (username, password, role)</td>
+              </tr>
+              <tr>
+                <td><span class="method-badge post">POST</span></td>
+                <td><code>/api/auth/register</code></td>
+                <td>Create a developer account with instant access to all 6 models</td>
+                <td>JSON (name, email, password)</td>
               </tr>
               <tr>
                 <td><span class="method-badge post">POST</span></td>

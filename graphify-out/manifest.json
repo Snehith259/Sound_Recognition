@@ -1,8 +1,8 @@
 {
   "Front-End/app.js": {
-    "mtime": 1795514410.9030015,
-    "seen": 1795514442.673077,
-    "ast_hash": "7f65f4377b249c8f75297641798a7118",
+    "mtime": 1795657680.7522223,
+    "seen": 1795657781.989572,
+    "ast_hash": "a1089e5ea6b91de81f50f697648e46a5",
     "semantic_hash": ""
   },
   "Preproccesing/__init__.py": {
@@ -126,9 +126,9 @@
     "semantic_hash": ""
   },
   "Front-End/index.html": {
-    "mtime": 1795618584.649622,
-    "seen": 1795618625.1147127,
-    "ast_hash": "d7979f390685cfca7e2a3b70b0a1210d",
+    "mtime": 1795657691.666563,
+    "seen": 1795657781.9939792,
+    "ast_hash": "d16ca338e9f2916dd32ec3bb71ae9f8b",
     "semantic_hash": ""
   },
   "Preproccesing/README.md": {
@@ -150,9 +150,9 @@
     "semantic_hash": "e24ae21f62efcf2f276b54081b26c174"
   },
   "main.py": {
-    "mtime": 1795514410.9698546,
-    "seen": 1795514442.6732056,
-    "ast_hash": "a32eb953bd8843c0514a2aa97325c0fe",
+    "mtime": 1795657580.0888932,
+    "seen": 1795657781.99334,
+    "ast_hash": "9d503f5878e8520cc5e47a6ce038f87d",
     "semantic_hash": ""
   },
   "Front-End/esc50_acoustic_profiles.json": {
@@ -420,9 +420,9 @@
     "semantic_hash": ""
   },
   "checkpoints/developer_accounts.json": {
-    "mtime": 1795646807.3386335,
-    "seen": 1795646838.6755328,
-    "ast_hash": "1ec12c5e5d2bb14407d9b9ed4522e184",
+    "mtime": 1795657774.3336737,
+    "seen": 1795657781.9910026,
+    "ast_hash": "e7f59779dda1e2ff5bde4670ff4ab9f7",
     "semantic_hash": ""
   },
   "tests/verify_auth_and_register.py": {

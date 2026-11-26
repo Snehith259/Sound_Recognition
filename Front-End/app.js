@@ -125,12 +125,12 @@ const CANONICAL_ESC50_FILES = {
 
 
 const MODEL_INFO = {
+  ensemble: { name: 'Ensemble Fusion', short: 'Ensemble', latency: null, params: '~191M', accuracy: 'Not evaluated' },
+  cnngru: { name: 'CNN-GRU', short: 'CNN-GRU', latency: null, params: '~20.2M', accuracy: 'Not evaluated' },
+  sresnet: { name: 'SResNet', short: 'SResNet', latency: null, params: '~11.8M', accuracy: 'Not evaluated' },
   ast: { name: 'AST-ESC50', short: 'AST-ESC50', latency: null, params: '~87M', accuracy: 'Not evaluated' },
-  resnet18: { name: 'ResNet-18', short: 'ResNet-18', latency: null, params: '—', accuracy: 'Not evaluated' },
-  vgg16: { name: 'VGG-16', short: 'VGG-16', latency: null, params: '—', accuracy: 'Not evaluated' },
-  sresnet: { name: 'SResNet', short: 'SResNet', latency: null, params: '—', accuracy: 'Not evaluated' },
-  cnngru: { name: 'CNN-GRU', short: 'CNN-GRU', latency: null, params: '—', accuracy: 'Not evaluated' },
-  ensemble: { name: 'Ensemble Fusion', short: 'Ensemble', latency: null, params: '—', accuracy: 'Not evaluated' },
+  resnet18: { name: 'ResNet-18', short: 'ResNet-18', latency: null, params: '~65.7M', accuracy: 'Not evaluated' },
+  vgg16: { name: 'VGG-16', short: 'VGG-16', latency: null, params: '~6.7M', accuracy: 'Not evaluated' },
 };
 
 
@@ -211,7 +211,7 @@ let timerInterval = null;
 let audioContext = null;
 let isClassifying = false;
 let currentResult = null;
-let currentModelKey = 'ast';
+let currentModelKey = 'ensemble';
 let decodePromise = Promise.resolve();
 let classificationToken = 0;
 let backendOnline = false;
@@ -4051,7 +4051,7 @@ async function loadAnalyticsData() {
       const accuracyCell = tableRow.querySelector('[data-model-metric="accuracy"]');
       const latencyCell = tableRow.querySelector('[data-model-metric="latency"]');
       if (accuracyCell) {
-        if (modelKey === 'ast') {
+        if (modelKey === 'ensemble') {
           accuracyCell.innerHTML = `<strong class="col-highlight">${fullAccuracyText}</strong>`;
         } else {
           accuracyCell.textContent = fullAccuracyText;
@@ -4067,11 +4067,43 @@ async function loadAnalyticsData() {
   }
   const perfChip = document.getElementById('perf-chip');
   if (perfChip) {
-    const isCv = perf.some(item => String(item.evaluatedOn || '').toLowerCase().includes('cross-validation'));
-    const astPerf = perfByModel.get('ast');
-    perfChip.textContent = astPerf && Number.isFinite(astPerf.accuracy)
-      ? `AST deployed: ${astPerf.accuracy.toFixed(1)}% Top-1 (${astPerf.top5Accuracy ? astPerf.top5Accuracy.toFixed(1) + '% Top-5' : 'fold-1 test'})`
+    const topPerf = [...perf].filter(item => Number.isFinite(item.accuracy)).sort((a, b) => b.accuracy - a.accuracy)[0];
+    perfChip.textContent = topPerf
+      ? `Best: ${topPerf.model} ${topPerf.accuracy.toFixed(1)}% Top-1 (${topPerf.top5Accuracy ? topPerf.top5Accuracy.toFixed(1) + '% Top-5' : 'evaluated'})`
       : 'Awaiting evaluation report';
+  }
+
+  // Hydrate External Mixed & Multi-Format Verification Table
+  const extTbody = document.getElementById('ext-benchmark-body');
+  const mixedBench = statsData?.mixedExternalBenchmark;
+  if (extTbody && mixedBench?.summary) {
+    const orderedKeys = ['ensemble', 'cnngru', 'sresnet', 'ast', 'resnet18', 'vgg16'];
+    const labelsMap = {
+      ensemble: 'Ensemble Fusion',
+      cnngru: 'CNN-GRU (V4)',
+      sresnet: 'SResNet (V4)',
+      ast: 'AST-ESC50',
+      resnet18: 'ResNet-18 (V4)',
+      vgg16: 'VGG-16 (V4)',
+    };
+    const mSum = mixedBench.summary;
+    const parityMap = mixedBench.formatParity || {};
+    extTbody.innerHTML = orderedKeys.filter(k => perfByModel.has(k) || mSum[k]).map(k => {
+      const p = perfByModel.get(k) || {};
+      const m = mSum[k] || {};
+      const cvStr = Number.isFinite(p.accuracy) ? `${p.accuracy.toFixed(1)}%${k === 'ast' ? ' (Fold-1)' : ''}` : '—';
+      const extStr = Number.isFinite(p.externalAccuracy) ? `${p.externalAccuracy.toFixed(1)}%` : '—';
+      const mixStr = Number.isFinite(m.inScopeRawTop1)
+        ? `${(m.inScopeRawTop1 * 100).toFixed(1)}% (${((m.mixedRawTop1 || 0) * 100).toFixed(1)}% Mix)`
+        : '—';
+      const both5Str = Number.isFinite(m.mixedDualSourceBothInTop5) ? `${(m.mixedDualSourceBothInTop5 * 100).toFixed(1)}%` : '—';
+      const mAuc = Number.isFinite(m.oodAuroc) ? m.oodAuroc.toFixed(3) : '—';
+      const fAuc = Number.isFinite(p.externalAuroc) ? p.externalAuroc.toFixed(3) : '—';
+      const parStr = Number.isFinite(parityMap[k]) ? `${(parityMap[k] * 100).toFixed(1)}%` : '—';
+      const latStr = Number.isFinite(p.latency) ? `~${p.latency.toFixed(1)} ms` : '—';
+      const rowCls = k === 'ensemble' ? ' class="highlight-row"' : '';
+      return `<tr${rowCls}><td><strong>${labelsMap[k] || k}</strong></td><td>${cvStr}</td><td>${extStr}</td><td>${mixStr}</td><td>${both5Str}</td><td>${mAuc} / ${fAuc}</td><td>${parStr}</td><td>${latStr}</td></tr>`;
+    }).join('');
   }
 
   if (telemetryTsEl) {
@@ -4198,8 +4230,8 @@ function drawModelPerformanceChart(perfList) {
   const availableH = h - startY - 24;
   const rowSlot = Math.min(38, Math.max(28, Math.floor(availableH / count)));
   const barHeight = Math.max(12, Math.min(18, rowSlot - 12));
-  const labelW = 145;
-  const chartW = w - labelW - 130;
+  const labelW = 128;
+  const chartW = w - labelW - 178;
 
   // Benchmark scale gridlines
   ctx.strokeStyle = isLight ? 'rgba(15, 23, 42, 0.06)' : 'rgba(255, 255, 255, 0.05)';
@@ -4375,7 +4407,7 @@ if (authModal) {
 }
 
 /* ── Architecture selector ─────────────────────────────────
-   User mode: Exposes exclusively the best model (AST-ESC50 · 92.7% verified accuracy).
+   User mode: Exposes exclusively the best model (Ensemble Fusion · 96.4% CV / 90.1% Blind External).
    Developer mode: Unlocks all 6 neural architectures for research and benchmarking. */
 function syncModelOptionsForRole() {
   if (!modelSelect) return;
@@ -4387,7 +4419,7 @@ function syncModelOptionsForRole() {
       opt.disabled = false;
       opt.style.display = '';
     } else {
-      if (opt.value === 'ast') {
+      if (opt.value === 'ensemble') {
         opt.hidden = false;
         opt.disabled = false;
         opt.style.display = '';
@@ -4401,14 +4433,14 @@ function syncModelOptionsForRole() {
   });
 
   if (!isDev) {
-    modelSelect.value = 'ast';
+    modelSelect.value = 'ensemble';
   }
 
   const batchModelInfo = document.getElementById('batch-model-info');
   if (batchModelInfo) {
     batchModelInfo.textContent = isDev
-      ? (modelSelect.options[modelSelect.selectedIndex]?.textContent?.split(' ')[0] || 'AST-ESC50')
-      : 'AST-ESC50 (Best)';
+      ? (modelSelect.options[modelSelect.selectedIndex]?.textContent?.split('(')[0]?.trim() || 'Ensemble Fusion')
+      : 'Ensemble Fusion (Best)';
   }
 
   updateModelBadge();
@@ -5836,14 +5868,14 @@ console.log(await res.json());`
   var running = false;
 
   function modelKey() {
-    if (!isDeveloperAuthenticated) return 'ast';
-    return modelSelect ? modelSelect.value : 'ast';
+    if (!isDeveloperAuthenticated) return 'ensemble';
+    return modelSelect ? modelSelect.value : 'ensemble';
   }
   function modelName() {
-    if (!isDeveloperAuthenticated) return 'AST-ESC50 (Best)';
-    if (!modelSelect) return 'AST-ESC50';
+    if (!isDeveloperAuthenticated) return 'Ensemble Fusion (Best)';
+    if (!modelSelect) return 'Ensemble Fusion';
     var opt = modelSelect.options[modelSelect.selectedIndex];
-    return opt ? opt.textContent.trim().split(' ')[0] : modelSelect.value;
+    return opt ? opt.textContent.trim().split('(')[0].trim() : modelSelect.value;
   }
   function syncModelLabel() {
     if (modelInfo) modelInfo.textContent = modelName();

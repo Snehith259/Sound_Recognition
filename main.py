@@ -458,6 +458,8 @@ async def predict_batch(
                 "status": "success",
                 "success": True,
                 "isOutOfScope": res.get("isOutOfScope", False),
+                "belowConfidenceThreshold": res.get("belowConfidenceThreshold", False),
+                "oodScore": res.get("oodScore"),
                 "category": res["category"],
                 "confidence": res["confidence"],
                 "topPrediction": {
@@ -544,11 +546,11 @@ async def list_checkpoints():
     report_models = load_evaluation_report().get("models", {})
     params_map = {
         "ast": "~87M",
-        "sresnet": "~11.2M",
-        "ensemble": "~28M",
-        "cnngru": "~0.5M",
-        "vgg16": "~15.8M",
-        "resnet18": "~11.3M",
+        "ensemble": "~191M",
+        "cnngru": "~20.2M",
+        "sresnet": "~11.8M",
+        "resnet18": "~65.7M",
+        "vgg16": "~6.7M",
     }
     display_names = {
         "ast": "AST-ESC50",
@@ -559,12 +561,12 @@ async def list_checkpoints():
         "ensemble": "Ensemble Fusion",
     }
     desc_map = {
-        "ast": "Audio Spectrogram Transformer with patch self-attention fine-tuned on ESC-50 (92.7% Top-1)",
-        "sresnet": "Upgraded transfer residual backbone on 128-band Log-Mel spectrograms (72.7% Top-1)",
-        "ensemble": "Multi-stream softmax fusion uniting transformer, recurrence, and convolutional heads (71.6% Top-1)",
-        "cnngru": "Hybrid 2D CNN with bidirectional recurrent GRU layers (67.3% Top-1)",
-        "vgg16": "Stacked 3x3 deep convolutional network on Log-Mel spectrograms (64.6% Top-1)",
-        "resnet18": "18-layer residual network baseline with skip connections (58.8% Top-1)",
+        "ensemble": "Hybrid linear + log-prob fusion uniting AudioSet-2M V4 backbones and AST with AudioSet-527 OOD gating (96.4% CV Top-1, 90.1% Blind External)",
+        "cnngru": "EfficientAT MobileNetV3 (MN2.0 AudioSet-2M) + 2-layer BiGRU attentive pooling at 32 kHz (95.9% CV Top-1, 39.7 ms)",
+        "sresnet": "EfficientAT Dynamic MobileNet (DyMN10 AudioSet-2M) with sub-half localization at 32 kHz (95.0% CV Top-1, 99.6% Top-5)",
+        "ast": "Audio Spectrogram Transformer (16x16 patch self-attention) fine-tuned on 16 kHz ESC-50 waveforms (92.7% Fold-1 Top-1, 82.7% Blind External)",
+        "resnet18": "PANNs ResNet22 AudioSet-2M backbone with compact sub-half burst aggregation at 32 kHz (90.5% CV Top-1, 98.9% Top-5)",
+        "vgg16": "PANNs Cnn10 4-block VGG-family AudioSet-2M backbone trained with 32 kHz acoustic mixes (87.4% CV Top-1, 87.0% Blind External)",
     }
     checkpoints = []
     for model_name, info in inventory.items():
@@ -668,6 +670,12 @@ async def get_stats():
         metrics = model_result.get("metrics", {})
         if not metrics:
             continue
+        ext_data = model_result.get("external") or {}
+        measured_latency = (
+            metrics.get("latencyMs")
+            if metrics.get("latencyMs") is not None
+            else ext_data.get("meanLatencyMs")
+        )
         model_performance.append({
             "model": display_names.get(model_name, model_name),
             "modelKey": model_name,
@@ -675,11 +683,26 @@ async def get_stats():
             "top5Accuracy": metrics.get("top5") * 100 if metrics.get("top5") is not None else None,
             "r2Score": metrics.get("r2Probability"),
             "ece": metrics.get("ece"),
-            "externalAccuracy": model_result.get("external", {}).get("top1") * 100 if model_result.get("external", {}).get("top1") is not None else None,
-            "latency": metrics.get("latencyMs"),
+            "externalAccuracy": ext_data.get("top1") * 100 if ext_data.get("top1") is not None else None,
+            "externalAuroc": (ext_data.get("oodRanking") or {}).get("auroc") if isinstance(ext_data.get("oodRanking"), dict) else ext_data.get("oodAuroc"),
+            "latency": measured_latency,
             "color": colors.get(model_name, "#94a3b8"),
             "evaluatedOn": model_result.get("evaluation", eval_report.get("evaluation")),
         })
+
+    mixed_ext_report = None
+    mixed_report_path = BASE_DIR / "eval" / "reports" / "external_mixed_final.json"
+    if mixed_report_path.is_file():
+        try:
+            with open(mixed_report_path, "r", encoding="utf-8") as f:
+                raw_mixed = json.load(f)
+            mixed_ext_report = {
+                "summary": raw_mixed.get("summary", {}),
+                "formatParity": raw_mixed.get("formatParity", {}),
+                "threshold": raw_mixed.get("threshold", 0.5),
+            }
+        except Exception:
+            mixed_ext_report = None
 
     uptime = get_uptime_seconds()
     proc = psutil.Process(os.getpid())
@@ -723,6 +746,7 @@ async def get_stats():
             "groupDistribution": group_distribution,
         },
         "modelPerformance": model_performance,
+        "mixedExternalBenchmark": mixed_ext_report,
         "preprocessingReport": preprocessing_report,
         "modelVersions": [],
         "evaluationReport": eval_report,
