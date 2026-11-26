@@ -23,13 +23,14 @@ from Preproccesing.acoustic_inference import (
     load_audio_waveform,
 )
 from eval.metrics import classification_metrics
-from eval.train_cv import MODEL_CONFIG, SPLIT_DIR, _load_split, _new_model, _temperature_scale
+from eval.train_cv import MODEL_CONFIG, MODEL_CONFIG_BY_VERSION, SPLIT_DIR, _load_split, _new_model, _temperature_scale
 
 CV_DIR = ROOT / "checkpoints" / "cv"
 REPORT_DIR = ROOT / "eval" / "reports"
+ENSEMBLE_WEIGHTS_V4 = {"sresnet": 0.38, "cnngru": 0.34, "resnet18": 0.16, "vgg16": 0.12}
 ENSEMBLE_WEIGHTS_V2 = {"sresnet": 0.34, "vgg16": 0.28, "resnet18": 0.26, "cnngru": 0.12}
 ENSEMBLE_WEIGHTS_V1 = {"sresnet": 0.30, "vgg16": 0.32, "resnet18": 0.28, "cnngru": 0.10}
-AST_ENSEMBLE_WEIGHT = 0.60
+AST_ENSEMBLE_WEIGHT = 0.25
 FIELDS = (
     "top1", "top5", "macroF1", "nll", "brier", "ece", "r2Probability",
     "meanConfidence", "accuracyAtConfidence90", "coverageAtConfidence90",
@@ -39,7 +40,12 @@ FIELDS = (
 def _checkpoint_arch_version(checkpoint: dict[str, Any]) -> int:
     if checkpoint.get("arch_version") is not None:
         return int(checkpoint["arch_version"])
-    return 2 if str(checkpoint.get("format", "")).endswith("-v2") else 1
+    fmt = str(checkpoint.get("format", ""))
+    if fmt.endswith("-v4"):
+        return 4
+    if fmt.endswith("-v3"):
+        return 3
+    return 2 if fmt.endswith("-v2") else 1
 
 
 def _batched_logits(model: torch.nn.Module, x: torch.Tensor, batch_size: int, device: torch.device) -> torch.Tensor:
@@ -190,14 +196,16 @@ def evaluate(model_key: str, batch_size: int = 64, device_name: str = "auto") ->
                 f"Missing {checkpoint_path}; train one model per held-out fold. A final model cannot be reused as CV evidence."
             )
         checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
-        if checkpoint.get("model_name") != model_key or checkpoint.get("feature_type") != feature_type:
-            raise ValueError(f"Checkpoint metadata does not match requested model/features: {checkpoint_path}")
         arch_version = _checkpoint_arch_version(checkpoint)
+        expected_feat = MODEL_CONFIG_BY_VERSION.get(arch_version, MODEL_CONFIG)[model_key][1]
+        if checkpoint.get("model_name") != model_key or checkpoint.get("feature_type") != expected_feat:
+            raise ValueError(f"Checkpoint metadata does not match requested model/features: {checkpoint_path}")
         model = _new_model(model_key, pretrained=False, arch_version=arch_version).to(device)
-        model.load_state_dict(checkpoint["state_dict"], strict=True)
+        sd = {k: (v.float() if isinstance(v, torch.Tensor) and v.is_floating_point() else v) for k, v in checkpoint["state_dict"].items()}
+        model.load_state_dict(sd, strict=True)
         model.eval()
-        x_test, y_test = _load_split(f"fold_{fold}_test", feature_type)
-        logits = _batched_logits(model, x_test, batch_size, device)
+        x_test, y_test = _load_split(f"fold_{fold}_test", expected_feat)
+        logits = _batched_logits(model, x_test, min(batch_size, 32) if expected_feat == "wave_32k" else batch_size, device)
         temperature = max(0.05, min(20.0, float(checkpoint.get("temperature", 1.0))))
         probabilities = F.softmax(logits / temperature, dim=1).numpy()
         metrics = classification_metrics(
@@ -262,24 +270,36 @@ def evaluate_ensemble(
     detected_versions: set[int] = set()
 
     for fold in range(1, 6):
-        x_val, y_val = _load_split(f"fold_{fold}_val", "log_mel")
-        x_test, y_test = _load_split(f"fold_{fold}_test", "log_mel")
         val_log_probs: dict[str, torch.Tensor] = {}
         test_log_probs: dict[str, torch.Tensor] = {}
         fold_versions: list[int] = []
+        split_cache: dict[str, tuple[torch.Tensor, torch.Tensor]] = {}
+        y_val: torch.Tensor | None = None
+        y_test: torch.Tensor | None = None
 
         for model_key in cnn_keys:
             checkpoint_path = CV_DIR / model_key / f"fold_{fold}.pt"
             checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
             arch_version = _checkpoint_arch_version(checkpoint)
+            feat_t = MODEL_CONFIG_BY_VERSION.get(arch_version, MODEL_CONFIG)[model_key][1]
+            if feat_t not in split_cache:
+                split_cache[feat_t] = _load_split(f"fold_{fold}_val", feat_t)
+            x_val, y_val_cur = split_cache[feat_t]
+            test_key = f"{feat_t}_test"
+            if test_key not in split_cache:
+                split_cache[test_key] = _load_split(f"fold_{fold}_test", feat_t)
+            x_test, y_test_cur = split_cache[test_key]
+            y_val, y_test = y_val_cur, y_test_cur
             fold_versions.append(arch_version)
             detected_versions.add(arch_version)
             model = _new_model(model_key, pretrained=False, arch_version=arch_version).to(device)
-            model.load_state_dict(checkpoint["state_dict"], strict=True)
+            sd = {k: (v.float() if isinstance(v, torch.Tensor) and v.is_floating_point() else v) for k, v in checkpoint["state_dict"].items()}
+            model.load_state_dict(sd, strict=True)
             model.eval()
             temp = max(0.05, min(20.0, float(checkpoint.get("temperature", 1.0))))
-            val_log_probs[model_key] = F.log_softmax(_batched_logits(model, x_val, batch_size, device) / temp, dim=1)
-            test_log_probs[model_key] = F.log_softmax(_batched_logits(model, x_test, batch_size, device) / temp, dim=1)
+            bs_eval = min(batch_size, 32) if feat_t == "wave_32k" else batch_size
+            val_log_probs[model_key] = F.log_softmax(_batched_logits(model, x_val, bs_eval, device) / temp, dim=1)
+            test_log_probs[model_key] = F.log_softmax(_batched_logits(model, x_test, bs_eval, device) / temp, dim=1)
             del model
             if device.type == "cuda":
                 torch.cuda.empty_cache()
@@ -292,7 +312,12 @@ def evaluate_ensemble(
             val_log_probs["ast"] = F.log_softmax(ast_val_logits / ast_temp, dim=1)
             test_log_probs["ast"] = F.log_softmax(ast_test_logits / ast_temp, dim=1)
 
-        base_weights = dict(ENSEMBLE_WEIGHTS_V2 if all(v == 2 for v in fold_versions) else ENSEMBLE_WEIGHTS_V1)
+        if all(v >= 4 for v in fold_versions):
+            base_weights = dict(ENSEMBLE_WEIGHTS_V4)
+        elif all(v >= 2 for v in fold_versions):
+            base_weights = dict(ENSEMBLE_WEIGHTS_V2)
+        else:
+            base_weights = dict(ENSEMBLE_WEIGHTS_V1)
         if include_ast:
             cnn_scale = (1.0 - AST_ENSEMBLE_WEIGHT) / max(1e-12, sum(base_weights.values()))
             weights = {k: base_weights[k] * cnn_scale for k in cnn_keys}
@@ -300,11 +325,18 @@ def evaluate_ensemble(
         else:
             weights = base_weights
 
+        fold_ver = max(fold_versions) if fold_versions else 1
         val_fused = sum(weights[k] * val_log_probs[k] for k in model_keys)
         test_fused = sum(weights[k] * test_log_probs[k] for k in model_keys)
-        ens_temp = _temperature_scale(val_fused, y_val)
+        ens_temp = _temperature_scale(val_fused, y_val, min_temp=0.85 if fold_ver >= 4 else 0.05)
         fold_temps.append(ens_temp)
-        probabilities = F.softmax(test_fused / ens_temp, dim=1).numpy()
+        probs_log = F.softmax(test_fused / ens_temp, dim=1)
+        if fold_ver >= 4:
+            test_lin = sum(weights[k] * torch.exp(test_log_probs[k]) for k in model_keys)
+            probs = 0.5 * test_lin + 0.5 * probs_log
+            probabilities = (probs / probs.sum(dim=1, keepdim=True)).numpy()
+        else:
+            probabilities = probs_log.numpy()
         metrics = classification_metrics(
             y_test.numpy(),
             probabilities,
@@ -325,8 +357,13 @@ def evaluate_ensemble(
             "mean": float(np.mean(values)) if values else None,
             "std": float(np.std(values, ddof=1)) if len(values) > 1 else (0.0 if values else None),
         }
-    arch_ver = 2 if detected_versions == {2} else 1
-    base_weights = dict(ENSEMBLE_WEIGHTS_V2 if arch_ver == 2 else ENSEMBLE_WEIGHTS_V1)
+    arch_ver = max(detected_versions) if detected_versions else 1
+    if arch_ver >= 4:
+        base_weights = dict(ENSEMBLE_WEIGHTS_V4)
+    elif arch_ver >= 2:
+        base_weights = dict(ENSEMBLE_WEIGHTS_V2)
+    else:
+        base_weights = dict(ENSEMBLE_WEIGHTS_V1)
     if include_ast:
         cnn_scale = (1.0 - AST_ENSEMBLE_WEIGHT) / max(1e-12, sum(base_weights.values()))
         weights = {k: round(base_weights[k] * cnn_scale, 4) for k in cnn_keys}
@@ -356,7 +393,7 @@ def evaluate_ensemble(
         "schemaVersion": 1,
         "archVersion": arch_ver,
         "includesAst": include_ast,
-        "fusion": "weighted_log_prob",
+        "fusion": "hybrid" if arch_ver >= 4 else "weighted_log_prob",
         "weights": weights,
         "temperature": float(np.mean(fold_temps)),
         "foldTemperatures": fold_temps,

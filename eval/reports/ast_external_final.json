@@ -1,0 +1,69 @@
+{
+  "model": "Adam-ousse/ast-esc50-finetuned-fold1",
+  "revision": "fb2443ee3c362d6683a8f493eab2d15598360fb6",
+  "checkpointSha256": "f3b7ad3ffc95f5d867c7bb088da394bf048e649850535e9faa1f75276e0c6617",
+  "windowPolicy": "5s windows, 2.5s hop, max 12, mean probabilities, no peak normalization",
+  "inferencePath": "Preproccesing.acoustic_inference.run_acoustic_inference",
+  "gitCommit": "3345e65ecb57bcb5abb59ae8e620a9a44fe0ec18",
+  "createdAt": "2026-11-25T22:43:11.565864+00:00",
+  "split": "final",
+  "nClips": 105,
+  "inScopeCount": 81,
+  "oodCount": 24,
+  "ambientCount": 0,
+  "top1": 0.82716,
+  "top5": 0.938272,
+  "wilson95Top1": {
+    "low": 0.7305,
+    "high": 0.8942
+  },
+  "ambientTop1": 0.0,
+  "ambientWilson95": {
+    "low": 0.0,
+    "high": 0.0
+  },
+  "ambientN": 0,
+  "meanConfidenceCorrect": 0.8649,
+  "meanConfidenceWrong": 0.4699,
+  "selectiveAccuracyAt90": 1.0,
+  "selectiveCoverageAt90": 0.5556,
+  "selectiveAccuracyAt80": 0.9623,
+  "selectiveCoverageAt80": 0.6543,
+  "latencyMs": 1359.7,
+  "unambiguous": {
+    "n": 60,
+    "top1": 0.883333,
+    "top5": 0.933333,
+    "macroF1": 0.937862,
+    "nll": 0.558168,
+    "brier": 0.190727,
+    "ece": 0.107194,
+    "r2Probability": 0.805381,
+    "meanConfidence": 0.8497,
+    "wilson95Top1": {
+      "low": 0.7782,
+      "high": 0.9423
+    }
+  },
+  "ood": {
+    "n": 105,
+    "oodCount": 24,
+    "inScopeCount": 81,
+    "auroc": 0.852366255144033,
+    "aupr": 0.6055656134940747,
+    "rejectionAt90InScopeAcceptance": 0.3333333333333333,
+    "thresholdAt90InScopeAcceptance": 0.6204
+  },
+  "perSource": {
+    "IBM/MAX-Audio-Classifier": {
+      "inScopeCount": 10,
+      "oodCount": 4,
+      "allowedTop1": 0.9
+    },
+    "YashNita/Animal-Sound-Dataset": {
+      "inScopeCount": 71,
+      "oodCount": 20,
+      "allowedTop1": 0.8169
+    }
+  }
+}

@@ -1,107 +1,139 @@
 {
-  "createdAt": 1795577566.249773,
-  "elapsedSeconds": 2955.0,
-  "device": "cuda",
+  "createdAt": 1795642233.0723746,
+  "elapsedSeconds": 2214.1,
+  "device": "cpu",
   "models": [
     {
       "model": "resnet18",
+      "archVersion": 4,
       "foldCheckpoints": [
-        "/kaggle/working/Sound_Recognition/checkpoints/cv/resnet18/fold_1.pt",
-        "/kaggle/working/Sound_Recognition/checkpoints/cv/resnet18/fold_2.pt",
-        "/kaggle/working/Sound_Recognition/checkpoints/cv/resnet18/fold_3.pt",
-        "/kaggle/working/Sound_Recognition/checkpoints/cv/resnet18/fold_4.pt",
-        "/kaggle/working/Sound_Recognition/checkpoints/cv/resnet18/fold_5.pt"
+        "E:\\PS\\PS Program\\Sound_Recognition\\checkpoints\\cv\\resnet18\\fold_1.pt",
+        "E:\\PS\\PS Program\\Sound_Recognition\\checkpoints\\cv\\resnet18\\fold_2.pt",
+        "E:\\PS\\PS Program\\Sound_Recognition\\checkpoints\\cv\\resnet18\\fold_3.pt",
+        "E:\\PS\\PS Program\\Sound_Recognition\\checkpoints\\cv\\resnet18\\fold_4.pt",
+        "E:\\PS\\PS Program\\Sound_Recognition\\checkpoints\\cv\\resnet18\\fold_5.pt"
       ],
       "bestEpochs": [
-        34,
-        31,
-        34,
-        39,
-        21
+        25,
+        27,
+        24,
+        8,
+        19
+      ],
+      "bestE2EEpochs": [
+        0,
+        0,
+        0,
+        0,
+        0
       ],
       "temperatures": [
-        0.480675113138814,
-        0.5646077323357956,
-        0.5078476424266515,
-        0.5837422525965941,
-        0.498131350502182
+        0.85,
+        0.8904383130524688,
+        0.8627416352685257,
+        0.85,
+        0.85
       ],
-      "finalCheckpoint": "/kaggle/working/Sound_Recognition/checkpoints/esc50_resnet18_v1.pt"
+      "finalCheckpoint": "E:\\PS\\PS Program\\Sound_Recognition\\checkpoints\\esc50_resnet18_v1.pt"
     },
     {
       "model": "vgg16",
+      "archVersion": 4,
       "foldCheckpoints": [
-        "/kaggle/working/Sound_Recognition/checkpoints/cv/vgg16/fold_1.pt",
-        "/kaggle/working/Sound_Recognition/checkpoints/cv/vgg16/fold_2.pt",
-        "/kaggle/working/Sound_Recognition/checkpoints/cv/vgg16/fold_3.pt",
-        "/kaggle/working/Sound_Recognition/checkpoints/cv/vgg16/fold_4.pt",
-        "/kaggle/working/Sound_Recognition/checkpoints/cv/vgg16/fold_5.pt"
+        "E:\\PS\\PS Program\\Sound_Recognition\\checkpoints\\cv\\vgg16\\fold_1.pt",
+        "E:\\PS\\PS Program\\Sound_Recognition\\checkpoints\\cv\\vgg16\\fold_2.pt",
+        "E:\\PS\\PS Program\\Sound_Recognition\\checkpoints\\cv\\vgg16\\fold_3.pt",
+        "E:\\PS\\PS Program\\Sound_Recognition\\checkpoints\\cv\\vgg16\\fold_4.pt",
+        "E:\\PS\\PS Program\\Sound_Recognition\\checkpoints\\cv\\vgg16\\fold_5.pt"
       ],
       "bestEpochs": [
-        21,
-        31,
-        50,
+        30,
+        18,
         24,
-        21
+        16,
+        13
+      ],
+      "bestE2EEpochs": [
+        0,
+        0,
+        0,
+        0,
+        0
       ],
       "temperatures": [
-        0.5996074315283892,
-        0.6450258555375162,
-        0.5952566608092912,
-        0.6158608008950491,
-        0.6239231348733432
+        0.85,
+        0.8862523727387657,
+        0.85,
+        0.85,
+        0.85
       ],
-      "finalCheckpoint": "/kaggle/working/Sound_Recognition/checkpoints/esc50_vgg16_v1.pt"
+      "finalCheckpoint": "E:\\PS\\PS Program\\Sound_Recognition\\checkpoints\\esc50_vgg16_v1.pt"
     },
     {
       "model": "sresnet",
+      "archVersion": 4,
       "foldCheckpoints": [
-        "/kaggle/working/Sound_Recognition/checkpoints/cv/sresnet/fold_1.pt",
-        "/kaggle/working/Sound_Recognition/checkpoints/cv/sresnet/fold_2.pt",
-        "/kaggle/working/Sound_Recognition/checkpoints/cv/sresnet/fold_3.pt",
-        "/kaggle/working/Sound_Recognition/checkpoints/cv/sresnet/fold_4.pt",
-        "/kaggle/working/Sound_Recognition/checkpoints/cv/sresnet/fold_5.pt"
+        "E:\\PS\\PS Program\\Sound_Recognition\\checkpoints\\cv\\sresnet\\fold_1.pt",
+        "E:\\PS\\PS Program\\Sound_Recognition\\checkpoints\\cv\\sresnet\\fold_2.pt",
+        "E:\\PS\\PS Program\\Sound_Recognition\\checkpoints\\cv\\sresnet\\fold_3.pt",
+        "E:\\PS\\PS Program\\Sound_Recognition\\checkpoints\\cv\\sresnet\\fold_4.pt",
+        "E:\\PS\\PS Program\\Sound_Recognition\\checkpoints\\cv\\sresnet\\fold_5.pt"
       ],
       "bestEpochs": [
-        27,
+        13,
         31,
-        36,
-        47,
-        24
+        29,
+        28,
+        20
+      ],
+      "bestE2EEpochs": [
+        0,
+        0,
+        0,
+        0,
+        0
       ],
       "temperatures": [
-        0.34922348084217175,
-        0.4219885956906249,
-        0.37226772758635357,
-        0.4440512669250371,
-        0.41636527742376994
+        0.85,
+        0.85,
+        0.85,
+        0.85,
+        0.85
       ],
-      "finalCheckpoint": "/kaggle/working/Sound_Recognition/checkpoints/esc50_sresnet_linear_v09.pt"
+      "finalCheckpoint": "E:\\PS\\PS Program\\Sound_Recognition\\checkpoints\\esc50_sresnet_linear_v09.pt"
     },
     {
       "model": "cnngru",
+      "archVersion": 4,
       "foldCheckpoints": [
-        "/kaggle/working/Sound_Recognition/checkpoints/cv/cnngru/fold_1.pt",
-        "/kaggle/working/Sound_Recognition/checkpoints/cv/cnngru/fold_2.pt",
-        "/kaggle/working/Sound_Recognition/checkpoints/cv/cnngru/fold_3.pt",
-        "/kaggle/working/Sound_Recognition/checkpoints/cv/cnngru/fold_4.pt",
-        "/kaggle/working/Sound_Recognition/checkpoints/cv/cnngru/fold_5.pt"
+        "E:\\PS\\PS Program\\Sound_Recognition\\checkpoints\\cv\\cnngru\\fold_1.pt",
+        "E:\\PS\\PS Program\\Sound_Recognition\\checkpoints\\cv\\cnngru\\fold_2.pt",
+        "E:\\PS\\PS Program\\Sound_Recognition\\checkpoints\\cv\\cnngru\\fold_3.pt",
+        "E:\\PS\\PS Program\\Sound_Recognition\\checkpoints\\cv\\cnngru\\fold_4.pt",
+        "E:\\PS\\PS Program\\Sound_Recognition\\checkpoints\\cv\\cnngru\\fold_5.pt"
       ],
       "bestEpochs": [
-        35,
-        52,
-        33,
-        56,
-        47
+        17,
+        23,
+        21,
+        25,
+        23
+      ],
+      "bestE2EEpochs": [
+        0,
+        0,
+        0,
+        0,
+        0
       ],
       "temperatures": [
-        1.0395494075667822,
-        0.9936414976940798,
-        0.9193413356114573,
-        1.0447023579290389,
-        1.0765497271411013
+        0.85,
+        0.85,
+        0.85,
+        0.85,
+        0.8785903195322204
       ],
-      "finalCheckpoint": "/kaggle/working/Sound_Recognition/checkpoints/esc50_cnngru_recurrent_v08.pt"
+      "finalCheckpoint": "E:\\PS\\PS Program\\Sound_Recognition\\checkpoints\\esc50_cnngru_recurrent_v08.pt"
     }
   ],
   "note": "This is training metadata, not an evaluation report. Run eval_esc50_cv_features and external evaluation before publishing scores."

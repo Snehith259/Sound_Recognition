@@ -54,3 +54,6 @@ graphify-out/*.lock
 # Cloudflare tunnel binary
 cloudflared.exe
 
+
+# External mixed benchmark audio
+eval/external_mixed/

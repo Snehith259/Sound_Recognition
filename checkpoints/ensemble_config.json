@@ -1,19 +1,20 @@
 {
   "schemaVersion": 1,
-  "archVersion": 1,
-  "fusion": "weighted_log_prob",
+  "archVersion": 4,
+  "includesAst": false,
+  "fusion": "hybrid",
   "weights": {
-    "sresnet": 0.3,
-    "vgg16": 0.32,
-    "resnet18": 0.28,
-    "cnngru": 0.1
+    "sresnet": 0.38,
+    "cnngru": 0.34,
+    "resnet18": 0.16,
+    "vgg16": 0.12
   },
-  "temperature": 0.872127850616535,
+  "temperature": 0.8684324213317399,
   "foldTemperatures": [
-    0.8262050663336223,
-    0.8945975741316459,
-    0.8483710662916358,
-    0.8664963676303017,
-    0.9249691786954688
+    0.85,
+    0.8724304191282988,
+    0.85,
+    0.85,
+    0.9197316875304005
   ]
 }

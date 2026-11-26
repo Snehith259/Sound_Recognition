@@ -220,11 +220,13 @@ class CNNGRUFast(nn.Module):
 # ══════════════════════════════════════════════════════════════
 
 def log_mel_to_imagenet_3ch(x: torch.Tensor) -> torch.Tensor:
-    """Convert (B, 1, 128, T) [0, 1] Log-Mel into ImageNet-normalized [Mel, Delta, Delta-Delta]."""
+    """Convert (B, 1, 128, T) [0, 1] Log-Mel into balanced [Mel, Delta, Delta-Delta] ImageNet 3-ch input."""
     mel = x.squeeze(1)  # (B, 128, T)
-    centered = mel * 2.0 - 1.0
-    delta1 = AF.compute_deltas(centered).clamp(-1.0, 1.0) * 0.5 + 0.5
-    delta2 = AF.compute_deltas(delta1 * 2.0 - 1.0).clamp(-1.0, 1.0) * 0.5 + 0.5
+    # Match dynamic range of temporal derivatives (~0.04-0.08 std) to ImageNet RGB std (~0.23)
+    raw_d1 = AF.compute_deltas(mel)
+    raw_d2 = AF.compute_deltas(raw_d1)
+    delta1 = (raw_d1 * 4.5).clamp(-1.0, 1.0) * 0.5 + 0.5
+    delta2 = (raw_d2 * 10.0).clamp(-1.0, 1.0) * 0.5 + 0.5
     rgb = torch.stack([mel, delta1, delta2], dim=1)  # (B, 3, 128, T)
     mean = rgb.new_tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1)
     std = rgb.new_tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1)
@@ -382,6 +384,349 @@ class CNNGRUV2(nn.Module):
         var = torch.sum(w * (gru_out - mean.unsqueeze(1)) ** 2, dim=1).clamp_min(1e-6)
         std = torch.sqrt(var)
         return self.fc(torch.cat([mean, std], dim=1))
+
+
+# ══════════════════════════════════════════════════════════════
+# V3 Architectures (Dual Avg+Max Pooling & Multi-Scale Stem)
+# ══════════════════════════════════════════════════════════════
+
+class DualPoolHead(nn.Module):
+    """Dual Adaptive Avg+Max pooling classifier head for mixed and pure acoustic maps."""
+    def __init__(self, in_channels: int, hidden_dim: int, num_classes: int = 50, dropout: float = 0.3):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.LayerNorm(in_channels * 2),
+            nn.Dropout(dropout),
+            nn.Linear(in_channels * 2, hidden_dim),
+            nn.GELU(),
+            nn.Dropout(dropout * 0.65),
+            nn.Linear(hidden_dim, num_classes),
+        )
+
+    def forward(self, feat_map: torch.Tensor) -> torch.Tensor:
+        avg = F.adaptive_avg_pool2d(feat_map, 1).flatten(1)
+        mx = F.adaptive_max_pool2d(feat_map, 1).flatten(1)
+        return self.net(torch.cat([avg, mx], dim=1))
+
+
+class _StemTailBackboneV3(nn.Module):
+    """Shared stem+tail forward pipeline supporting cached stem training and full E2E inference."""
+    stem: nn.Module
+    tail: nn.Module
+    head: nn.Module
+
+    def forward_stem(self, x: torch.Tensor) -> torch.Tensor:
+        return self.stem(log_mel_to_imagenet_3ch(x))
+
+    def forward_tail(self, stem_feats: torch.Tensor) -> torch.Tensor:
+        return self.head(self.tail(stem_feats))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.forward_tail(self.forward_stem(x))
+
+
+class ResNet18V3(_StemTailBackboneV3):
+    """3-ch ImageNet ResNet-18 with Dual Avg+Max Pooling for overlapping/mixed audio."""
+    def __init__(self, num_classes: int = 50, pretrained: bool = True):
+        super().__init__()
+        weights = _require_weights(tv_models.ResNet18_Weights, pretrained)
+        base = tv_models.resnet18(weights=weights)
+        self.stem = nn.Sequential(
+            base.conv1, base.bn1, base.relu, base.maxpool,
+            base.layer1, base.layer2,
+        )
+        self.tail = nn.Sequential(base.layer3, base.layer4)
+        self.head = DualPoolHead(512, 256, num_classes, dropout=0.30)
+
+
+class _SpatialMaxHead(nn.Module):
+    """Combines (2,2) spatial average quadrants with (1,1) global peak pooling."""
+    def __init__(self, in_channels: int, hidden_dim: int, num_classes: int = 50, dropout: float = 0.35):
+        super().__init__()
+        in_dim = in_channels * 4 + in_channels
+        self.net = nn.Sequential(
+            nn.LayerNorm(in_dim),
+            nn.Dropout(dropout),
+            nn.Linear(in_dim, hidden_dim),
+            nn.GELU(),
+            nn.Dropout(dropout * 0.7),
+            nn.Linear(hidden_dim, num_classes),
+        )
+
+    def forward(self, feat_map: torch.Tensor) -> torch.Tensor:
+        avg22 = F.adaptive_avg_pool2d(feat_map, (2, 2)).flatten(1)
+        mx11 = F.adaptive_max_pool2d(feat_map, (1, 1)).flatten(1)
+        return self.net(torch.cat([avg22, mx11], dim=1))
+
+
+class VGG16V3(_StemTailBackboneV3):
+    """3-ch ImageNet VGG16-BN with multi-quadrant avg + global peak pooling."""
+    def __init__(self, num_classes: int = 50, pretrained: bool = True):
+        super().__init__()
+        weights = _require_weights(tv_models.VGG16_BN_Weights, pretrained)
+        base = tv_models.vgg16_bn(weights=weights)
+        self.stem = nn.Sequential(*list(base.features.children())[:34])
+        self.tail = nn.Sequential(*list(base.features.children())[34:])
+        self.head = _SpatialMaxHead(512, 512, num_classes, dropout=0.35)
+
+
+class SResNetV3(_StemTailBackboneV3):
+    """3-ch ImageNet ConvNeXt-Tiny backbone with Dual Avg+Max Pooling."""
+    def __init__(self, num_classes: int = 50, pretrained: bool = True):
+        super().__init__()
+        weights = _require_weights(tv_models.ConvNeXt_Tiny_Weights, pretrained)
+        base = tv_models.convnext_tiny(weights=weights)
+        in_features = base.classifier[2].in_features
+        self.stem = nn.Sequential(*list(base.features.children())[:6])
+        self.tail = nn.Sequential(*list(base.features.children())[6:])
+        self.head = DualPoolHead(in_features, 256, num_classes, dropout=0.25)
+
+
+class _CNNGRUSequenceTail(nn.Module):
+    """EfficientNet MBConv tail + BiGRU temporal aggregator for stem-cached & E2E training."""
+    def __init__(self, cnn_tail: nn.Module, cnn_channels: int = 1280, hidden_size: int = 160):
+        super().__init__()
+        self.cnn_tail = cnn_tail
+        self.seq_proj = nn.Sequential(
+            nn.Linear(cnn_channels, 256),
+            nn.LayerNorm(256),
+            nn.GELU(),
+        )
+        self.gru = nn.GRU(
+            input_size=256,
+            hidden_size=hidden_size,
+            num_layers=2,
+            batch_first=True,
+            bidirectional=True,
+            dropout=0.25,
+        )
+        feat_dim = hidden_size * 2
+        self.attn = nn.Sequential(
+            nn.Linear(feat_dim, 128),
+            nn.Tanh(),
+            nn.Linear(128, 1),
+        )
+        self.peak_proj = nn.Sequential(
+            nn.Linear(cnn_channels, 256),
+            nn.LayerNorm(256),
+            nn.GELU(),
+        )
+        self.out_dim = feat_dim * 2 + 256
+
+    def forward(self, stem_feats: torch.Tensor) -> torch.Tensor:
+        feat = self.cnn_tail(stem_feats)  # (B, 1280, 4, 7)
+        cnn_peak = self.peak_proj(F.adaptive_max_pool2d(feat, 1).flatten(1))
+        seq_raw = F.adaptive_avg_pool2d(feat, (1, feat.shape[-1])).squeeze(2).transpose(1, 2)  # (B, T, 1280)
+        seq = self.seq_proj(seq_raw)
+        gru_out, _ = self.gru(seq)
+        w = torch.softmax(self.attn(gru_out), dim=1)
+        mean = torch.sum(w * gru_out, dim=1)
+        var = torch.sum(w * (gru_out - mean.unsqueeze(1)) ** 2, dim=1).clamp_min(1e-6)
+        std = torch.sqrt(var)
+        return torch.cat([mean, std, cnn_peak], dim=1)
+
+
+class CNNGRUV3(_StemTailBackboneV3):
+    """Pretrained EfficientNet-B0 Spectral CNN + 2-layer BiGRU + Attentive Stats & Peak Pooling."""
+    def __init__(self, num_classes: int = 50, hidden_size: int = 160, pretrained: bool = False):
+        super().__init__()
+        weights = _require_weights(tv_models.EfficientNet_B0_Weights, pretrained)
+        base = tv_models.efficientnet_b0(weights=weights)
+        self.stem = nn.Sequential(*list(base.features.children())[:5])  # (B, 80, 8, 14)
+        cnn_tail = nn.Sequential(*list(base.features.children())[5:])
+        self.tail = _CNNGRUSequenceTail(cnn_tail, cnn_channels=1280, hidden_size=hidden_size)
+        self.head = nn.Sequential(
+            nn.LayerNorm(self.tail.out_dim),
+            nn.Dropout(0.30),
+            nn.Linear(self.tail.out_dim, 256),
+            nn.GELU(),
+            nn.Dropout(0.20),
+            nn.Linear(256, num_classes),
+        )
+
+
+# ══════════════════════════════════════════════════════════════
+# V4 Architectures (AudioSet-2M Pretrained Audio Backbones @ 32 kHz)
+# ══════════════════════════════════════════════════════════════
+
+class _AudioHeadV4(nn.Module):
+    """Compact residual + bottleneck classifier head on AudioSet features."""
+    def __init__(self, in_dim: int, hidden_dim: int = 320, num_classes: int = 50, dropout: float = 0.35):
+        super().__init__()
+        self.skip = nn.Linear(in_dim, num_classes)
+        self.mlp = nn.Sequential(
+            nn.LayerNorm(in_dim),
+            nn.Dropout(dropout),
+            nn.Linear(in_dim, hidden_dim),
+            nn.GELU(),
+            nn.Dropout(dropout * 0.6),
+            nn.Linear(hidden_dim, num_classes),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return 0.45 * self.skip(x) + 0.55 * self.mlp(x)
+
+
+class _PannsAudioBaseV4(nn.Module):
+    """Shared wrapper for PANNs ResNet22 and Cnn14 AudioSet-2M backbones."""
+    backbone_cls: type
+    repo_id: str
+
+    def __init__(self, num_classes: int = 50, pretrained: bool = False):
+        super().__init__()
+        from Preproccesing.audioset_backbones import load_pretrained_panns
+        self.backbone = self.backbone_cls()
+        if pretrained:
+            load_pretrained_panns(self.repo_id, self.backbone)
+        in_dim = self.backbone.emb_dim + 527
+        self.head = _AudioHeadV4(in_dim=in_dim, hidden_dim=320, num_classes=num_classes, dropout=0.38)
+
+    def extract_frozen_features(self, wav: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        e_g, e_h1, e_h2, as_logits = self.backbone.extract_multi(wav)
+        # Compact sub-half blend captures localized bursts inside mixtures without inflating feature dim
+        loc = torch.max(F.normalize(e_h1, dim=-1), F.normalize(e_h2, dim=-1))
+        emb = 0.65 * F.normalize(e_g, dim=-1) + 0.35 * loc
+        feat = torch.cat([emb, torch.sigmoid(as_logits)], dim=-1)
+        return feat, as_logits
+
+    def forward_from_features(self, feat: torch.Tensor) -> torch.Tensor:
+        return self.head(feat)
+
+    def forward_with_audioset(self, wav: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        feat, as_logits = self.extract_frozen_features(wav)
+        return self.head(feat), as_logits
+
+    def forward(self, wav: torch.Tensor) -> torch.Tensor:
+        return self.forward_with_audioset(wav)[0]
+
+
+class ResNet22AudioV4(_PannsAudioBaseV4):
+    """PANNs ResNet22 AudioSet-2M backbone + localized mix head (`resnet18` v4 slot)."""
+    def __init__(self, num_classes: int = 50, pretrained: bool = False):
+        from Preproccesing.audioset_backbones import PannsResNet22Backbone
+        self.backbone_cls = PannsResNet22Backbone
+        self.repo_id = "nicofarr/panns_ResNet22"
+        super().__init__(num_classes=num_classes, pretrained=pretrained)
+
+
+class Cnn10AudioV4(_PannsAudioBaseV4):
+    """PANNs Cnn10 AudioSet-2M VGG-family double-conv backbone (`vgg16` v4 slot)."""
+    def __init__(self, num_classes: int = 50, pretrained: bool = False):
+        from Preproccesing.audioset_backbones import PannsCnn10Backbone
+        self.backbone_cls = PannsCnn10Backbone
+        self.repo_id = "nicofarr/panns_Cnn10"
+        super().__init__(num_classes=num_classes, pretrained=pretrained)
+
+
+class Cnn14AudioV4(_PannsAudioBaseV4):
+    """PANNs Cnn14 14-conv AudioSet-2M VGG-family backbone (`vgg16` v4 slot)."""
+    def __init__(self, num_classes: int = 50, pretrained: bool = False):
+        from Preproccesing.audioset_backbones import PannsCnn14Backbone
+        self.backbone_cls = PannsCnn14Backbone
+        self.repo_id = "nicofarr/panns_Cnn14"
+        super().__init__(num_classes=num_classes, pretrained=pretrained)
+
+
+class DyMNAudioV4(nn.Module):
+    """EfficientAT DyMN Dynamic Squeezed Residual Net + sub-half localization (`sresnet` v4 slot)."""
+    def __init__(self, num_classes: int = 50, pretrained: bool = False):
+        super().__init__()
+        from Preproccesing.audioset_backbones import (
+            AudioDyMNBackbone,
+            MelSTFT32k,
+            load_pretrained_efficientat,
+        )
+        self.mel = MelSTFT32k()
+        self.backbone = AudioDyMNBackbone(width_mult=1.0, num_classes=527)
+        if pretrained:
+            load_pretrained_efficientat(
+                "https://github.com/fschmid56/EfficientAT/releases/download/v0.0.1/dymn10_as.pt",
+                self.backbone,
+            )
+        in_dim = self.backbone.out_channels * 3 + 527
+        self.head = _AudioHeadV4(in_dim=in_dim, hidden_dim=320, num_classes=num_classes, dropout=0.35)
+
+    def extract_frozen_features(self, wav: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        spec = self.mel(wav, augment=False)
+        e_g, e_h1, e_h2, as_logits = self.backbone.extract_multi(spec)
+        feat = torch.cat(
+            [F.normalize(e_g, dim=-1), F.normalize(e_h1, dim=-1), F.normalize(e_h2, dim=-1), torch.sigmoid(as_logits)],
+            dim=-1,
+        )
+        return feat, as_logits
+
+    def forward_from_features(self, feat: torch.Tensor) -> torch.Tensor:
+        return self.head(feat)
+
+    def forward_with_audioset(self, wav: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        feat, as_logits = self.extract_frozen_features(wav)
+        return self.head(feat), as_logits
+
+    def forward(self, wav: torch.Tensor) -> torch.Tensor:
+        return self.forward_with_audioset(wav)[0]
+
+
+class _MN20GRUHead(nn.Module):
+    """2-layer BiGRU + Attentive Stats & Peak Pooling over MobileNetV3-AudioSet conv frames."""
+    def __init__(self, seq_dim: int, clip_dim: int, num_classes: int = 50, hidden_size: int = 160):
+        super().__init__()
+        self.proj = nn.Sequential(nn.Linear(seq_dim, 256), nn.LayerNorm(256), nn.GELU())
+        self.gru = nn.GRU(256, hidden_size, num_layers=2, batch_first=True, bidirectional=True, dropout=0.20)
+        feat_dim = hidden_size * 2
+        self.attn = nn.Linear(feat_dim, 1)
+        self.skip = nn.Linear(clip_dim, num_classes)
+        self.mlp = nn.Sequential(
+            nn.LayerNorm(clip_dim + feat_dim * 2),
+            nn.Dropout(0.35),
+            nn.Linear(clip_dim + feat_dim * 2, 256),
+            nn.GELU(),
+            nn.Dropout(0.20),
+            nn.Linear(256, num_classes),
+        )
+
+    def forward(self, clip_feat: torch.Tensor, seq_feat: torch.Tensor) -> torch.Tensor:
+        g, _ = self.gru(self.proj(seq_feat))
+        w = torch.softmax(self.attn(g), dim=1)
+        mean = torch.sum(w * g, dim=1)
+        mx = torch.max(g, dim=1)[0]
+        return 0.45 * self.skip(clip_feat) + 0.55 * self.mlp(torch.cat([clip_feat, mean, mx], dim=-1))
+
+
+class MN20GRUAudioV4(nn.Module):
+    """EfficientAT MN2.0 AudioSet-2M CNN + 2-layer BiGRU temporal aggregator (`cnngru` v4 slot)."""
+    def __init__(self, num_classes: int = 50, pretrained: bool = False):
+        super().__init__()
+        from Preproccesing.audioset_backbones import (
+            AudioMobileNetBackbone,
+            MelSTFT32k,
+            load_pretrained_efficientat,
+        )
+        self.mel = MelSTFT32k()
+        self.backbone = AudioMobileNetBackbone(width_mult=2.0, num_classes=527)
+        if pretrained:
+            load_pretrained_efficientat(
+                "https://github.com/fschmid56/EfficientAT/releases/download/v0.0.1/mn20_as_mAP_478.pt",
+                self.backbone,
+            )
+        seq_dim = self.backbone.out_channels
+        clip_dim = seq_dim + 527
+        self.head = _MN20GRUHead(seq_dim=seq_dim, clip_dim=clip_dim, num_classes=num_classes)
+
+    def extract_frozen_features(self, wav: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        spec = self.mel(wav, augment=False)
+        emb, as_logits, t_seq = self.backbone.extract_sequence_and_global(spec)
+        clip_feat = torch.cat([F.normalize(emb, dim=-1), torch.sigmoid(as_logits)], dim=-1)
+        return clip_feat, t_seq, as_logits
+
+    def forward_from_features(self, clip_feat: torch.Tensor, seq_feat: torch.Tensor) -> torch.Tensor:
+        return self.head(clip_feat, seq_feat)
+
+    def forward_with_audioset(self, wav: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        clip_feat, t_seq, as_logits = self.extract_frozen_features(wav)
+        return self.head(clip_feat, t_seq), as_logits
+
+    def forward(self, wav: torch.Tensor) -> torch.Tensor:
+        return self.forward_with_audioset(wav)[0]
 
 
 # ══════════════════════════════════════════════════════════════

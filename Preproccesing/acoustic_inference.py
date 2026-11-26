@@ -217,6 +217,37 @@ def _load_ast_engine() -> Dict[str, Any]:
     return _AST_ENGINE
 
 
+def _slice_analysis_windows(
+    y: np.ndarray,
+    sr: int,
+    silence_rms_threshold: float,
+) -> Tuple[List[np.ndarray], np.ndarray]:
+    """Slice 5 s windows without tiling short clips or double-counting tiny codec tails."""
+    window = int(sr * ANALYSIS_WINDOW_SECONDS)
+    hop = int(sr * ANALYSIS_WINDOW_HOP_SECONDS)
+    if y.size <= window:
+        chunks = [np.pad(y, (0, window - y.size)) if y.size < window else y]
+        return chunks, np.array([1.0], dtype=np.float64)
+
+    starts = list(range(0, y.size - window + 1, hop))
+    final_start = y.size - window
+    # Ignore tiny <25% hop overflow caused by MP3/AAC encoder priming delay
+    if (final_start - starts[-1]) >= max(1, int(0.25 * hop)):
+        starts.append(final_start)
+    if len(starts) > MAX_ANALYSIS_WINDOWS:
+        starts = starts[:MAX_ANALYSIS_WINDOWS - 1] + [final_start]
+    chunks = [y[s:s + window] for s in starts]
+    w_rms = np.array([float(np.sqrt(np.mean(c ** 2))) if c.size else 0.0 for c in chunks], dtype=np.float64)
+    max_rms = float(np.max(w_rms))
+    if max_rms > 1e-8:
+        win_weights = np.where(w_rms >= max(silence_rms_threshold, 0.15 * max_rms), w_rms / max_rms, 0.0)
+        w_sum = float(np.sum(win_weights))
+        win_weights = win_weights / w_sum if w_sum > 1e-8 else np.ones(len(chunks)) / len(chunks)
+    else:
+        win_weights = np.ones(len(chunks)) / len(chunks)
+    return chunks, win_weights
+
+
 def _ast_probabilities(y: np.ndarray, sr: int) -> Tuple[np.ndarray, int]:
     """RMS-weighted, temperature-scaled class probabilities over 5 s windows. No filename or metadata use."""
     engine = _load_ast_engine()
@@ -226,46 +257,29 @@ def _ast_probabilities(y: np.ndarray, sr: int) -> Tuple[np.ndarray, int]:
         )
     y = np.asarray(y, dtype=np.float32)
 
-    window = int(AST_SAMPLE_RATE * ANALYSIS_WINDOW_SECONDS)
-    hop = int(AST_SAMPLE_RATE * ANALYSIS_WINDOW_HOP_SECONDS)
     silence_rms_threshold = 10.0 ** (SILENCE_DBFS_THRESHOLD / 20.0)
-    if y.size <= window:
-        chunks = [np.pad(y, (0, window - y.size)) if y.size < window else y]
-        win_weights = np.array([1.0], dtype=np.float64)
-    else:
-        starts = list(range(0, y.size - window + 1, hop))
-        final_start = y.size - window
-        if starts[-1] != final_start:
-            starts.append(final_start)
-        if len(starts) > MAX_ANALYSIS_WINDOWS:
-            starts = starts[:MAX_ANALYSIS_WINDOWS - 1] + [final_start]
-        chunks = [y[s:s + window] for s in starts]
-        w_rms = np.array([float(np.sqrt(np.mean(c ** 2))) if c.size else 0.0 for c in chunks], dtype=np.float64)
-        max_rms = float(np.max(w_rms))
-        if max_rms > 1e-8:
-            win_weights = np.where(w_rms >= max(silence_rms_threshold, 0.15 * max_rms), w_rms / max_rms, 0.0)
-            w_sum = float(np.sum(win_weights))
-            win_weights = win_weights / w_sum if w_sum > 1e-8 else np.ones(len(chunks)) / len(chunks)
-        else:
-            win_weights = np.ones(len(chunks)) / len(chunks)
+    chunks, win_weights = _slice_analysis_windows(y, AST_SAMPLE_RATE, silence_rms_threshold)
 
     temp = float(engine.get("temperature", 1.0))
+    label_items = sorted(engine["label_map"].items())
+    out_indices = np.array([out_idx for out_idx, _ in label_items], dtype=np.int64)
+    cat_indices = np.array([cat_id for _, cat_id in label_items], dtype=np.int64)
     accumulated = np.zeros(len(ESC50_CATEGORIES), dtype=np.float64)
-    for chunk, weight in zip(chunks, win_weights):
+    batch_size = 6
+    for start_idx in range(0, len(chunks), batch_size):
+        batch_chunks = chunks[start_idx:start_idx + batch_size]
+        batch_weights = win_weights[start_idx:start_idx + batch_size]
         inputs = engine["feature_extractor"](
-            chunk, sampling_rate=AST_SAMPLE_RATE, return_tensors="pt"
+            batch_chunks, sampling_rate=AST_SAMPLE_RATE, return_tensors="pt"
         )
-        with torch.no_grad():
-            logits = engine["model"](**inputs).logits[0] / temp
-        probs = torch.softmax(logits, dim=-1).numpy()
-        mapped = np.zeros(len(ESC50_CATEGORIES), dtype=np.float64)
-        for output_index, category_id in engine["label_map"].items():
-            mapped[category_id] = probs[output_index]
-        accumulated += float(weight) * mapped
+        with torch.inference_mode():
+            logits = engine["model"](**inputs).logits / temp
+        probs_batch = torch.softmax(logits, dim=-1).cpu().numpy()
+        mapped = np.zeros((probs_batch.shape[0], len(ESC50_CATEGORIES)), dtype=np.float64)
+        mapped[:, cat_indices] = probs_batch[:, out_indices]
+        accumulated += np.sum(mapped * batch_weights[:, None], axis=0)
 
     accumulated /= max(float(accumulated.sum()), 1e-12)
-    import gc
-    gc.collect()
     return accumulated.astype(np.float32), len(chunks)
 
 
@@ -493,29 +507,61 @@ def load_model_checkpoint(model_name: str) -> Optional[Dict[str, Any]]:
         VGG16V2,
         SResNetV2,
         CNNGRUV2,
+        ResNet18V3,
+        VGG16V3,
+        SResNetV3,
+        CNNGRUV3,
+        ResNet22AudioV4,
+        Cnn10AudioV4,
+        DyMNAudioV4,
+        MN20GRUAudioV4,
     )
     data = torch.load(ckpt_path, map_location="cpu", weights_only=False)
     if "state_dict" not in data:
         raise RuntimeError(f"Checkpoint '{filename}' has no state_dict.")
-    arch_version = int(data.get("arch_version") or (2 if str(data.get("format", "")).endswith("-v2") else 1))
-    classes_v1 = {
-        "resnet18": ResNet18Transfer,
-        "vgg16": VGG16Transfer,
-        "sresnet": SResNetTransfer,
-        "cnngru": CNNGRUFast,
+    fmt = str(data.get("format", ""))
+    default_ver = 4 if fmt.endswith("-v4") else (3 if fmt.endswith("-v3") else (2 if fmt.endswith("-v2") else 1))
+    arch_version = int(data.get("arch_version") or default_ver)
+    feat_type = str(data.get("feature_type") or feat_type)
+    classes_by_version = {
+        1: {
+            "resnet18": ResNet18Transfer,
+            "vgg16": VGG16Transfer,
+            "sresnet": SResNetTransfer,
+            "cnngru": CNNGRUFast,
+        },
+        2: {
+            "resnet18": ResNet18V2,
+            "vgg16": VGG16V2,
+            "sresnet": SResNetV2,
+            "cnngru": CNNGRUV2,
+        },
+        3: {
+            "resnet18": ResNet18V3,
+            "vgg16": VGG16V3,
+            "sresnet": SResNetV3,
+            "cnngru": CNNGRUV3,
+        },
+        4: {
+            "resnet18": ResNet22AudioV4,
+            "vgg16": Cnn10AudioV4,
+            "sresnet": DyMNAudioV4,
+            "cnngru": MN20GRUAudioV4,
+        },
     }
-    classes_v2 = {
-        "resnet18": ResNet18V2,
-        "vgg16": VGG16V2,
-        "sresnet": SResNetV2,
-        "cnngru": CNNGRUV2,
-    }
-    cls = (classes_v2 if arch_version == 2 else classes_v1)[matched_key]
-    if matched_key in {"resnet18", "vgg16", "sresnet"}:
+    if arch_version not in classes_by_version:
+        raise ValueError(f"Unsupported checkpoint arch_version={arch_version} in '{filename}'.")
+    cls = classes_by_version[arch_version][matched_key]
+    if matched_key in {"resnet18", "vgg16", "sresnet"} or arch_version >= 4:
         model = cls(num_classes=50, pretrained=False)
     else:
         model = cls(num_classes=50)
-    model.load_state_dict(data["state_dict"], strict=True)
+    # Checkpoints may store frozen AudioSet backbones in float16 for compact deployment
+    state_dict = {
+        k: (v.float() if isinstance(v, torch.Tensor) and v.is_floating_point() else v)
+        for k, v in data["state_dict"].items()
+    }
+    model.load_state_dict(state_dict, strict=True)
     model.eval()
     entry = {
         "model": model,
@@ -528,6 +574,26 @@ def load_model_checkpoint(model_name: str) -> Optional[Dict[str, Any]]:
     }
     _MODEL_CACHE[matched_key] = entry
     return entry
+
+
+def _ffmpeg_decode_audio(source: bytes | str) -> Tuple[np.ndarray, int]:
+    """Decode arbitrary container audio via ffmpeg AU stream so native sample rate reaches soxr."""
+    import subprocess
+    inp = "pipe:0" if isinstance(source, (bytes, bytearray)) else str(source)
+    cmd = ["ffmpeg", "-v", "error", "-i", inp, "-ac", "1", "-c:a", "pcm_f32be", "-f", "au", "pipe:1"]
+    proc = subprocess.run(
+        cmd,
+        input=bytes(source) if isinstance(source, (bytes, bytearray)) else None,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=15,
+    )
+    if proc.returncode != 0 or not proc.stdout:
+        raise RuntimeError(f"ffmpeg decode failed: {proc.stderr.decode(errors='ignore')[:200]}")
+    y_dec, sr_dec = sf.read(io.BytesIO(proc.stdout))
+    if np.asarray(y_dec).size == 0:
+        raise RuntimeError("ffmpeg produced empty audio stream")
+    return np.asarray(y_dec, dtype=np.float32), int(sr_dec)
 
 
 def load_audio_waveform(
@@ -544,18 +610,12 @@ def load_audio_waveform(
     if isinstance(audio_input, np.ndarray):
         y = audio_input.astype(np.float32)
     elif isinstance(audio_input, (bytes, bytearray)):
-        # Try soundfile container decoding
+        # Try soundfile container decoding first
         try:
             y, sr = sf.read(io.BytesIO(audio_input))
         except Exception:
             try:
-                import subprocess
-                cmd = ['ffmpeg', '-v', 'error', '-i', 'pipe:0', '-f', 'f32le', '-ar', str(target_sr), '-ac', '1', 'pipe:1']
-                proc = subprocess.run(cmd, input=bytes(audio_input), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10)
-                if proc.returncode != 0 or not proc.stdout:
-                    raise RuntimeError("ffmpeg pipe decode failed")
-                y = np.frombuffer(proc.stdout, dtype=np.float32)
-                sr = target_sr
+                y, sr = _ffmpeg_decode_audio(bytes(audio_input))
             except Exception:
                 try:
                     y, sr = librosa.load(io.BytesIO(audio_input), sr=target_sr, mono=True)
@@ -567,14 +627,7 @@ def load_audio_waveform(
             y, sr = sf.read(str(audio_input))
         except Exception:
             try:
-                import subprocess
-                cmd = ['ffmpeg', '-v', 'error', '-i', str(audio_input), '-f', 'f32le', '-ar', str(target_sr), '-ac', '1', 'pipe:1']
-                proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10)
-                if proc.returncode == 0 and len(proc.stdout) > 0:
-                    y = np.frombuffer(proc.stdout, dtype=np.float32)
-                    sr = target_sr
-                else:
-                    raise RuntimeError("ffmpeg file decode failed")
+                y, sr = _ffmpeg_decode_audio(str(audio_input))
             except Exception:
                 try:
                     y, sr = librosa.load(str(audio_input), sr=target_sr, mono=True)
@@ -779,7 +832,18 @@ def run_acoustic_inference(
     t_start = time.time()
 
     norm_name = re.sub(r"[^a-z0-9]", "", model_name.lower())
-    decode_sr = AST_SAMPLE_RATE if norm_name in {"ast", "astesc50"} else 22050
+    is_ast_only = norm_name in {"ast", "astesc50"}
+    is_multi_ensemble = norm_name in {"ensemble", "fusion"}
+    entries: list[Dict[str, Any]] = []
+    if is_ast_only:
+        decode_sr = AST_SAMPLE_RATE
+    else:
+        model_names = ["resnet18", "vgg16", "sresnet", "cnngru"] if is_multi_ensemble else [model_name]
+        entries = [load_model_checkpoint(name) for name in model_names]
+        missing = [name for name, entry in zip(model_names, entries) if entry is None]
+        if missing:
+            raise FileNotFoundError(f"No trained checkpoint is available for: {', '.join(missing)}.")
+        decode_sr = 32000 if any(entry["feat_type"] == "wave_32k" for entry in entries) else 22050
     # Measure the original decoded recording before padding or peak normalization.
     y, sr = load_audio_waveform(audio_input, target_sr=decode_sr, target_duration=None)
     metrics = compute_signal_metrics(y, sr)
@@ -797,18 +861,12 @@ def run_acoustic_inference(
         return _build_tone_result(metrics, model_name, t_start)
 
     t_infer = time.time()
-    if norm_name in {"ast", "astesc50"}:
+    as_ood_probs: Optional[np.ndarray] = None
+    if is_ast_only:
         probs, window_count = _ast_probabilities(y, sr)
         engine_name = "ast-esc50"
         confidence_type = "model_softmax"
     else:
-        is_multi_ensemble = norm_name in {"ensemble", "fusion"}
-        model_names = ["resnet18", "vgg16", "sresnet", "cnngru"] if is_multi_ensemble else [model_name]
-        entries = [load_model_checkpoint(name) for name in model_names]
-        missing = [name for name, entry in zip(model_names, entries) if entry is None]
-        if missing:
-            raise FileNotFoundError(f"No trained checkpoint is available for: {', '.join(missing)}.")
-
         # Include AST in ensemble for stronger fusion when available
         include_ast_in_ensemble = False
         if is_multi_ensemble:
@@ -818,47 +876,50 @@ def run_acoustic_inference(
             except Exception:
                 pass
 
-        window_samples = int(22050 * ANALYSIS_WINDOW_SECONDS)
-        hop_samples = int(22050 * ANALYSIS_WINDOW_HOP_SECONDS)
-        short_tile_samples = int(22050 * 3.5)
-        if y.size < window_samples:
-            if 0 < y.size < short_tile_samples:
-                # Tile short clips (<3.5s) instead of padding with >30% silence so global pooling retains signal.
-                reps = int(np.ceil(window_samples / y.size))
-                windows = [np.tile(y, reps)[:window_samples]]
+        feat_types = {entry["feat_type"] for entry in entries}
+        if feat_types & {"log_mel", "mfcc"}:
+            if sr != 22050:
+                try:
+                    import soxr
+                    y_22k = soxr.resample(y, sr, 22050)
+                except Exception:
+                    y_22k = librosa.resample(y, orig_sr=sr, target_sr=22050)
             else:
-                windows = [np.pad(y, (0, window_samples - y.size))]
+                y_22k = y
+            windows_22k, win_weights_22k = _slice_analysis_windows(np.asarray(y_22k, dtype=np.float32), 22050, silence_rms_threshold)
         else:
-            starts = list(range(0, max(1, y.size - window_samples + 1), hop_samples))
-            final_start = y.size - window_samples
-            if starts[-1] != final_start:
-                starts.append(final_start)
-            if len(starts) > MAX_ANALYSIS_WINDOWS:
-                starts = starts[:MAX_ANALYSIS_WINDOWS - 1] + [final_start]
-            windows = [y[start:start + window_samples] for start in starts]
-
-        if len(windows) > 1:
-            w_rms = np.array([float(np.sqrt(np.mean(w ** 2))) if w.size else 0.0 for w in windows], dtype=np.float64)
-            max_rms = float(np.max(w_rms))
-            if max_rms > 1e-8:
-                win_weights = np.where(w_rms >= max(silence_rms_threshold, 0.15 * max_rms), w_rms / max_rms, 0.0)
-                w_sum = float(np.sum(win_weights))
-                win_weights = win_weights / w_sum if w_sum > 1e-8 else np.ones(len(windows)) / len(windows)
-            else:
-                win_weights = np.ones(len(windows)) / len(windows)
+            windows_22k, win_weights_22k = ([], np.array([1.0]))
+        if "wave_32k" in feat_types:
+            try:
+                import soxr
+                y_32k = soxr.resample(y, sr, 32000) if sr != 32000 else y
+            except Exception:
+                y_32k = librosa.resample(y, orig_sr=sr, target_sr=32000) if sr != 32000 else y
+            windows_32k, win_weights_32k = _slice_analysis_windows(np.asarray(y_32k, dtype=np.float32), 32000, silence_rms_threshold)
         else:
-            win_weights = np.ones(len(windows), dtype=np.float64)
+            windows_32k, win_weights_32k = ([], np.array([1.0]))
 
         from Preproccesing.feature_extractor import extract_log_mel_spectrogram, extract_mfcc
         batch_by_feat: Dict[str, torch.Tensor] = {}
-        for feat_type in {entry["feat_type"] for entry in entries}:
-            tensors = []
-            for window in windows:
-                peak = float(np.max(np.abs(window))) if window.size else 0.0
-                model_window = window / peak if peak > 1e-8 else window
-                feat = extract_mfcc(model_window, sr=22050) if feat_type == "mfcc" else extract_log_mel_spectrogram(model_window, sr=22050)
-                tensors.append(torch.from_numpy(feat).unsqueeze(0).unsqueeze(0).float())
-            batch_by_feat[feat_type] = torch.cat(tensors, dim=0)
+        weights_by_feat: Dict[str, np.ndarray] = {}
+        for feat_type in feat_types:
+            if feat_type == "wave_32k":
+                tensors = []
+                for window in windows_32k:
+                    peak = float(np.max(np.abs(window))) if window.size else 0.0
+                    model_window = window / peak if peak > 1e-8 else window
+                    tensors.append(torch.from_numpy(model_window.astype(np.float32)).unsqueeze(0))
+                batch_by_feat[feat_type] = torch.cat(tensors, dim=0)
+                weights_by_feat[feat_type] = win_weights_32k
+            else:
+                tensors = []
+                for window in windows_22k:
+                    peak = float(np.max(np.abs(window))) if window.size else 0.0
+                    model_window = window / peak if peak > 1e-8 else window
+                    feat = extract_mfcc(model_window, sr=22050) if feat_type == "mfcc" else extract_log_mel_spectrogram(model_window, sr=22050)
+                    tensors.append(torch.from_numpy(feat).unsqueeze(0).unsqueeze(0).float())
+                batch_by_feat[feat_type] = torch.cat(tensors, dim=0)
+                weights_by_feat[feat_type] = win_weights_22k
 
         ensemble_cfg_path = CHECKPOINTS_DIR / "ensemble_config.json"
         ensemble_cfg: Dict[str, Any] = {}
@@ -868,77 +929,115 @@ def run_acoustic_inference(
             except Exception:
                 ensemble_cfg = {}
 
-        all_v2 = all(entry.get("arch_version", 1) == 2 for entry in entries)
-        if is_multi_ensemble and ensemble_cfg.get("archVersion") == (2 if all_v2 else 1):
+        arch_versions = {int(entry.get("arch_version", 1)) for entry in entries}
+        ensemble_arch = next(iter(arch_versions)) if len(arch_versions) == 1 else max(arch_versions)
+        is_modern = ensemble_arch >= 2
+        if is_multi_ensemble and ensemble_cfg.get("archVersion") == ensemble_arch:
             ensemble_weights = ensemble_cfg.get("weights") or {"sresnet": 0.34, "vgg16": 0.28, "resnet18": 0.26, "cnngru": 0.12}
             ens_temp = max(0.05, min(20.0, float(ensemble_cfg.get("temperature", 1.0))))
-            use_log_fusion = ensemble_cfg.get("fusion") == "weighted_log_prob"
+            ens_fusion = str(ensemble_cfg.get("fusion", "weighted_log_prob"))
         else:
-            ensemble_weights = {"sresnet": 0.34, "vgg16": 0.28, "resnet18": 0.26, "cnngru": 0.12} if all_v2 else {"sresnet": 0.30, "vgg16": 0.32, "resnet18": 0.28, "cnngru": 0.10}
+            ensemble_weights = (
+                {"sresnet": 0.34, "cnngru": 0.28, "vgg16": 0.20, "resnet18": 0.18}
+                if ensemble_arch >= 4
+                else ({"sresnet": 0.34, "vgg16": 0.28, "resnet18": 0.26, "cnngru": 0.12} if is_modern else {"sresnet": 0.30, "vgg16": 0.32, "resnet18": 0.28, "cnngru": 0.10})
+            )
             ens_temp = 1.0
-            use_log_fusion = all_v2
+            ens_fusion = "hybrid" if ensemble_arch >= 4 else ("weighted_log_prob" if is_modern else "weighted_linear")
 
-        # When AST is included without an AST-calibrated ensemble_config.json,
-        # blend 72% AST + 28% CNNs linearly so OOD/confident CNN errors cannot veto AST.
         if include_ast_in_ensemble:
             cfg_matches_ast = (
                 is_multi_ensemble
                 and bool(ensemble_cfg.get("includesAst"))
-                and ensemble_cfg.get("archVersion") == (2 if all_v2 else 1)
+                and ensemble_cfg.get("archVersion") == ensemble_arch
             )
             if not cfg_matches_ast:
-                ast_w = 0.72
-                cnn_total = 1.0 - ast_w
-                base_cnn_sum = max(1e-12, sum(float(ensemble_weights.get(k, 0.25)) for k in model_names))
-                ensemble_weights = {
-                    k: float(ensemble_weights.get(k, 0.25)) * cnn_total / base_cnn_sum
-                    for k in model_names
-                }
-                ensemble_weights["ast"] = ast_w
-                ens_temp = 1.0
-                use_log_fusion = False
-            else:
-                use_log_fusion = ensemble_cfg.get("fusion") == "weighted_log_prob"
+                if ensemble_arch >= 4:
+                    ensemble_weights = {"sresnet": 0.285, "ast": 0.25, "cnngru": 0.255, "resnet18": 0.12, "vgg16": 0.09}
+                    ens_temp = 1.0
+                    ens_fusion = "hybrid"
+                else:
+                    ast_w = 0.72
+                    cnn_total = 1.0 - ast_w
+                    base_cnn_sum = max(1e-12, sum(float(ensemble_weights.get(k, 0.25)) for k in model_names))
+                    ensemble_weights = {
+                        k: float(ensemble_weights.get(k, 0.25)) * cnn_total / base_cnn_sum
+                        for k in model_names
+                    }
+                    ensemble_weights["ast"] = ast_w
+                    ens_temp = 1.0
+                    ens_fusion = "weighted_linear"
+
+        from Preproccesing.audioset_backbones import audioset_ood_probability
 
         per_model_probs = []
         model_weights = []
+        as_ood_scores = []
+        as_ood_weights = []
         for entry in entries:
             tx_batch = batch_by_feat[entry["feat_type"]]
-            with torch.no_grad():
-                logits = entry["model"](tx_batch)
+            w_win = weights_by_feat[entry["feat_type"]]
+            with torch.inference_mode():
+                if hasattr(entry["model"], "forward_with_audioset"):
+                    logits, as_logits = entry["model"].forward_with_audioset(tx_batch)
+                    win_as_ood = float(np.sum(audioset_ood_probability(as_logits) * w_win))
+                    as_ood_scores.append(win_as_ood)
+                    as_ood_weights.append(float(ensemble_weights.get(entry["arch_key"], 0.25)))
+                else:
+                    logits = entry["model"](tx_batch)
             raw_temp = float(entry.get("temperature", 1.0))
             temperature = max(0.05, min(20.0, raw_temp)) if raw_temp > 0 else 1.0
             window_probs = torch.softmax(logits / temperature, dim=1).numpy()
-            agg_probs = np.sum(window_probs * win_weights[:, None], axis=0)
+            agg_probs = np.sum(window_probs * w_win[:, None], axis=0)
             agg_probs /= np.sum(agg_probs)
             per_model_probs.append(agg_probs)
             model_weights.append(ensemble_weights.get(entry["arch_key"], 0.25))
 
-        # Add AST probabilities to ensemble if available
+        if as_ood_scores:
+            aw = np.asarray(as_ood_weights, dtype=np.float64)
+            aw /= np.sum(aw)
+            as_ood_probs = np.asarray(float(np.sum(np.asarray(as_ood_scores) * aw)))
+
         if include_ast_in_ensemble:
             ast_probs, _ast_wcount = _ast_probabilities(y, sr)
             per_model_probs.append(ast_probs)
-            model_weights.append(ensemble_weights.get("ast", 0.45))
+            model_weights.append(ensemble_weights.get("ast", 0.25))
 
         w_arr = np.asarray(model_weights, dtype=np.float64)
         w_arr /= np.sum(w_arr)
-        if is_multi_ensemble and use_log_fusion:
+        if is_multi_ensemble and ens_fusion in {"weighted_log_prob", "hybrid"}:
             fused_logits = np.sum([w * np.log(np.clip(p, 1e-12, 1.0)) for w, p in zip(w_arr, per_model_probs)], axis=0)
             scaled = fused_logits / ens_temp
             scaled -= np.max(scaled)
-            probs = np.exp(scaled)
-            probs /= np.sum(probs)
+            probs_log = np.exp(scaled)
+            probs_log /= np.sum(probs_log)
+            if ens_fusion == "hybrid":
+                probs_lin = np.sum([w * p for w, p in zip(w_arr, per_model_probs)], axis=0)
+                probs = 0.5 * probs_lin + 0.5 * (probs_log / np.sum(probs_log))
+                probs /= np.sum(probs)
+            else:
+                probs = probs_log
         else:
             probs = np.sum([w * p for w, p in zip(w_arr, per_model_probs)], axis=0)
             probs /= np.sum(probs)
         model_entry = {"arch_key": "ensemble" if is_multi_ensemble else entries[0]["arch_key"]}
         engine_name = f"{model_entry['arch_key']}-checkpoint"
         confidence_type = "temperature_scaled_softmax_score"
-        window_count = len(windows)
+        window_count = len(windows_32k) if "wave_32k" in feat_types else len(windows_22k)
 
     order = np.argsort(probs)[::-1]
     top_id = int(order[0])
     top_prob = float(probs[top_id])
+    second_prob = float(probs[int(order[1])]) if len(order) > 1 else 0.0
+    norm_ent = float(-np.sum(probs * np.log(np.clip(probs, 1e-12, 1.0))) / np.log(len(ESC50_CATEGORIES)))
+    # Concentrated 2-sound mixtures retain in-domain support when top-2 dominates remaining 48 classes
+    mix_support = min(1.0, top_prob + 0.45 * min(second_prob, top_prob) * max(0.0, 1.0 - norm_ent))
+    if as_ood_probs is not None:
+        as_ood_f = float(as_ood_probs)
+        ood_score = float(max(0.60 * (1.0 - mix_support) + 0.40 * as_ood_f, 0.72 * as_ood_f))
+    else:
+        ood_score = float(1.0 - mix_support)
+    in_domain_conf = 1.0 - ood_score
 
     predictions = [
         {"category": ESC50_CATEGORIES[int(idx)], "confidence": round(float(probs[int(idx)]), 4)}
@@ -946,10 +1045,9 @@ def run_acoustic_inference(
     ]
 
     below_thresh = (
-        top_prob < max(0.0, min(1.0, confidence_threshold))
+        in_domain_conf < max(0.0, min(1.0, confidence_threshold))
         if confidence_threshold is not None else False
     )
-    ood_score = float(1.0 - top_prob)
     elapsed_ms = round((time.time() - t_infer) * 1000, 1)
 
     result: Dict[str, Any] = {
@@ -976,7 +1074,8 @@ def run_acoustic_inference(
             "emoji": "❓",
             "group": "Out of Domain",
             "description": (
-                f"Model confidence ({round(top_prob * 100, 1)}%) is below the requested "
+                f"Acoustic in-domain match ({round(in_domain_conf * 100, 1)}%, "
+                f"top class {round(top_prob * 100, 1)}%) is below the requested "
                 f"threshold ({round(confidence_threshold * 100, 1)}%). Sound does not reliably match "
                 f"any ESC-50 category."
             ),
